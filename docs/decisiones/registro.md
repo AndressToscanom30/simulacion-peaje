@@ -244,3 +244,41 @@ tomaron durante el desarrollo.
   es la lectura más probable. Un M/M/c por intervalo no sirve: varios intervalos
   del festivo quedan con ρ ≥ 1 y la fórmula diverge.
 - **Descarta:** M/M/c por intervalo promediado, y usar `c` promedio no entero.
+
+## DEC-021 — La validación se reporta sin ajustar parámetros, incluida la brecha del festivo
+
+- **Fecha:** 27/10/2026
+- **Decisión:** la validación de la fase 1 se publicó tal como salió. El tiempo
+  medio de atención se queda en 12,1016 s aunque subirlo a ≈ 15,5 s haría cuadrar
+  la cola observada del festivo. La brecha queda documentada en
+  `docs/resultados/validacion-fase1.md`, en PEN-008 y en PEN-009.
+- **Motivo:** la sección 6 del contexto lo prohíbe expresamente. Un parámetro
+  movido para que el modelo cuadre deja de ser una medición y el modelo deja de
+  poder predecir nada fuera del caso con el que se ajustó.
+- **Descarta:** calibrar el tiempo de servicio contra la cola observada, y
+  cualquier factor de corrección aplicado solo al festivo.
+
+## DEC-022 — Se reportan dos colas máximas y dos caudales
+
+- **Fecha:** 27/10/2026
+- **Decisión:** cada réplica reporta la cola máxima **continua** de la hora y el
+  máximo de las 12 **lecturas puntuales** en instantes aleatorios; además
+  reporta las llegadas de la hora y las salidas dentro de la hora.
+- **Motivo:** las colas máximas observadas (32 / 8 / 7 / 1) salen de 12 lecturas
+  puntuales por conteo, así que lo comparable con ellas es el máximo muestreado,
+  no el continuo, que por construcción es mayor (PEN-004). Y el 1.064 del
+  festivo es un total de llegadas, no un caudal de salidas (PEN-005): con cola
+  inicial de 23 las dos cifras no coinciden y hace falta decir cuál es cuál.
+- **Descarta:** reportar una sola cola máxima, y llamar "caudal" a las llegadas.
+
+## DEC-023 — El informe de validación es un archivo generado
+
+- **Fecha:** 27/10/2026
+- **Decisión:** `docs/resultados/validacion-fase1.md` lo escribe
+  `scripts/simular.js`, incluida la sección de lectura de los resultados, que
+  calcula sus cifras de las réplicas en vez de llevarlas escritas. No se edita a
+  mano.
+- **Motivo:** una conclusión escrita a mano envejece en silencio en cuanto
+  cambia un parámetro o el motor. Generándola, cualquier cambio se ve en la
+  siguiente corrida.
+- **Descarta:** redactar las conclusiones a mano en el archivo de resultados.

@@ -3,7 +3,12 @@
 Estado: 27/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-## Fase 1 — Motor de un sentido con casetas fijas + validación
+**Fase 1 cerrada.** Siguiente: fase 2 (regla de apertura y cierre). Antes de
+empezarla conviene leer PEN-008 y PEN-009 en `docs/pendientes.md`: el modelo
+subestima la congestión del festivo, así que las casetas que recomiende la regla
+hay que leerlas como cota inferior.
+
+## Fase 1 — Motor de un sentido con casetas fijas + validación ✅
 
 - [x] PRNG propio con semilla (mulberry32) y pruebas de reproducibilidad
 - [x] Generador gamma por Marsaglia–Tsang (k = 4,68; θ = 2,58 s)
@@ -18,7 +23,11 @@ cerrada mientras sus pruebas no pasen.
 - [x] Corrida por lotes de 30 réplicas (semillas 1…30)
 - [x] M/M/c de referencia por Erlang C
 - [x] Validación contra los 4 conteos → `docs/resultados/validacion-fase1.md`
-- [x] Pruebas unitarias del motor
+- [x] Pruebas unitarias del motor (58 pruebas en verde)
+
+Resultado: las llegadas quedan validadas (error < 1,6 % en los cuatro conteos) y
+los carriles-intervalo coinciden exactamente con la operación real. La espera
+queda corta en los cuatro casos, y en el festivo 4,6 veces corta: ver PEN-008.
 
 ## Fase 2 — Regla de apertura y cierre
 
