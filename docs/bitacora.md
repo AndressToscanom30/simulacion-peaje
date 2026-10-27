@@ -2,6 +2,65 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-27 (2.ª intervención) — Fase 2: regla de apertura y cierre
+
+**Qué cambió:**
+
+- **DEC-024** fija que las lecturas de cola de los conteos son la **fila más
+  larga de una caseta**, no el total del sentido, y saca las consecuencias: la
+  lectura es cota inferior de la cola total, la cola única del motor debería
+  quedar por encima, la fórmula `Wq_est = Lq × 12,1 / c` no aplica a esas
+  lecturas, los umbrales de la regla siguen siendo sobre cola total, y queda
+  **anulado** el cálculo de "servicio implícito" de 15,5 s de la fase 1, que
+  suponía cola única. Se quitó del informe de validación.
+- Nuevo `scripts/diagnostico-festivo.js` (`npm run diagnostico`) →
+  `docs/resultados/diagnostico-festivo.md`, con la comparación intervalo por
+  intervalo y la marca de dónde la cola simulada queda por debajo de la
+  observada.
+- **DEC-025** supera **solo** la parte de la DEC-021 que descartaba correcciones
+  al festivo, y añade el escenario de sensibilidad "servicio lento": media
+  15,5 s con el mismo CV (`k = 4,68`, `θ = 3,3120 s`). Nunca es el valor por
+  defecto, solo se aplica al pico y se reporta siempre junto al caso base.
+- **Modo `c(t)` por regla** en el motor, sin romper el programado, que sigue
+  siendo el valor por defecto: evaluación tras cada llegada y cada fin de
+  servicio, apertura a `t + demora` con una sola pendiente y sin revocar la
+  orden, cierre solo tras 15 min seguidos bajo el umbral y sin interrumpir
+  servicios. Nuevo evento `APERTURA_CASETA`. Medidas nuevas: aperturas, cierres,
+  cierres cancelados, cambios de `c` y tiempo por número de casetas abiertas.
+- **DEC-026** registra los 10 casos límite que el contexto no cubre y que hubo
+  que decidir (la `c` de los umbrales es la efectiva, se cancela un cierre
+  marcado antes de ordenar una apertura, la ventana de 15 min se reinicia a cada
+  cambio de `c`, se prefiere cerrar una caseta libre, y los contadores excluyen
+  el arranque, entre otros).
+- 28 pruebas nuevas (86 en total), incluida una de **regresión** que lee
+  `validacion-fase1.md` y comprueba que el modo programado sigue dando esos
+  mismos números. Verificada por contraste: mover `θ` la hace fallar.
+- Nuevo `scripts/fase2.js` (`npm run fase2`) → `docs/resultados/fase2-regla.md`,
+  con 16 casos × 30 réplicas y las mismas semillas en todos.
+
+**Qué mostró el diagnóstico:** el festivo subestima en **12 de 12 intervalos** en
+media, y en **8 de 12** ni la peor de las 30 réplicas alcanza la lectura de
+campo. En los cuatro conteos, 21 de 48 intervalos en media y 10 de 48 en las 30.
+
+**Qué concluye la comparación:** depende del régimen de servicio. Con el medido
+(12,10 s) operador y regla cumplen el criterio en los cuatro conteos, y en el
+festivo la regla queda algo peor (`Wq` 0,32 contra 0,28 min) gastando un 7,4 %
+más de carriles-intervalo. Con el lento de sensibilidad (15,5 s) ninguno cumple,
+pero la regla baja `Wq` de 2,90 a 1,23 min y el % de intervalos sobre 2,5 min de
+50,0 % a 9,2 %, por un 7 % más de carriles. Con demora 0 la regla sí mejora al
+operador también en el caso base, lo que señala el retardo de reacción como la
+causa.
+
+**Qué quedó a medias:** nada de la fase 2. Pendientes nuevos: PEN-010 (el
+servicio lento es hipótesis, no medición), PEN-011 (la regla es reactiva y el
+operador fue anticipativo) y PEN-012 (la ventana de 15 min cuesta un 7,4 % de
+carriles-intervalo). PEN-002 queda parcialmente cerrado y PEN-008 reescrito.
+
+**Qué sigue:** fase 3, el reparto de casetas entre sentidos sobre el pozo común
+de 6, con la reasignación por ρ > 0,60 y el desempate cuando los dos sentidos
+piden caseta. Ahí hará falta el sustituto de demanda de Cúcuta→Pamplona en el
+festivo (195 veh/h del domingo, arrancando con 1 caseta).
+
 ## 2026-10-27 — Documentación, esqueleto y fase 1 del motor
 
 **Qué cambió:**

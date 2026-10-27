@@ -31,6 +31,10 @@ const MEDIDAS_ESCALARES = [
   'colaFinal',
   'fraccionIntervalosSobreUmbral',
   'carrilesIntervalo',
+  'aperturas',
+  'cierres',
+  'cierresCancelados',
+  'cambiosDeC',
 ];
 
 /**
@@ -47,6 +51,14 @@ export function resumirLote(replicas) {
     escalares[medida] = resumir(replicas.map((r) => r[medida]));
   }
 
+  // Tiempo con cada número de casetas abiertas, en segundos. Las réplicas
+  // pueden traer arreglos de distinto largo según el tope de casetas del caso,
+  // así que se resume hasta el mayor y lo que falte cuenta como 0.
+  const nivelesMaximos = Math.max(...replicas.map((r) => r.tiempoPorCasetasAbiertas.length));
+  const tiempoPorCasetasAbiertas = Array.from({ length: nivelesMaximos }, (_, c) =>
+    resumir(replicas.map((r) => r.tiempoPorCasetasAbiertas[c] ?? 0)),
+  );
+
   const intervalos = replicas[0].wqPorIntervaloSegundos.length;
   const porIntervalo = Array.from({ length: intervalos }, (_, i) => ({
     intervalo: i,
@@ -54,7 +66,7 @@ export function resumirLote(replicas) {
     colaMuestreada: resumir(replicas.map((r) => r.colaMuestreada[i])),
   }));
 
-  return { replicas: replicas.length, escalares, porIntervalo };
+  return { replicas: replicas.length, escalares, porIntervalo, tiempoPorCasetasAbiertas };
 }
 
 /**

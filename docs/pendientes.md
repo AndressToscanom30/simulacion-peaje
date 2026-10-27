@@ -176,3 +176,48 @@ mantiene la pregunta abierta hasta que alguien la responda.
   Eso sería la calibración que la sección 6 del contexto prohíbe.
 - **Qué haría falta para cerrarlo:** medir tiempos de atención en un festivo y en
   el sentido Pamplona→Cúcuta.
+
+### PEN-011 — Con el servicio medido, la regla no mejora al operador, y en el festivo queda algo peor
+
+- **Origen:** experimentos de la fase 2 (`docs/resultados/fase2-regla.md`).
+- **Qué pasa:** con servicio base (12,10 s) el operador y la regla cumplen el
+  criterio en los cuatro conteos, y en el festivo la regla queda ligeramente
+  **peor**: `Wq` 0,32 contra 0,28 min, y cola máxima continua 36,1 contra 29,3.
+- **Por qué, con lo que se ve en las tablas:** la regla es **reactiva**. Espera a
+  que la cola pase el umbral y después tarda la demora de 5 min en tener la
+  caseta abierta. El operador fue **anticipativo**: abrió la quinta caseta al
+  empezar el intervalo 6 sin esperar a que la cola lo exigiera. Con demora 0 la
+  regla sí mejora al operador (`Wq` 0,19 contra 0,28), lo que confirma que la
+  diferencia es el retardo de reacción y no los umbrales.
+- **Mientras tanto:** se reporta tal cual. **No se tocaron los umbrales** para
+  que la regla ganara.
+- **Qué está abierto:** si conviene añadirle a la regla un disparador
+  anticipativo. El contexto trae en la sección 4 una derivación por tasa de
+  llegadas (abrir la 2.ª en 21 llegadas/5 min, la 3.ª en 46, la 4.ª en 70, la
+  5.ª en 95) que serviría justo para eso, pero DEC-006 decidió disparar por cola
+  y descartó disparar por tasa. **No se reabre aquí**: queda anotado para la
+  interpretación de la fase 7, y si se decidiera añadirlo haría falta una
+  decisión nueva que diga qué supera.
+- **Ojo con la lectura:** este resultado vale en el régimen donde, según el
+  modelo, no hay problema que resolver (PEN-009). Con servicio lento la regla
+  mejora mucho al operador.
+
+### PEN-012 — La ventana de 15 min hace que la regla gaste más carriles-intervalo que el operador
+
+- **Origen:** experimentos de la fase 2.
+- **Qué pasa:** sumando los cuatro conteos con servicio base, la regla gasta
+  **130,0 carriles-intervalo contra 121,0** del operador, un 7,4 % más. El caso
+  extremo es domingoPC: **21,0 contra 14,0**, un 50 % más, porque el operador
+  bajó a 1 caseta en el intervalo 3 y se quedó ahí, mientras la regla tardó casi
+  una hora en poder cerrar.
+- **Por qué:** para cerrar, la cola tiene que mantenerse bajo el umbral 15 min
+  **seguidos**, y el conteo se reinicia cada vez que sube (DEC-007) o cambia `c`
+  (DEC-026, punto 3). Con demanda baja la cola roza el umbral de vez en cuando y
+  cada repunte reinicia la espera.
+- **Es el precio de la histéresis, no un defecto:** la ventana está justamente
+  para que no se abra y cierre a cada rato, que sería inoperable. El resultado
+  cuantifica cuánto cuesta.
+- **Qué está abierto:** si 15 min es el valor adecuado, y si el costo en
+  personal de ese 7,4 % compensa. El parámetro `ventanaCierreSegundos` ya es
+  editable; la fase 4 puede correrlo como sensibilidad, igual que la demora.
+- **Mientras tanto:** se deja en los 15 min del contexto. **No se ajustó.**

@@ -3,10 +3,12 @@
 Estado: 27/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Fase 1 cerrada.** Siguiente: fase 2 (regla de apertura y cierre). Antes de
-empezarla conviene leer PEN-008 y PEN-009 en `docs/pendientes.md`: el modelo
-subestima la congestión del festivo, así que las casetas que recomiende la regla
-hay que leerlas como cota inferior.
+**Fases 1 y 2 cerradas.** Siguiente: fase 3 (reparto de casetas entre sentidos
+sobre el pozo común de 6). Antes de empezarla, leer en `docs/pendientes.md`:
+PEN-008 (el modelo de cola única subestima la congestión del pico, así que las
+casetas que recomiende la regla son cota inferior), PEN-009 (con el servicio
+medido la operación real ya cumple el criterio) y PEN-011 (la regla es reactiva;
+con demora 0 sí mejora al operador).
 
 ## Fase 1 — Motor de un sentido con casetas fijas + validación ✅
 
@@ -29,15 +31,30 @@ Resultado: las llegadas quedan validadas (error < 1,6 % en los cuatro conteos) y
 los carriles-intervalo coinciden exactamente con la operación real. La espera
 queda corta en los cuatro casos, y en el festivo 4,6 veces corta: ver PEN-008.
 
-## Fase 2 — Regla de apertura y cierre
+## Fase 2 — Regla de apertura y cierre ✅
 
-- [ ] Modo `c(t)` **por regla**, evaluada tras cada llegada y cada fin de servicio
-- [ ] Umbrales de apertura (cola > 4 / 9 / 14 / 19) y de cierre (cola < 2 / 4 / 7 / 9)
-- [ ] Apertura programada a `t + demora`, con una sola apertura pendiente por sentido
-- [ ] Cierre solo si la cola se mantiene bajo el umbral 15 min seguidos, con
+- [x] Modo `c(t)` **por regla**, evaluada tras cada llegada y cada fin de servicio
+- [x] Umbrales de apertura (cola > 4 / 9 / 14 / 19) y de cierre (cola < 2 / 4 / 7 / 9)
+- [x] Apertura programada a `t + demora`, con una sola apertura pendiente por sentido
+- [x] Cierre solo si la cola se mantiene bajo el umbral 15 min seguidos, con
       reinicio del conteo si sube
-- [ ] Sensibilidad de la demora (0, 5 y 10 min)
-- [ ] Comparación de la regla contra la operación real observada
+- [x] Casetas marcadas que no interrumpen el servicio en curso
+- [x] Casos límite decididos y cubiertos con pruebas (DEC-026)
+- [x] Sensibilidad de la demora (0, 5 y 10 min)
+- [x] Escenario de sensibilidad "servicio lento" (DEC-025)
+- [x] Comparación de la regla contra la operación real observada
+      → `docs/resultados/fase2-regla.md`
+- [x] Diagnóstico de la definición de cola de campo (DEC-024)
+      → `docs/resultados/diagnostico-festivo.md`
+- [x] 86 pruebas en verde, incluida la regresión del modo programado contra
+      `validacion-fase1.md`
+
+Resultado: con el servicio medido (12,10 s) el operador y la regla cumplen el
+criterio en los cuatro conteos, y en el festivo la regla queda algo peor
+(PEN-011) gastando un 7,4 % más de carriles-intervalo (PEN-012). Con el servicio
+lento de sensibilidad (15,5 s) ninguno cumple, pero la regla baja `Wq` de 2,90 a
+1,23 min y el % de intervalos sobre 2,5 min de 50,0 % a 9,2 %, por un 7 % más de
+carriles. La conclusión depende del régimen de servicio.
 
 ## Fase 3 — Reparto de casetas entre sentidos
 
