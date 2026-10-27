@@ -282,3 +282,77 @@ tomaron durante el desarrollo.
   cambia un parámetro o el motor. Generándola, cualquier cambio se ve en la
   siguiente corrida.
 - **Descarta:** redactar las conclusiones a mano en el archivo de resultados.
+
+## DEC-024 — Las lecturas de cola de campo son la fila más larga de una caseta, no el total del sentido
+
+- **Fecha:** 27/10/2026
+- **Decisión:** el arreglo `cola` de cada conteo (sección 10 del contexto) se
+  interpreta como **el número de vehículos en la fila más larga de una sola
+  caseta** durante ese intervalo, no como el total de vehículos esperando en el
+  sentido. Esta entrada **supera** la lectura implícita que la fase 1 le dio a
+  esas cifras.
+- **Motivo:** así se tomaron en campo. La diferencia cambia por completo lo que
+  significa comparar la simulación con ellas.
+- **Consecuencias, que son las que importan:**
+  1. **La lectura observada es una cota inferior de la cola total real.** Si la
+     fila más larga tenía 32 vehículos, el total del sentido era ≥ 32, y con 5
+     casetas abiertas podía ser bastante más.
+  2. **El motor simula cola única (DEC-001), así que su cola total debería ser
+     mayor o igual que la lectura observada.** Donde la cola simulada queda por
+     debajo de la lectura, el modelo **subestima**, y no hay interpretación que
+     lo salve: es la comparación de un total contra una de sus partes.
+  3. **La fórmula `Wq_est = Lq × 12,1 / c` de la sección 3 no aplica tal cual a
+     estas lecturas.** Esa fórmula espera `Lq` = cola total del sentido; aplicada
+     a la fila más larga de una caseta da una cifra sin interpretación clara. El
+     recálculo de PEN-002 queda anulado por esto.
+  4. **Los umbrales de la regla (4 / 9 / 14 / 19) siguen siendo sobre cola
+     total**, como dice la sección 4 ("total de vehículos esperando en todas las
+     casetas abiertas del sentido"). No se reescalan.
+  5. **Queda anulado el cálculo de "servicio implícito" de ≈ 15,5 s** que la
+     fase 1 derivó en su informe. Ese cálculo suponía que haber cola implicaba
+     casetas ocupadas, lo que solo vale en cola única. Con filas por caseta, una
+     caseta puede estar libre mientras otra tiene cola, así que la holgura de
+     capacidad se explica por el desbalance y no exige un servicio más lento.
+- **Limitación declarada:** hay un **desajuste de definición** entre el dato de
+  campo (fila más larga de una caseta) y la variable del modelo (cola total de
+  una cola única). Las dos no son comparables de frente; solo se puede afirmar
+  la desigualdad de la consecuencia 2. Mientras no se registre la cola total por
+  sentido, la validación de la cola no puede pasar de ahí.
+- **Descarta:** leer el arreglo `cola` como total del sentido; usar esas
+  lecturas para estimar `Wq` observado con la fórmula de la sección 3; y derivar
+  un tiempo de servicio implícito a partir de ellas.
+
+## DEC-025 — Escenario de sensibilidad "servicio lento" (15,5 s), nunca por defecto
+
+- **Fecha:** 27/10/2026
+- **Supera:** **solo** la parte de la DEC-021 que descartaba "cualquier factor de
+  corrección aplicado solo al festivo". El resto de la DEC-021 sigue en pie: la
+  validación se reporta sin ajustar parámetros y no se calibra el servicio contra
+  la cola observada.
+- **Decisión:** se añade un escenario de sensibilidad con tiempo medio de
+  atención de **15,5 s** y el **mismo coeficiente de variación** del servicio
+  medido: `k = 4,68` y `θ = 15,5 / 4,68 = 3,3120 s` (desviación 7,17 s,
+  CV = 0,46, igual que el base). **El modelo base no cambia:** sigue en
+  12,1016 s con `k = 4,68` y `θ = 2,58 s`.
+- **Reglas de uso, que son parte de la decisión:**
+  1. Vive en `src/config/parametros.js` como parámetro de escenario
+     (`parametros.servicioLento`) y **nunca** es el valor por defecto.
+  2. Se aplica **solo a escenarios de pico**: el festivo y, en la fase 4, la
+     temporada alta. Los conteos normales siguen con 12,1016 s.
+  3. Se reporta **siempre junto al caso base** y rotulado como **hipótesis de
+     sensibilidad**, no como calibración.
+- **Motivo:** PEN-008 deja tres explicaciones posibles para la congestión del
+  festivo y conviene poder aislar la primera (servicio más lento en el pico) en
+  vez de solo nombrarla. Como escenario rotulado y acompañado del caso base, eso
+  es análisis de sensibilidad; sustituyendo el valor medido, sería calibración.
+  La diferencia está en que el valor por defecto no se mueve y en que las dos
+  cifras se publican juntas.
+- **De dónde sale el 15,5 s:** es el tiempo medio que haría falta para que las
+  casetas abiertas en el festivo estuvieran ocupadas todo el tiempo atendiendo
+  los 1.064 vehículos contados. Era el "servicio implícito" de la fase 1.
+  **Esa derivación ya no se sostiene** (DEC-024, consecuencia 5), así que el
+  15,5 s se usa como valor de referencia de "cuánto más lento tendría que ser",
+  no como estimación del servicio real. Ver PEN-010.
+- **Descarta:** usar 15,5 s como valor por defecto; aplicarlo a los conteos
+  normales; presentarlo sin el caso base al lado; y dimensionar la política
+  recomendada sobre él.

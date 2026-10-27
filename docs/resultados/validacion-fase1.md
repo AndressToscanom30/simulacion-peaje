@@ -264,43 +264,26 @@ observado (1,28 min). La cierra en parte pero no del todo:
 - Simulación: 0,276 min, 4,6 veces por debajo de lo observado.
 - La simulación multiplica por 4,8 la espera del M/M/c, pero sigue a 4,6× de lo observado.
 
-### Por qué: en el festivo sobra capacidad para la cola que se observó
+### Por qué: la cola de campo y la del modelo no son la misma variable
 
-Esta es la raíz del desajuste, y es aritmética, no un problema del motor:
+Las lecturas de cola de los conteos son la **fila más larga de una sola
+caseta**, no el total del sentido (DEC-024). El motor simula cola única, así
+que reporta la cola **total**. Como el total es mayor o igual que cualquiera
+de sus filas, el criterio limpio es la desigualdad: donde la cola total
+simulada queda por debajo de la lectura de campo, el modelo subestima con
+certeza.
 
-- El operador tuvo 55 carriles-intervalo abiertos, o sea 16500 segundos-caseta.
-- A 12,1016 s por vehículo, eso da capacidad para **1363 vehículos** en la hora.
-- Llegaron 1064 más 23 de cola inicial = **1087 vehículos**.
-- Sobra un 25 % de capacidad: la utilización implícita es **78 %**.
+Eso es justo lo que pasa en el festivo, y en todos los intervalos:
+`npm run diagnostico` lo desglosa en `diagnostico-festivo.md`. La cola
+simulada al final de la hora sale 0,0 en las 30 réplicas, mientras en
+campo la fila más larga todavía marcaba 14 vehículos.
 
-Con una cola única FIFO eso es contradictorio con lo observado. La cola media
-de las 12 lecturas del festivo es 22,7 vehículos y la última lectura es
-14: la cola nunca se vació. Pero una cola única no puede tener
-vehículos esperando y casetas desocupadas a la vez: en cuanto una caseta se
-libera, el primero de la cola entra. Si de verdad hubo cola toda la hora, las
-casetas estuvieron ocupadas casi el 100 % del tiempo, y entonces atender 1064
-vehículos con 16500 segundos-caseta exige un tiempo medio de atención de
-**15,5 s**, no de 12,1016 s.
-
-Y es justo lo que se ve en la simulación: la cola se vacía. La cola al final
-de la hora sale 0,0 en las 30 réplicas, contra 14 observados.
-
-Tres explicaciones posibles, ninguna descartable con los datos que hay:
-
-1. **El servicio del festivo fue más lento que los 12,10 s medidos.** Los 50
-   tiempos se tomaron en otro sentido (Cúcuta→Pamplona) y en otro día, y el
-   contexto ya lo declara como limitación (sección 8). Harían falta ≈ 15,5 s
-   para sostener la cola observada con esas casetas abiertas.
-2. **La cola estaba desbalanceada entre casetas.** El contexto también lo
-   declara (sección 8): en campo se vio desbalance, y el modelo de cola única
-   no lo reproduce. Con colas por caseta sí puede haber casetas libres y
-   vehículos esperando en otra fila al mismo tiempo.
-3. **Las lecturas de cola cuentan vehículos que el modelo no cuenta** (por
-   ejemplo motocicletas o vehículos de TAG en la misma fila).
-
-Las tres se anotaron en `docs/pendientes.md`. **No se tocó ningún parámetro:**
-cambiar los 12,10 s a 15,5 s haría cuadrar la cola del festivo, y es
-exactamente lo que el contexto prohíbe en la sección 6.
+Las causas posibles están en PEN-008 y PEN-010: servicio más lento que los
+12,10 s medidos en el pico, desbalance entre filas que la cola única no
+reproduce (sección 8 del contexto), o lecturas que cuentan vehículos ajenos
+al modelo. **No se tocó ningún parámetro** (DEC-021); la hipótesis de
+servicio lento entra como escenario de sensibilidad rotulado, no como
+calibración (DEC-025).
 
 ### Lo demás que conviene saber
 
@@ -329,14 +312,19 @@ exactamente lo que el contexto prohíbe en la sección 6.
 Lo que sigue describe las diferencias tal como salieron. **No se ajustó
 ningún parámetro** para reducirlas.
 
-| Conteo | Cola máx. obs. | Cola máx. muestreada sim. | Wq obs. decl. (min) | Wq obs. recalculado (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |
-|---|---|---|---|---|---|---|
-| viernes | 1 | 0,8 | 0,06 | 0,03 | 0,025 | 0,42× |
-| domingoCP | 7 | 5,8 | 0,24 | 0,17 | 0,130 | 0,54× |
-| domingoPC | 8 | 4,6 | 0,41 | 0,27 | 0,282 | 0,69× |
-| festivoPC | 32 | 21,4 | 1,28 | 1,02 | 0,276 | 0,22× |
+| Conteo | Fila más larga obs. | Cola total máx. muestreada sim. | Wq obs. decl. (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |
+|---|---|---|---|---|---|
+| viernes | 1 | 0,8 | 0,06 | 0,025 | 0,42× |
+| domingoCP | 7 | 5,8 | 0,24 | 0,130 | 0,54× |
+| domingoPC | 8 | 4,6 | 0,41 | 0,282 | 0,69× |
+| festivoPC | 32 | 21,4 | 1,28 | 0,276 | 0,22× |
 
-`Wq obs. recalculado` aplica la fórmula del contexto (sección 3)
-`Wq_est = Lq × 12,1 / c` a las lecturas de cola, intervalo por intervalo.
-Que no coincida con el valor declarado es PEN-002.
+Las dos columnas de cola **no son comparables de frente**: la observada es la
+fila más larga de una caseta y la simulada es el total del sentido (DEC-024).
+Lo único que se puede afirmar es que donde la simulada queda por debajo, el
+modelo subestima. `npm run diagnostico` lo desglosa intervalo por intervalo.
+
+La fórmula `Wq_est = Lq × 12,1 / c` de la sección 3 **no se usa** sobre estas
+lecturas: espera la cola total y aplicarla a la fila más larga de una caseta
+da una cifra sin interpretación (DEC-024, consecuencia 3; PEN-002).
 

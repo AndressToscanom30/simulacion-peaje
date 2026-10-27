@@ -17,19 +17,25 @@ mantiene la pregunta abierta hasta que alguien la responda.
 
 ## Abiertas del desarrollo
 
-### PEN-002 — La espera observada del festivo (1,28 min) no se reproduce con la fórmula del contexto
+### PEN-002 — La espera observada del festivo (1,28 min) no se reproduce, y ya no se puede recalcular
 
 - **Origen:** fase 1. El contexto declara en la sección 6 una espera observada de
   1,28 min en el festivo contra 0,06 min del M/M/c (unas 20 veces).
-- **Qué pasa:** al aplicar la fórmula de la sección 3 (`Wq_est = Lq × 12,1 / c`)
-  a las lecturas de cola del festivo, intervalo por intervalo y con la `c` de
-  cada intervalo, sale **1,01 min**, no 1,28. Con la cola media de la hora
-  (22,67) y `c = 5` sale 0,91 min. No se encontró una combinación que dé 1,28.
-- **Mientras tanto:** en la validación se imprime el valor declarado (1,28 min)
-  como referencia del contexto y, al lado, el recalculado (1,01 min), con la
-  diferencia a la vista. **No se cambió ningún dato ni ninguna fórmula.**
-- **Qué haría falta:** saber cómo se calculó el 1,28 (¿otra `c`? ¿otra media de
-  cola? ¿espera medida en campo y no estimada?).
+- **Estado: parcialmente cerrado por DEC-024.** Cuando se abrió este pendiente se
+  intentó reconstruir el 1,28 aplicando la fórmula de la sección 3
+  (`Wq_est = Lq × 12,1 / c`) a las lecturas de cola, y salía 1,01 min. **Ese
+  recálculo queda anulado:** las lecturas son la fila más larga de una sola
+  caseta, no la cola total del sentido, y la fórmula espera un total. Aplicada a
+  una fila da una cifra sin interpretación. El recálculo se quitó del informe de
+  validación.
+- **Qué sigue abierto:** no se sabe cómo se obtuvo el 1,28 min ni, por tanto,
+  contra qué se está comparando la simulación. Puede ser una espera medida en
+  campo (que sí sería comparable) o una estimada a partir de la cola total (que
+  nunca se registró).
+- **Mientras tanto:** en el informe se imprime el valor declarado (1,28 min) como
+  referencia del contexto, sin recálculo al lado, y la comparación se presenta
+  como lo que es: una razón contra un valor cuyo origen no está documentado.
+- **Qué haría falta:** que quede escrito cómo se calculó el 1,28.
 
 ### PEN-003 — ¿Desde cuándo cuenta la espera de los vehículos de la cola inicial?
 
@@ -50,6 +56,9 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** la validación reporta las dos: la cola máxima continua y
   el máximo de las 12 lecturas muestreadas en instantes aleatorios, que es la
   comparable con lo observado.
+- **Añadido el 27/10/2026:** DEC-024 fija además que la lectura observada es la
+  fila más larga de **una** caseta, no el total del sentido, así que ni siquiera
+  el máximo muestreado es comparable de frente. Ver PEN-008.
 
 ### PEN-005 — ¿Qué es exactamente el "caudal de la hora"?
 
@@ -79,41 +88,46 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** se toma como el número de casetas **abiertas** durante el
   intervalo, y el motor las abre al comenzar el intervalo.
 
-### PEN-008 — La simulación no reproduce la cola sostenida del festivo
+### PEN-008 — El modelo de cola única subestima la congestión del pico
 
-- **Origen:** validación de la fase 1 (`docs/resultados/validacion-fase1.md`).
-- **Qué pasa:** con los parámetros del contexto y las casetas que el operador
-  tuvo abiertas, la simulación da `Wq` = **0,28 min** en el festivo contra los
-  **1,28 min** declarados: se queda 4,6 veces corta. Mejora mucho sobre el
-  M/M/c (0,06 min, 22 veces corto), pero no cierra la brecha. La cola al final
-  de la hora sale **0 en las 30 réplicas**, contra 14 observados: en la
-  simulación la cola se vacía y en campo no.
-- **Por qué, en aritmética:** los 55 carriles-intervalo del festivo son 16.500
-  segundos-caseta. A 12,1016 s por vehículo eso da capacidad para 1.363
-  vehículos, y solo entraron 1.064 + 23 = 1.087. Sobra un 25 % de capacidad y la
-  utilización implícita es del 78 %. En una cola **única** eso es incompatible
-  con una cola sostenida de 14 a 32 vehículos: no puede haber vehículos
-  esperando y casetas libres al mismo tiempo. Si la cola fue real, las casetas
-  estuvieron ocupadas casi todo el tiempo, y atender 1.064 vehículos con 16.500
-  segundos-caseta exigiría un tiempo medio de atención de **≈ 15,5 s**, no de
-  12,10 s.
-- **Tres explicaciones, ninguna descartable con los datos que hay:**
-  1. El servicio del festivo fue más lento que los 12,10 s medidos. Los 50
-     tiempos son de otro sentido y otro día (limitación ya declarada en la
-     sección 8). Harían falta ≈ 15,5 s.
-  2. La cola estaba desbalanceada entre casetas (también declarado en la
-     sección 8). Con colas por caseta sí puede haber una caseta libre y
-     vehículos esperando en otra fila.
-  3. Las lecturas de cola cuentan vehículos que el modelo no cuenta
-     (motocicletas, o vehículos de TAG en la misma fila).
-- **Mientras tanto:** **no se tocó ningún parámetro.** Subir el tiempo de
-  atención a 15,5 s haría cuadrar el festivo y es justo lo que el contexto
-  prohíbe en la sección 6. Se reporta la diferencia y se sigue.
-- **Qué haría falta:** medir tiempos de atención en un festivo y en el sentido
-  Pamplona→Cúcuta, o registrar la cola por caseta en vez del total del sentido.
-- **Consecuencia para las fases siguientes:** la regla de la fase 2 se va a
-  dimensionar sobre un modelo que subestima la congestión del pico. Las casetas
-  que recomiende hay que leerlas como una **cota inferior**.
+- **Origen:** validación de la fase 1. **Reescrito el 27/10/2026** tras DEC-024,
+  que fija que las lecturas de cola son la fila más larga de una caseta.
+- **Qué pasa, ahora con el criterio correcto:** como la cola total de un sentido
+  es mayor o igual que cualquiera de sus filas, donde la cola **total** simulada
+  queda por debajo de la **fila más larga** observada el modelo subestima con
+  certeza. Y eso pasa en el festivo en los **12 de 12 intervalos** en media, y en
+  **8 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de
+  campo. En los cuatro conteos juntos son 21 de 48 intervalos en media y 10 de 48
+  en las 30 réplicas. El desglose está en `docs/resultados/diagnostico-festivo.md`
+  (`npm run diagnostico`).
+- **En espera:** `Wq` sale 0,28 min en el festivo contra los 1,28 min declarados,
+  4,6 veces corto. El M/M/c estaba 22 veces corto, así que la simulación cierra
+  parte de la brecha pero no toda. Ojo con esta comparación: el origen del 1,28
+  no está documentado (PEN-002).
+- **Tres explicaciones posibles, ninguna descartable con los datos que hay:**
+  1. El servicio en el pico fue más lento que los 12,10 s medidos. Los 50 tiempos
+     son de otro sentido y otro día (limitación declarada en la sección 8). Esta
+     hipótesis entra como escenario de sensibilidad en DEC-025 y PEN-010.
+  2. **La más probable:** las filas estaban desbalanceadas entre casetas, y la
+     cola única no lo reproduce (también declarado en la sección 8). Con filas
+     por caseta puede haber una caseta libre y otra con 30 vehículos a la vez,
+     que es exactamente lo que el modelo de cola única no puede representar.
+  3. Las lecturas cuentan vehículos que el modelo no cuenta (motocicletas, o
+     vehículos de TAG en la misma fila).
+- **Lo que este pendiente ya NO afirma:** la fase 1 había derivado de aquí un
+  "tiempo de servicio implícito" de ≈ 15,5 s, razonando que haber cola implica
+  casetas ocupadas. Eso **solo vale en cola única** y queda anulado por DEC-024
+  (consecuencia 5): con filas por caseta la holgura de capacidad se explica por
+  el desbalance sin necesidad de suponer un servicio más lento. El cálculo se
+  quitó del informe.
+- **Mientras tanto:** **no se tocó ningún parámetro** (DEC-021). Se reporta la
+  diferencia y se sigue.
+- **Qué haría falta:** registrar la **cola total por sentido** (y, mejor, por
+  caseta) en un conteo de pico. Sin eso la validación de la cola no puede pasar
+  de la desigualdad.
+- **Consecuencia para las fases siguientes:** la regla de la fase 2 se dimensiona
+  sobre un modelo que subestima la congestión del pico. Las casetas que
+  recomiende hay que leerlas como **cota inferior**.
 
 ### PEN-009 — Según la simulación la operación observada ya cumple el criterio de desempeño
 
@@ -129,3 +143,36 @@ mantiene la pregunta abierta hasta que alguien la responda.
   fase 4 sigue siendo válida en términos **relativos** (todos los escenarios
   comparten el mismo sesgo y las mismas semillas), pero los valores absolutos de
   `Wq` no se pueden presentar como predicción de la espera real.
+
+### PEN-010 — La hipótesis de servicio lento (15,5 s) es sensibilidad, no calibración
+
+- **Origen:** fase 2, DEC-025.
+- **Qué es:** un escenario de sensibilidad con tiempo medio de atención de
+  **15,5 s** y el mismo coeficiente de variación del servicio medido
+  (`k = 4,68`, `θ = 15,5 / 4,68 = 3,3120 s`), aplicado solo a escenarios de pico.
+  El modelo base **no cambia**: sigue en 12,1016 s con `θ = 2,58 s`.
+- **Por qué 15,5 s y no otro valor:** es el tiempo medio que haría falta para que
+  las casetas que el operador tuvo abiertas en el festivo estuvieran ocupadas
+  todo el tiempo atendiendo los 1.064 vehículos contados. Era el "servicio
+  implícito" que la fase 1 derivó suponiendo cola única. **Esa derivación ya no
+  se sostiene** (DEC-024, consecuencia 5): con filas por caseta la holgura se
+  explica por el desbalance. Así que el 15,5 s **no es una estimación del
+  servicio real**, solo un valor de referencia que marca cuánto más lento tendría
+  que ser el servicio para explicar el pico por esa vía en lugar de por el
+  desbalance.
+- **Qué pendiente responde:** cuál de las tres hipótesis de PEN-008 explica la
+  congestión del festivo. El escenario aísla la primera (servicio más lento). Si
+  con 15,5 s la simulación reprodujera la congestión observada, la hipótesis 1
+  quedaría como candidata; si no, apunta a la 2 (desbalance) o la 3.
+- **Reglas de uso, que son parte de la decisión:**
+  - Vive en `parametros.js` como parámetro de escenario y **nunca** es el valor
+    por defecto.
+  - Se aplica solo a escenarios de pico (festivo y, en la fase 4, temporada
+    alta). Los conteos normales siguen en 12,1016 s.
+  - Se reporta **siempre junto al caso base** y rotulado como hipótesis de
+    sensibilidad.
+- **Lo que no se puede hacer con él:** presentarlo como el servicio real del
+  peaje, usarlo para dimensionar la política recomendada, o quitarle el rótulo.
+  Eso sería la calibración que la sección 6 del contexto prohíbe.
+- **Qué haría falta para cerrarlo:** medir tiempos de atención en un festivo y en
+  el sentido Pamplona→Cúcuta.

@@ -38,6 +38,23 @@ export const parametros = {
     maximoObservadoSegundos: 29.18,
   },
 
+  /**
+   * Escenario de sensibilidad "servicio lento" (DEC-025, PEN-010).
+   *
+   * **Nunca es el valor por defecto.** Se aplica solo a escenarios de pico
+   * (festivo y, en la fase 4, temporada alta) y se reporta siempre junto al
+   * caso base, rotulado como hipótesis de sensibilidad, no como calibración.
+   *
+   * Media 15,5 s con el mismo CV del servicio medido: misma forma `k = 4,68` y
+   * escala `θ = 15,5 / 4,68`, lo que da desviación 7,17 s y CV = 0,46.
+   */
+  servicioLento: {
+    gammaForma: 4.68,
+    gammaEscalaSegundos: 15.5 / 4.68,
+    mediaObservadaSegundos: 15.5,
+    etiqueta: 'servicio lento (sensibilidad, 15,5 s)',
+  },
+
   // --------------------------------------------------------------- llegadas ---
   llegadas: {
     /**

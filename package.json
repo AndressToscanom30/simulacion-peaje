@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "simular": "node scripts/simular.js"
+    "simular": "node scripts/simular.js",
+    "diagnostico": "node scripts/diagnostico-festivo.js",
+    "fase2": "node scripts/fase2.js"
   },
   "dependencies": {
     "react": "18.3.1",
