@@ -1,0 +1,31 @@
+:root {
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color-scheme: light dark;
+}
+
+body {
+  margin: 0;
+  padding: 2rem 1rem;
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th,
+td {
+  border: 1px solid currentColor;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+
+.nota {
+  opacity: 0.75;
+}

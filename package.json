@@ -1,0 +1,24 @@
+{
+  "name": "simulacion-peaje-los-acacios",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Simulación de eventos discretos del peaje Los Acacios (via Cucuta-Pamplona)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "simular": "node scripts/simular.js"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "4.3.4",
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
+  }
+}
