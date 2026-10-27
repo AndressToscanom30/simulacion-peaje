@@ -356,3 +356,56 @@ tomaron durante el desarrollo.
 - **Descarta:** usar 15,5 s como valor por defecto; aplicarlo a los conteos
   normales; presentarlo sin el caso base al lado; y dimensionar la política
   recomendada sobre él.
+
+## DEC-026 — Casos límite de la regla de apertura y cierre
+
+- **Fecha:** 27/10/2026
+- **Contexto:** la sección 4 fija los umbrales, la demora, la ventana de 15 min y
+  los puntos de evaluación, pero deja casos sin cubrir. Cada uno se decidió así y
+  tiene una prueba que lo fija.
+
+1. **La `c` de los umbrales es la de las casetas que van a atender**, es decir
+   abiertas y **no** marcadas para cerrar. Una caseta marcada sigue físicamente
+   abierta y terminando su servicio, pero ya no tomará vehículos nuevos, así que
+   contarla daría umbrales de una capacidad que no existe. Para los
+   carriles-intervalo, en cambio, cuenta como abierta, porque el carril está
+   ocupado y el personal está ahí.
+2. **Antes de ordenar una apertura, si hay una caseta marcada para cerrar se
+   cancela ese cierre.** Es capacidad instantánea y gratis; ordenar una apertura
+   nueva costaría la demora de 5 min teniendo una caseta abierta a mano. Se
+   cuenta aparte como `cierresCancelados`.
+3. **La ventana de 15 min se reinicia cada vez que cambia `c`**, no solo tras un
+   cierre. Al cambiar `c` cambia el umbral de cierre, así que el tiempo
+   acumulado bajo el umbral anterior no dice nada del nuevo. La sección 4 solo
+   exige reiniciar cuando la cola sube; esto lo extiende al cambio de `c`.
+4. **Para cerrar se prefiere una caseta libre** sobre marcar una ocupada. Si hay
+   una sin atender a nadie, cerrarla no hace esperar a nadie. Solo si todas las
+   abiertas están ocupadas se marca una, y esa se cierra al terminar su servicio.
+5. **Abrir tiene prioridad sobre cerrar** cuando se evalúa la regla. Con los
+   umbrales del contexto las dos condiciones no se pueden cumplir a la vez
+   (abrir pide cola > 14 con `c` = 3, cerrar pide cola < 4), pero el orden queda
+   fijado para que umbrales editados por el usuario no dejen el resultado al
+   azar.
+6. **La regla se evalúa solo tras cada llegada y cada fin de servicio**, como
+   dice la sección 4. Consecuencia: el cumplimiento de los 15 min se detecta en
+   el primer evento posterior, no en el instante exacto. Con la demanda de los
+   conteos los eventos van a segundos de distancia, así que el retraso es
+   despreciable; se deja así por seguir la fuente de verdad en vez de añadir un
+   temporizador que el contexto no contempla.
+7. **`APERTURA_CASETA` se atiende entre el cambio de intervalo y la llegada**
+   (extiende el orden de DEC-017). Si una apertura y una llegada caen en el
+   mismo instante, la caseta ya ordenada abre primero y el vehículo puede usarla.
+8. **Los contadores de aperturas y cierres no cuentan el arranque.** Las casetas
+   que se abren en `t = 0` son el punto de partida. El conteo funciona igual en
+   los dos modos, así que `cambiosDeC` compara al operador con la regla.
+9. **En modo regla las casetas iniciales son las del primer intervalo
+   observado** de cada conteo, para que la regla arranque donde arrancó el
+   operador y la comparación sea justa.
+10. **La orden de apertura no se revoca.** Si la cola baja durante la demora, la
+    caseta abre igual: la orden ya se dio y el personal ya se movió. Es lo que
+    dice "se programa para `t + demora`" leído literalmente.
+
+- **Descarta:** usar la `c` física para los umbrales; ordenar una apertura
+  teniendo una caseta marcada; conservar la ventana de 15 min al cambiar `c`;
+  marcar una caseta ocupada habiendo una libre; revocar una apertura ordenada; y
+  contar las casetas del arranque como aperturas.

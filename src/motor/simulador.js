@@ -1,12 +1,18 @@
 /**
  * Motor de simulación de eventos discretos de **un sentido** del peaje.
  *
- * Fase 1 del plan: `c(t)` en modo **programado**, es decir copiando el número
- * de casetas que el operador tuvo abiertas en cada intervalo del conteo. La
- * regla de apertura y cierre es la fase 2 y todavía no está aquí.
- *
  * Modelo (contexto, sección 2): cola única FIFO atendida por `c(t)` casetas
  * idénticas, servicio gamma, llegadas Poisson por tramos de 5 min.
+ *
+ * Dos modos de control de `c(t)` (contexto, sección 4):
+ *
+ * - `'programado'` (fase 1): copia el número de casetas que el operador tuvo
+ *   abiertas en cada intervalo del conteo. Sirve para validar.
+ * - `'regla'` (fase 2): aplica la regla de apertura y cierre por cola, evaluada
+ *   tras cada llegada y cada fin de servicio.
+ *
+ * El reparto de casetas entre los dos sentidos es la fase 3 y no está aquí: este
+ * motor simula un sentido con su propio tope de casetas.
  *
  * JS puro: no importa React, ni DOM, ni Three.js. Toda la aleatoriedad sale del
  * PRNG con semilla; no se usa `Math.random`.
@@ -19,11 +25,27 @@ import { crearColaEventos, TIPO_EVENTO } from './colaEventos.js';
 /** Estados de una caseta. */
 const CASETA = { ABIERTA: 'abierta', CERRADA: 'cerrada' };
 
+export const MODO_CASETAS = { PROGRAMADO: 'programado', REGLA: 'regla' };
+
+/**
+ * @typedef {object} ConfiguracionRegla
+ * @property {Record<number, number|null>} abrirSiColaMayorQue por casetas abiertas
+ * @property {Record<number, number|null>} cerrarSiColaMenorQue por casetas abiertas
+ * @property {number} demoraAperturaSegundos
+ * @property {number} ventanaCierreSegundos la cola debe estar bajo el umbral
+ *   este tiempo seguido antes de cerrar
+ * @property {number} maximoCasetas
+ * @property {number} minimoCasetas
+ */
+
 /**
  * @typedef {object} ConfiguracionSentido
  * @property {number} semilla
  * @property {number[]} llegadas veh por intervalo, tal como se contaron
- * @property {number[]} casetasProgramadas casetas abiertas por intervalo
+ * @property {number[]} casetasProgramadas casetas abiertas por intervalo; en
+ *   modo `'regla'` solo se usa su primera posición, como casetas iniciales
+ * @property {'programado'|'regla'} [modoCasetas='programado']
+ * @property {ConfiguracionRegla} [regla] obligatoria en modo `'regla'`
  * @property {number} [colaInicial=0] vehículos esperando en t = 0
  * @property {number} [casetasIniciales] casetas abiertas en t = 0; por defecto
  *   las del primer intervalo programado
@@ -47,6 +69,8 @@ export function simularSentido(config) {
     semilla,
     llegadas,
     casetasProgramadas,
+    modoCasetas = MODO_CASETAS.PROGRAMADO,
+    regla = null,
     colaInicial = 0,
     factorEscalaDemanda = 1,
     duracionIntervaloSegundos,
@@ -58,10 +82,16 @@ export function simularSentido(config) {
 
   validar(config);
 
+  const porRegla = modoCasetas === MODO_CASETAS.REGLA;
   const intervalos = llegadas.length;
   const horizonte = intervalos * duracionIntervaloSegundos;
   const casetasIniciales = config.casetasIniciales ?? casetasProgramadas[0];
-  const maximoCasetas = config.maximoCasetas ?? Math.max(...casetasProgramadas, casetasIniciales);
+
+  // En modo regla el tope lo pone la regla; en modo programado, el conteo.
+  const maximoCasetas = porRegla
+    ? (config.maximoCasetas ?? regla.maximoCasetas)
+    : (config.maximoCasetas ?? Math.max(...casetasProgramadas, casetasIniciales));
+  const minimoCasetas = porRegla ? regla.minimoCasetas : 0;
 
   const prng = crearPrng(semilla);
   const eventos = crearColaEventos();
@@ -95,6 +125,27 @@ export function simularSentido(config) {
   // Integral de c(t) para los carriles-intervalo, y último instante integrado.
   let integralCasetasAbiertas = 0;
   let ultimoInstanteIntegrado = 0;
+  /** Tiempo acumulado con exactamente i casetas abiertas, en segundos. */
+  const tiempoPorCasetasAbiertas = new Array(maximoCasetas + 1).fill(0);
+
+  // ------------------------------------------------- estado de la regla ---
+  /** Instante en que abrirá la caseta ordenada, o `null` si no hay ninguna. */
+  let aperturaPendiente = null;
+  /**
+   * Instante desde el que la cola está continuamente bajo el umbral de cierre,
+   * o `null` si no lo está. Se reinicia si la cola sube o si cambia `c`.
+   */
+  let desdeCuandoBajoUmbral = null;
+
+  let aperturas = 0;
+  let cierres = 0;
+  let cierresCancelados = 0;
+  /**
+   * Las casetas que se abren en `t = 0` son el punto de partida, no un cambio.
+   * El conteo arranca después de la inicialización, y cuenta igual en los dos
+   * modos para que el operador y la regla sean comparables (DEC-026).
+   */
+  let contandoCambios = false;
 
   // ------------------------------------------------------------ funciones ---
 
@@ -108,15 +159,25 @@ export function simularSentido(config) {
   /** Casetas físicamente abiertas, incluidas las marcadas que siguen atendiendo. */
   const casetasAbiertas = () => casetas.filter((c) => c.estado === CASETA.ABIERTA).length;
 
-  /** Casetas que pueden tomar un vehículo nuevo. */
+  /**
+   * Casetas que van a atender vehículos nuevos: abiertas y no marcadas para
+   * cerrar. Es la `c` con la que la regla mira sus umbrales (DEC-026).
+   */
+  const casetasEfectivas = () =>
+    casetas.filter((c) => c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar).length;
+
+  /** Casetas que pueden tomar un vehículo ahora mismo. */
   const casetasDisponibles = () =>
     casetas.filter((c) => c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar && !c.vehiculo);
 
-  /** Acumula ∫c(t)dt hasta `t`, acotado al horizonte. */
+  /** Acumula ∫c(t)dt y el tiempo por nivel de `c` hasta `t`, acotado al horizonte. */
   function integrarHasta(t) {
     const hasta = Math.min(t, horizonte);
     if (hasta > ultimoInstanteIntegrado) {
-      integralCasetasAbiertas += casetasAbiertas() * (hasta - ultimoInstanteIntegrado);
+      const abiertas = casetasAbiertas();
+      const lapso = hasta - ultimoInstanteIntegrado;
+      integralCasetasAbiertas += abiertas * lapso;
+      tiempoPorCasetasAbiertas[abiertas] += lapso;
       ultimoInstanteIntegrado = hasta;
     }
   }
@@ -144,13 +205,49 @@ export function simularSentido(config) {
     }
   }
 
+  /** Abre una caseta cerrada. Devuelve `true` si había alguna que abrir. */
+  function abrirUna() {
+    const cerrada = casetas.find((c) => c.estado === CASETA.CERRADA);
+    if (!cerrada) return false;
+    cerrada.estado = CASETA.ABIERTA;
+    cerrada.marcadaParaCerrar = false;
+    if (contandoCambios) aperturas += 1;
+    return true;
+  }
+
+  /**
+   * Marca una caseta para cerrar. Si está libre cierra en el acto; si está
+   * atendiendo, se cierra al terminar su servicio: **nunca se interrumpe una
+   * atención en curso** (DEC-007).
+   *
+   * Prefiere una caseta libre, que no hace esperar al recurso (DEC-026).
+   *
+   * @returns {'cerrada'|'marcada'|null}
+   */
+  function cerrarUna() {
+    const libre = casetas.find(
+      (c) => c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar && !c.vehiculo,
+    );
+    if (libre) {
+      libre.estado = CASETA.CERRADA;
+      if (contandoCambios) cierres += 1;
+      return 'cerrada';
+    }
+    const ocupada = casetas.find(
+      (c) => c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar && c.vehiculo,
+    );
+    if (ocupada) {
+      ocupada.marcadaParaCerrar = true;
+      return 'marcada';
+    }
+    return null;
+  }
+
   /** Ajusta el número de casetas abiertas al valor programado `objetivo`. */
   function ajustarCasetas(objetivo) {
     // Primero desmarcar las que estaban en vías de cerrar: si hace falta
     // capacidad, retener una caseta ya abierta cuesta menos que abrir otra.
-    let disponibles = casetas.filter(
-      (c) => c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar,
-    ).length;
+    let disponibles = casetasEfectivas();
 
     if (disponibles < objetivo) {
       for (const c of casetas) {
@@ -163,32 +260,16 @@ export function simularSentido(config) {
     }
 
     while (disponibles < objetivo) {
-      const cerrada = casetas.find((c) => c.estado === CASETA.CERRADA);
-      if (!cerrada) break; // tope de casetas del sentido
-      cerrada.estado = CASETA.ABIERTA;
-      cerrada.marcadaParaCerrar = false;
+      if (!abrirUna()) break; // tope de casetas del sentido
       disponibles += 1;
     }
 
-    // Para cerrar: primero las que están libres (cierran ya), después las
-    // ocupadas, que se marcan y cerrarán al terminar su servicio. Una caseta
-    // marcada NUNCA interrumpe el servicio en curso (DEC-007).
+    // Para cerrar: primero las libres (cierran ya), después las ocupadas, que
+    // se marcan y cerrarán al terminar su servicio.
     let sobran = disponibles - objetivo;
-    if (sobran > 0) {
-      for (const c of casetas) {
-        if (sobran <= 0) break;
-        if (c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar && !c.vehiculo) {
-          c.estado = CASETA.CERRADA;
-          sobran -= 1;
-        }
-      }
-      for (const c of casetas) {
-        if (sobran <= 0) break;
-        if (c.estado === CASETA.ABIERTA && !c.marcadaParaCerrar && c.vehiculo) {
-          c.marcadaParaCerrar = true;
-          sobran -= 1;
-        }
-      }
+    while (sobran > 0) {
+      if (cerrarUna() === null) break;
+      sobran -= 1;
     }
   }
 
@@ -224,17 +305,101 @@ export function simularSentido(config) {
     }
   }
 
+  // -------------------------------------------------------------- regla ---
+
+  /**
+   * Pone al día la ventana de cierre: arranca el conteo si la cola está bajo el
+   * umbral y lo reinicia si no.
+   */
+  function actualizarVentanaCierre() {
+    const c = casetasEfectivas();
+    const umbral = regla.cerrarSiColaMenorQue[c];
+    if (umbral === null || umbral === undefined || c <= minimoCasetas) {
+      desdeCuandoBajoUmbral = null;
+      return;
+    }
+    if (enEspera() < umbral) {
+      if (desdeCuandoBajoUmbral === null) desdeCuandoBajoUmbral = reloj;
+    } else {
+      desdeCuandoBajoUmbral = null;
+    }
+  }
+
+  /**
+   * ¿Hay que abrir? Si sí, ordena la apertura para `t + demora` y devuelve
+   * `true`. La orden no se revoca: al llegar la hora la caseta abre aunque la
+   * cola ya haya bajado.
+   */
+  function intentarAbrir() {
+    const c = casetasEfectivas();
+    const umbral = regla.abrirSiColaMayorQue[c];
+    if (umbral === null || umbral === undefined) return false; // ya está en el tope
+    if (c >= maximoCasetas) return false;
+    if (enEspera() <= umbral) return false;
+
+    // Si hay una caseta marcada para cerrar, cancelar ese cierre da capacidad
+    // en el acto y gratis: es preferible a ordenar una apertura con demora
+    // (DEC-026).
+    const marcada = casetas.find((c2) => c2.estado === CASETA.ABIERTA && c2.marcadaParaCerrar);
+    if (marcada) {
+      marcada.marcadaParaCerrar = false;
+      cierresCancelados += 1;
+      desdeCuandoBajoUmbral = null; // cambió c efectiva: el conteo arranca de nuevo
+      despachar();
+      return true;
+    }
+
+    if (aperturaPendiente !== null) return false; // una sola apertura pendiente
+
+    aperturaPendiente = reloj + regla.demoraAperturaSegundos;
+    eventos.programar(aperturaPendiente, TIPO_EVENTO.APERTURA_CASETA, {});
+    return true;
+  }
+
+  /**
+   * ¿Hay que cerrar? Exige que la cola haya estado bajo el umbral
+   * `ventanaCierreSegundos` seguidos. Tras cerrar, el conteo arranca de nuevo.
+   */
+  function intentarCerrar() {
+    const c = casetasEfectivas();
+    if (c <= minimoCasetas) return false;
+    const umbral = regla.cerrarSiColaMenorQue[c];
+    if (umbral === null || umbral === undefined) return false;
+    if (enEspera() >= umbral) return false;
+    if (desdeCuandoBajoUmbral === null) return false;
+    if (reloj - desdeCuandoBajoUmbral < regla.ventanaCierreSegundos) return false;
+
+    if (cerrarUna() === null) return false;
+    desdeCuandoBajoUmbral = null; // tras cerrar una, el conteo empieza de nuevo
+    return true;
+  }
+
+  /**
+   * Evalúa la regla. Se llama tras cada llegada y cada fin de servicio
+   * (contexto, sección 4). Abrir tiene prioridad sobre cerrar: la congestión
+   * urge y los umbrales no se solapan, así que nunca se cumplen las dos.
+   */
+  function evaluarRegla() {
+    if (!porRegla) return;
+    actualizarVentanaCierre();
+    if (intentarAbrir()) return;
+    intentarCerrar();
+  }
+
   // ------------------------------------------------------- inicialización ---
 
   ajustarCasetas(casetasIniciales);
+  contandoCambios = true;
 
   // Cola inicial: vehículos con llegada en t = 0 (DEC-018, PEN-003).
   for (let i = 0; i < colaInicial; i += 1) encolar(0);
 
-  for (let i = 1; i < intervalos; i += 1) {
-    eventos.programar(i * duracionIntervaloSegundos, TIPO_EVENTO.CAMBIO_INTERVALO, {
-      intervalo: i,
-    });
+  if (!porRegla) {
+    for (let i = 1; i < intervalos; i += 1) {
+      eventos.programar(i * duracionIntervaloSegundos, TIPO_EVENTO.CAMBIO_INTERVALO, {
+        intervalo: i,
+      });
+    }
   }
 
   // Un muestreo de cola por intervalo, en un instante aleatorio dentro de él
@@ -253,6 +418,7 @@ export function simularSentido(config) {
   if (primera !== null) eventos.programar(primera, TIPO_EVENTO.LLEGADA, {});
 
   despachar();
+  evaluarRegla();
 
   // ------------------------------------------------------------ bucle ---
   // Las llegadas se cortan en el horizonte, pero la simulación sigue hasta
@@ -274,13 +440,26 @@ export function simularSentido(config) {
         if (caseta.marcadaParaCerrar) {
           caseta.estado = CASETA.CERRADA;
           caseta.marcadaParaCerrar = false;
+          if (contandoCambios) cierres += 1;
+          desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
         }
         despachar();
+        evaluarRegla();
         break;
       }
 
       case TIPO_EVENTO.CAMBIO_INTERVALO: {
         ajustarCasetas(casetasProgramadas[evento.datos.intervalo]);
+        despachar();
+        break;
+      }
+
+      case TIPO_EVENTO.APERTURA_CASETA: {
+        // La orden ya se dio: la caseta abre aunque la cola haya bajado.
+        aperturaPendiente = null;
+        if (abrirUna()) {
+          desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
+        }
         despachar();
         break;
       }
@@ -291,6 +470,7 @@ export function simularSentido(config) {
         despachar();
         const siguiente = proximaLlegada(reloj);
         if (siguiente !== null) eventos.programar(siguiente, TIPO_EVENTO.LLEGADA, {});
+        evaluarRegla();
         break;
       }
 
@@ -319,6 +499,7 @@ export function simularSentido(config) {
 
   return {
     semilla,
+    modoCasetas,
 
     /** Llegadas generadas dentro del horizonte (comparable con el conteo). */
     llegadasSimuladas,
@@ -336,7 +517,7 @@ export function simularSentido(config) {
     colaMaximaContinua,
     /** Lectura puntual de cola, una por intervalo, en instante aleatorio. */
     colaMuestreada,
-    /** Máximo de las 12 lecturas puntuales: lo comparable con lo observado (PEN-004). */
+    /** Máximo de las 12 lecturas puntuales (PEN-004, DEC-024). */
     colaMaximaMuestreada: Math.max(...colaMuestreada.map((c) => c ?? 0)),
     colaFinal: enEspera(),
 
@@ -349,6 +530,20 @@ export function simularSentido(config) {
     /** Carriles-intervalo: ∫c(t)dt ÷ duración del intervalo (contexto, sección 6). */
     carrilesIntervalo: integralCasetasAbiertas / duracionIntervaloSegundos,
 
+    // ------------------------------------------------ actividad de la regla ---
+    /** Casetas abiertas después del arranque (por la regla o por el programa). */
+    aperturas,
+    /** Casetas cerradas después del arranque (por la regla o por el programa). */
+    cierres,
+    /** Cierres cancelados por un repunte de la cola antes de consumarse. */
+    cierresCancelados,
+    /** Veces que cambió el número de casetas abiertas. */
+    cambiosDeC: aperturas + cierres,
+    /** Segundos con exactamente i casetas abiertas, indexado por i. */
+    tiempoPorCasetasAbiertas: [...tiempoPorCasetasAbiertas],
+    /** Segundos con el máximo de casetas abiertas. */
+    tiempoEnMaximoCasetas: tiempoPorCasetasAbiertas[maximoCasetas] ?? 0,
+
     /** Instante en que se atendió al último vehículo. */
     instanteFinal: reloj,
     numerosAleatoriosUsados: prng.cuenta(),
@@ -358,7 +553,13 @@ export function simularSentido(config) {
 }
 
 function validar(config) {
-  const { llegadas, casetasProgramadas, duracionIntervaloSegundos } = config;
+  const {
+    llegadas,
+    casetasProgramadas,
+    duracionIntervaloSegundos,
+    modoCasetas = MODO_CASETAS.PROGRAMADO,
+    regla,
+  } = config;
 
   if (!Array.isArray(llegadas) || llegadas.length === 0) {
     throw new TypeError('`llegadas` debe ser un arreglo no vacío de veh/intervalo.');
@@ -373,5 +574,39 @@ function validar(config) {
   }
   if (!(duracionIntervaloSegundos > 0)) {
     throw new RangeError('`duracionIntervaloSegundos` debe ser positivo.');
+  }
+
+  if (modoCasetas !== MODO_CASETAS.PROGRAMADO && modoCasetas !== MODO_CASETAS.REGLA) {
+    throw new TypeError(
+      `\`modoCasetas\` debe ser '${MODO_CASETAS.PROGRAMADO}' o '${MODO_CASETAS.REGLA}', llegó: ${modoCasetas}`,
+    );
+  }
+
+  if (modoCasetas === MODO_CASETAS.REGLA) {
+    if (!regla) throw new TypeError("El modo 'regla' necesita la configuración `regla`.");
+    for (const campo of [
+      'abrirSiColaMayorQue',
+      'cerrarSiColaMenorQue',
+      'demoraAperturaSegundos',
+      'ventanaCierreSegundos',
+      'maximoCasetas',
+      'minimoCasetas',
+    ]) {
+      if (regla[campo] === undefined) {
+        throw new TypeError(`Falta \`regla.${campo}\`.`);
+      }
+    }
+    if (!(regla.minimoCasetas >= 1)) {
+      throw new RangeError('`regla.minimoCasetas` debe ser al menos 1.');
+    }
+    if (!(regla.maximoCasetas >= regla.minimoCasetas)) {
+      throw new RangeError('`regla.maximoCasetas` debe ser mayor o igual que el mínimo.');
+    }
+    if (!(regla.demoraAperturaSegundos >= 0)) {
+      throw new RangeError('`regla.demoraAperturaSegundos` no puede ser negativa.');
+    }
+    if (!(regla.ventanaCierreSegundos >= 0)) {
+      throw new RangeError('`regla.ventanaCierreSegundos` no puede ser negativa.');
+    }
   }
 }

@@ -12,16 +12,23 @@
 export const TIPO_EVENTO = {
   FIN_SERVICIO: 'FIN_SERVICIO',
   CAMBIO_INTERVALO: 'CAMBIO_INTERVALO',
+  APERTURA_CASETA: 'APERTURA_CASETA',
   LLEGADA: 'LLEGADA',
   MUESTREO_COLA: 'MUESTREO_COLA',
 };
 
-/** Menor número = se atiende primero cuando dos eventos caen en el mismo instante. */
+/**
+ * Menor número = se atiende primero cuando dos eventos caen en el mismo
+ * instante (DEC-017). `APERTURA_CASETA` entra entre el cambio de intervalo y la
+ * llegada (DEC-026): la caseta que ya estaba ordenada abre antes de que llegue
+ * el vehículo de ese instante, así que el vehículo puede usarla.
+ */
 export const PRIORIDAD_EVENTO = {
   [TIPO_EVENTO.FIN_SERVICIO]: 0,
   [TIPO_EVENTO.CAMBIO_INTERVALO]: 1,
-  [TIPO_EVENTO.LLEGADA]: 2,
-  [TIPO_EVENTO.MUESTREO_COLA]: 3,
+  [TIPO_EVENTO.APERTURA_CASETA]: 2,
+  [TIPO_EVENTO.LLEGADA]: 3,
+  [TIPO_EVENTO.MUESTREO_COLA]: 4,
 };
 
 function esAnterior(a, b) {

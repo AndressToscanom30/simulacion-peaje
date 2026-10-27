@@ -10,10 +10,11 @@ describe('calendario de eventos', () => {
     expect(instantes).toEqual([10, 30, 50, 70, 90]);
   });
 
-  it('desempata por tipo: fin de servicio, cambio de intervalo, llegada, muestreo (DEC-017)', () => {
+  it('desempata por tipo: fin de servicio, cambio de intervalo, apertura, llegada, muestreo (DEC-017, DEC-026)', () => {
     const cola = crearColaEventos();
     cola.programar(100, TIPO_EVENTO.MUESTREO_COLA);
     cola.programar(100, TIPO_EVENTO.LLEGADA);
+    cola.programar(100, TIPO_EVENTO.APERTURA_CASETA);
     cola.programar(100, TIPO_EVENTO.CAMBIO_INTERVALO);
     cola.programar(100, TIPO_EVENTO.FIN_SERVICIO);
     const tipos = [];
@@ -21,6 +22,7 @@ describe('calendario de eventos', () => {
     expect(tipos).toEqual([
       TIPO_EVENTO.FIN_SERVICIO,
       TIPO_EVENTO.CAMBIO_INTERVALO,
+      TIPO_EVENTO.APERTURA_CASETA,
       TIPO_EVENTO.LLEGADA,
       TIPO_EVENTO.MUESTREO_COLA,
     ]);

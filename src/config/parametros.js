@@ -137,6 +137,25 @@ export const parametros = {
   },
 };
 
+/**
+ * Arma la configuración de la regla que espera el motor (modo `'regla'`).
+ *
+ * @param {object} [opciones]
+ * @param {number} [opciones.demoraAperturaSegundos] para la sensibilidad de la
+ *   demora; por defecto el caso base de `parametros.regla`.
+ * @param {object} [opciones.p] parámetros base, por si se quieren sustituir.
+ */
+export function configuracionRegla({ demoraAperturaSegundos, p = parametros } = {}) {
+  return {
+    abrirSiColaMayorQue: p.regla.abrirSiColaMayorQue,
+    cerrarSiColaMenorQue: p.regla.cerrarSiColaMenorQue,
+    demoraAperturaSegundos: demoraAperturaSegundos ?? p.regla.demoraAperturaSegundos,
+    ventanaCierreSegundos: p.regla.ventanaCierreSegundos,
+    maximoCasetas: p.casetas.maximoPorSentido,
+    minimoCasetas: p.casetas.minimoPorSentido,
+  };
+}
+
 /** Semillas de las réplicas: `primeraSemilla` … `primeraSemilla + replicas - 1`. */
 export function semillasReplicas(corridas = parametros.corridas) {
   return Array.from({ length: corridas.replicas }, (_, i) => corridas.primeraSemilla + i);
