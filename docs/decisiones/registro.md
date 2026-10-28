@@ -679,3 +679,90 @@ tomaron durante el desarrollo.
   siempre, y los informes de las fases 1 a 4 se regeneran idénticos.
 - **Descarta:** editar los conteos de campo de `datos.js` (que son la fuente de
   verdad y no se tocan); y guardar la demanda editada fuera del escenario.
+
+## DEC-036 — La escena 3D es una función pura de la traza y del instante
+
+- **Fecha:** 30/10/2026
+- **Decisión de la usuaria.** La visualización 3D **no habla con el motor**. Lo
+  único que consume es la **traza** (DEC-033) y un instante: de ahí sale todo lo
+  que se dibuja.
+- **Cómo se cumple:**
+  - `src/ui/vista3d/modeloEscena.js` traduce traza + `t` en un modelo de escena
+    (vehículos con su fase, casetas con su estado, contadores). **No importa
+    three, ni React, ni el motor.** Se prueba en entorno `node`.
+  - Avanza con el **cursor de `crearReproductor`** de la fase 5, así que no
+    recorre todos los eventos en cada fotograma.
+  - Usa el **reloj de reproducción de la fase 5**; no se crea otro. La vista 3D
+    y los tableros 2D comparten el mismo instante, así que no pueden
+    desincronizarse.
+- **Motivo:** mantiene la independencia del motor que fija la DEC-012 y hace la
+  escena determinista y probable sin WebGL: con la misma traza y el mismo `t`,
+  el modelo de escena es siempre el mismo.
+- **Descarta:** un segundo reloj para la escena; que la escena consulte el motor
+  o el escenario; y animaciones que dependan del tiempo real del navegador para
+  decidir **qué** se ve (solo deciden cómo se interpola).
+
+## DEC-037 — three + @react-three/fiber de la serie 8, carga diferida y geometría procedural
+
+- **Fecha:** 30/10/2026
+- **Decisión de la usuaria, con las versiones verificadas:**
+  - `three@0.170.0` y `@react-three/fiber@8.18.0`, **versiones exactas** como el
+    resto del `package.json`. Se comprobó que la serie 9 de fiber exige
+    `react >=19` en sus `peerDependencies`, así que con React 18.3.1 la serie
+    correcta es la **8**.
+  - **`@react-three/drei` no se instala.** Lo único que hacía falta de ahí era
+    `OrbitControls`, y three lo trae en
+    `three/examples/jsm/controls/OrbitControls.js`, que se registra con el
+    `extend` de fiber. Para los letreros, `drei` habría traído `troika-three-text`
+    y una fuente, que son peso y un activo externo.
+  - **Carga diferida** con `React.lazy`: three no entra en el paquete principal.
+    Quien no abra la vista 3D no lo descarga.
+  - **Sin modelos ni texturas externas.** Toda la geometría es procedural
+    (cajas, cilindros, planos) y el texto de los letreros se dibuja en un
+    `<canvas>` 2D y se usa como `CanvasTexture`: procedural también, sin ningún
+    archivo que cargar.
+- **Descarta:** fiber 9 (incompatible con React 18), drei, modelos glTF, texturas
+  o fuentes externas, y meter three en el paquete principal.
+
+## DEC-038 — La escena representa el modelo, no una foto del peaje
+
+- **Fecha:** 30/10/2026
+- **Decisión de la usuaria.** La escena dibuja **lo que el modelo simula**, no lo
+  que se ve en el peaje real. Donde las dos cosas difieren, manda el modelo y la
+  escena lo rotula.
+  1. **Cola única por sentido.** Un solo embudo por sentido, **no una fila por
+     caseta**, porque el modelo es de cola única (DEC-001) y la cola de campo que
+     se midió era la fila más larga de una caseta (DEC-024). Dibujar filas por
+     caseta sugeriría que el modelo las tiene.
+  2. **Casetas reversibles.** Cada caseta lleva un indicador de a qué sentido
+     sirve, porque en el modelo las casetas son un recurso compartido que cambia
+     de dueño (DEC-002, DEC-008). No hay casetas "de un sentido".
+  3. **Los desplazamientos son cosméticos.** El modelo no tiene distancias ni
+     velocidades: un vehículo pasa de la cola a la caseta en el instante del
+     evento. La entrada desde el borde y el tránsito cola→caseta son
+     interpolación visual y **no afectan a ninguna medida**. La escena lo dice
+     con una nota fija.
+  4. **Todos los vehículos son de la misma clase.** La categoría no entra al
+     modelo (DEC-003), así que la variación de color y tamaño es solo para poder
+     seguir un vehículo con la vista, derivada del `vehiculoId`.
+- **Consecuencia para las fases que midan:** nada de lo que se ve en 3D es un
+  resultado. Los resultados están en `docs/resultados/`.
+- **Descarta:** filas por caseta; casetas fijas por sentido; dar a los
+  desplazamientos un significado que el modelo no tiene; y distinguir categorías
+  de vehículo.
+
+## DEC-039 — Las constantes visuales viven en `src/config/escena3d.js`, y el color nunca es la única señal
+
+- **Fecha:** 30/10/2026
+- **Decisión de la usuaria.** Las dimensiones, separaciones, duraciones visuales
+  y colores de la escena están en `src/config/escena3d.js`, no repartidos por
+  los componentes. Es el mismo principio de la DEC-030 aplicado a lo visual.
+- **El color no codifica estado por sí solo.** Cada estado de caseta se
+  distingue además por **forma** (altura y figura del indicador del letrero) y
+  por **texto** en el letrero. Así la escena se lee sin depender de distinguir
+  colores, y las capturas en escala de grises siguen siendo interpretables.
+- **`prefers-reduced-motion`** reduce lo decorativo (interpolación de entrada y
+  de tránsito, marcadores que laten), **nunca la simulación**: los mismos
+  eventos en los mismos instantes.
+- **Descarta:** constantes visuales dentro de los componentes; y estados que
+  solo se distingan por color.
