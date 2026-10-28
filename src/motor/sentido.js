@@ -251,8 +251,16 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
     return null;
   }
 
-  /** Ajusta el número de casetas abiertas al valor programado `objetivo`. */
-  function ajustarCasetas(objetivo) {
+  /**
+   * Ajusta el número de casetas abiertas al valor programado `objetivo`.
+   *
+   * El objetivo se acota al mínimo y al tope del sentido: ni el conteo ni las
+   * casetas iniciales pueden hacer que un sentido pase de su tope, porque el
+   * tope es un límite físico del peaje (DEC-032). Con el tope por defecto
+   * (el máximo del propio conteo) esto no cambia nada.
+   */
+  function ajustarCasetas(objetivoPedido) {
+    const objetivo = Math.min(Math.max(objetivoPedido, minimoCasetas), maximoCasetas);
     // Primero desmarcar las que estaban en vías de cerrar: si hace falta
     // capacidad, retener una caseta ya abierta cuesta menos que abrir otra.
     let disponibles = casetasEfectivas();

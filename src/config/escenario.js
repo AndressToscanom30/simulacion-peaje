@@ -283,6 +283,25 @@ export function problemasDelEscenario(escenario) {
       if (!entero(s.colaInicial) || s.colaInicial < 0) {
         errores.push(`${donde}: \`colaInicial\` tiene que ser un entero de 0 o más, llegó ${s.colaInicial}.`);
       }
+      const minimo = e.pozo?.minimoPorSentido;
+      const tope = e.pozo?.maximoPorSentido;
+      if (!entero(s.casetasIniciales) || s.casetasIniciales < 1) {
+        errores.push(
+          `${donde}: \`casetasIniciales\` tiene que ser un entero de 1 o más, llegó ${s.casetasIniciales}.`,
+        );
+      } else if (entero(minimo) && entero(tope) && (s.casetasIniciales < minimo || s.casetasIniciales > tope)) {
+        errores.push(
+          `${donde}: \`casetasIniciales\` (${s.casetasIniciales}) tiene que estar entre el mínimo (${minimo}) y el tope por sentido (${tope}).`,
+        );
+      }
+      if (Array.isArray(s.casetasFijas) && entero(minimo) && entero(tope)) {
+        const fuera = s.casetasFijas.filter((c) => c < minimo || c > tope);
+        if (fuera.length > 0) {
+          errores.push(
+            `${donde}: \`casetasFijas\` tiene ${fuera.length} valor(es) fuera del rango ${minimo}–${tope}: ${[...new Set(fuera)].join(', ')}.`,
+          );
+        }
+      }
       if (s.modo !== MODO.PROGRAMADO && s.modo !== MODO.REGLA) {
         errores.push(`${donde}: \`modo\` tiene que ser "${MODO.PROGRAMADO}" o "${MODO.REGLA}", llegó "${s.modo}".`);
       }
@@ -362,13 +381,20 @@ export function problemasDelEscenario(escenario) {
 
   // Las tablas tienen que cubrir todos los valores de c que el tope permite.
   if (entero(z.minimoPorSentido) && entero(z.maximoPorSentido) && z.minimoPorSentido <= z.maximoPorSentido) {
+    /**
+     * Un umbral válido es un número de 0 o más. Ojo: `null >= 0` es `true` en
+     * JavaScript, así que hay que comprobar el tipo o un `null` a media tabla
+     * se colaría como válido.
+     */
+    const umbralPuesto = (tabla, c) => typeof tabla?.[c] === 'number' && tabla[c] >= 0;
+
     for (let c = z.minimoPorSentido; c <= z.maximoPorSentido; c += 1) {
-      if (c < z.maximoPorSentido && !(r.abrirSiColaMayorQue?.[c] >= 0)) {
+      if (c < z.maximoPorSentido && !umbralPuesto(r.abrirSiColaMayorQue, c)) {
         errores.push(
           `Falta el umbral de apertura para c = ${c}: con un tope de ${z.maximoPorSentido} hace falta uno para cada c de ${z.minimoPorSentido} a ${z.maximoPorSentido - 1}.`,
         );
       }
-      if (c > z.minimoPorSentido && !(r.cerrarSiColaMenorQue?.[c] >= 0)) {
+      if (c > z.minimoPorSentido && !umbralPuesto(r.cerrarSiColaMenorQue, c)) {
         errores.push(
           `Falta el umbral de cierre para c = ${c}: con un mínimo de ${z.minimoPorSentido} hace falta uno para cada c de ${z.minimoPorSentido + 1} a ${z.maximoPorSentido}.`,
         );

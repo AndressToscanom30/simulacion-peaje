@@ -586,3 +586,32 @@ tomaron durante el desarrollo.
 - **Descarta:** repetir el umbral de 5 casetas para todos los topes mayores;
   dejar `null` (que impediría abrir más allá de 5 con tope 7); e inventar
   valores sin relación con los del contexto.
+
+## DEC-032 — El tope por sentido acota el objetivo de casetas, y las casetas iniciales se validan contra él
+
+- **Fecha:** 28/10/2026
+- **Problema encontrado al configurar pozos y topes distintos (DEC-030):** en
+  modo programado, un sentido podía abrir **más casetas que su tope**. Con un
+  tope de 2 y unas casetas iniciales de 4 (las del escenario base), el sentido
+  tomaba 4 casetas del pozo, porque `ajustarCasetas` solo miraba lo que el
+  conteo pedía y lo que quedaba en el pozo, no el tope del sentido. Con los
+  valores por defecto no se veía, porque el tope era el máximo del propio
+  conteo.
+- **Decisión, en dos partes:**
+  1. **El motor acota** el objetivo de casetas al mínimo y al tope del sentido.
+     Ni el conteo ni las casetas iniciales pueden hacer que un sentido pase de
+     su tope, porque el tope es un límite físico del peaje (DEC-002).
+  2. **La validación rechaza** unas `casetasIniciales` fuera del rango
+     mínimo–tope, y unas `casetasFijas` con valores fuera de ese rango, diciendo
+     cuáles están mal.
+- **Motivo:** el invariante `1 ≤ c ≤ tope` es del modelo, no de los datos. Un
+  conteo o unas casetas iniciales que no cuadren con el tope son un error de
+  configuración, y vale más decirlo que simularlo mal en silencio.
+- **Lo que esto NO cambia:** con el tope por defecto (el máximo del propio
+  conteo en las fases 1 y 2, y 5 en la fase 3) el acotado no hace nada. Los
+  informes de las tres fases se regeneran idénticos.
+- **De paso:** la validación comprobaba los umbrales con `valor >= 0`, y en
+  JavaScript `null >= 0` es `true`, así que un `null` a media tabla se colaba
+  como umbral puesto. Ahora se comprueba que sea un número.
+- **Descarta:** dejar que el conteo o las casetas iniciales manden sobre el
+  tope; y validar umbrales con una comparación que acepte `null`.
