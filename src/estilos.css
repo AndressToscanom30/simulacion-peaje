@@ -214,3 +214,51 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   body { padding: 1rem 0.6rem; }
   .campos, .graficos, .estado-vivo { grid-template-columns: 1fr; }
 }
+
+/* --- vista 3D --- */
+.vista3d { margin: 1rem 0; border: 1px solid var(--borde); background: var(--fondo-panel); padding: 0.6rem; }
+.vista3d h3 { margin: 0; }
+.vista3d__lienzo {
+  height: min(60vh, 32rem); min-height: 18rem;
+  border: 1px solid var(--borde); border-radius: 4px; overflow: hidden;
+  background: var(--fondo-suave);
+}
+.vista3d__lienzo canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+
+.hud {
+  display: grid; gap: 0.6rem; margin-top: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  font-size: 0.84rem;
+}
+.hud__reloj { grid-column: 1 / -1; font-family: ui-monospace, monospace; font-size: 1rem; }
+.hud__sentido, .hud__pozo, .hud__registro {
+  border: 1px solid var(--borde); padding: 0.4rem 0.6rem; background: var(--fondo);
+}
+.hud h4 { margin: 0 0 0.3rem; font-size: 0.86rem; }
+.hud__flecha { color: var(--acento); }
+.hud dl { display: grid; grid-template-columns: 1fr auto; gap: 0.1rem 0.5rem; margin: 0; }
+.hud dt { color: var(--texto-suave); }
+.hud dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+.hud dd.grande { font-size: 1.1rem; font-weight: 600; }
+.hud__linea { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; grid-column: 1 / -1; }
+.hud__registro ul { margin: 0; padding-left: 1rem; font-size: 0.78rem; }
+.hud__registro li { margin-bottom: 0.15rem; }
+.hud__pie { grid-column: 1 / -1; }
+
+.leyenda-3d { margin-top: 0.5rem; border: 1px solid var(--borde); }
+.leyenda-3d summary { padding: 0.4rem 0.6rem; cursor: pointer; font-size: 0.86rem; font-weight: 600; }
+.leyenda-3d__columnas {
+  display: grid; gap: 0.8rem; padding: 0.6rem;
+  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+}
+.leyenda-3d h4 { margin: 0 0 0.3rem; font-size: 0.84rem; }
+.leyenda-3d ul { margin: 0 0 0.4rem; padding-left: 0; list-style: none; font-size: 0.8rem; }
+.leyenda-3d li { margin-bottom: 0.2rem; }
+.muestra {
+  display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.35rem;
+  border: 1px solid var(--borde); vertical-align: -1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vista3d__lienzo { scroll-behavior: auto; }
+}

@@ -88,24 +88,28 @@ export const ESCENA_3D = {
     anchoLetrero: 3.6,
     altoLetrero: 1.5,
     /** Largo de la calzada a cada lado de la plaza. */
-    largoCalzada: 60,
+    largoCalzada: 34,
     anchoArcen: 1.2,
   },
 
   /** Cómo se dibuja la cola única de cada sentido (DEC-038, punto 1). */
   cola: {
     /** Separación entre vehículos consecutivos de la cola. */
-    separacion: 2.3,
+    separacion: 2,
     /**
      * Cuántos vehículos de la cola se dibujan. Los que no caben se cuentan en
      * el contador de "no visibles", no se dibujan apilados.
      */
     visiblesMaximos: 45,
-    /** Ancho del embudo: la cola única se dibuja en varias hileras cortas. */
-    hileras: 3,
-    separacionHileras: 2.6,
+    /**
+     * Ancho del embudo. La cola es **una sola** (DEC-038): las hileras son para
+     * que quepa en pantalla, y por eso el embudo se mantiene más estrecho que
+     * la línea de casetas, para que no se lea como una fila por caseta.
+     */
+    hileras: 7,
+    separacionHileras: 2.3,
     /** Distancia del primero de la cola a la línea de casetas. */
-    separacionDeLaPlaza: 7,
+    separacionDeLaPlaza: 6.5,
   },
 
   /** Vehículos. Todos de la misma clase: la categoría no entra al modelo (DEC-003). */
@@ -139,12 +143,21 @@ export const ESCENA_3D = {
     reasignacion: '#d9a400',
   },
 
-  /** Preajustes de cámara. `objetivo` es relativo al centro de la plaza. */
+  /**
+   * Preajustes de cámara. Las distancias **no son fijas**: se calculan en
+   * `geometria.js` a partir del ancho de la plaza y del fondo de la cola, que
+   * dependen del tamaño del pozo. Estos factores dicen cómo.
+   *
+   * `altura` y `distancia` multiplican la medida de referencia de cada vista.
+   */
   camaras: {
-    aerea: { clave: 'aerea', etiqueta: 'Aérea', posicion: [0, 46, 30], objetivo: [0, 0, 0] },
-    lateral: { clave: 'lateral', etiqueta: 'Lateral', posicion: [44, 9, 26], objetivo: [0, 2, 0] },
-    todo: { clave: 'todo', etiqueta: 'Encuadrar todo', posicion: [0, 34, 58], objetivo: [0, 0, 0] },
+    aerea: { clave: 'aerea', etiqueta: 'Aérea', altura: 1.45, distancia: 0.45, inclinacion: 0.04 },
+    lateral: { clave: 'lateral', etiqueta: 'Lateral', altura: 0.26, distancia: 1.05, lado: true },
+    todo: { clave: 'todo', etiqueta: 'Encuadrar todo', altura: 1, distancia: 0.9, inclinacion: 0 },
   },
+
+  /** Campo de visión vertical de la cámara, en grados. */
+  campoDeVision: 42,
 };
 
 /** Color de un vehículo, determinista por su id. */

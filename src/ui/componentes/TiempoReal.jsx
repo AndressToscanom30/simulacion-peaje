@@ -6,6 +6,7 @@ import { horaDelConteo, relojSimulado, num, enMinutos } from '../formato.js';
 import EsquemaCasetas from './EsquemaCasetas.jsx';
 import TablaMedidas from './TablaMedidas.jsx';
 import { GraficoCola, GraficoCasetas, GraficoEspera } from './Graficos.jsx';
+import PanelVista3D from '../vista3d/PanelVista3D.jsx';
 
 /**
  * Modo tiempo real: reproduce una traza ya grabada (DEC-033).
@@ -15,6 +16,7 @@ import { GraficoCola, GraficoCasetas, GraficoEspera } from './Graficos.jsx';
  */
 export default function TiempoReal({ traza, escenario, semilla, alCambiarSemilla, alSimular, ocupado, error }) {
   const [velocidad, setVelocidad] = useState(VELOCIDADES[1]);
+  const [verVista3D, setVerVista3D] = useState(true);
   const [velocidadPropia, setVelocidadPropia] = useState(30);
   const [instante, setInstante] = useState(0);
   const [enMarcha, setEnMarcha] = useState(false);
@@ -221,6 +223,15 @@ export default function TiempoReal({ traza, escenario, semilla, alCambiarSemilla
           </div>
         ))}
       </div>
+
+      {/* La vista 3D comparte el reloj y los controles de arriba (DEC-036). */}
+      <PanelVista3D
+        traza={traza}
+        escenario={escenario}
+        instante={instante}
+        visible={verVista3D}
+        alCambiarVisible={setVerVista3D}
+      />
 
       <EsquemaCasetas pozo={estado.pozo} etiquetas={etiquetas} />
 
