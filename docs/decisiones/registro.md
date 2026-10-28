@@ -615,3 +615,67 @@ tomaron durante el desarrollo.
   como umbral puesto. Ahora se comprueba que sea un número.
 - **Descarta:** dejar que el conteo o las casetas iniciales manden sobre el
   tope; y validar umbrales con una comparación que acepte `null`.
+
+## DEC-033 — El modo tiempo real reproduce una traza grabada, no simula paso a paso
+
+- **Fecha:** 29/10/2026
+- **Decisión de la usuaria.** El modo tiempo real **no** acopla el motor a la
+  interfaz. Funciona en dos tiempos:
+  1. El motor corre **una réplica completa** en un Web Worker, con un
+     **grabador** que anota cada evento en una traza.
+  2. La interfaz **reproduce** esa traza con un **reloj de reproducción**:
+     velocidades 1×, 10×, 60× y una configurable, pausa, reinicio y salto a un
+     instante cualquiera.
+- **Motivo:** la reproducción es determinista (la traza ya está completa),
+  pausable y **rebobinable**, que es imposible con un motor por pasos: para
+  volver atrás habría que rehacer la simulación. Y la fase 6 pinta el 3D desde
+  la misma traza, sin tocar el motor ni duplicar la lógica.
+- **Lo que esto cuesta:** hay que esperar a que la réplica termine antes de
+  empezar a ver nada. Con una hora simulada eso son decenas de milisegundos, así
+  que no se nota. Si en la fase 6 hiciera falta reproducir horizontes mucho más
+  largos, habría que grabar por tramos; con el horizonte del estudio no aplica.
+- **Descarta:** un motor que avance de evento en evento desde la interfaz;
+  `setInterval` empujando al motor; y simular dentro del hilo de la interfaz.
+
+## DEC-034 — Dependencias mínimas: gráficos en SVG propio y jsdom solo en la interfaz
+
+- **Fecha:** 29/10/2026
+- **Decisión de la usuaria.** No se añade ninguna librería de gráficos ni de
+  componentes. Los tableros se dibujan con **SVG escrito a mano**, y las únicas
+  dependencias siguen siendo React, Vite y Vitest (más `jsdom` para probar la
+  interfaz).
+- **Motivo:** los tres gráficos que pide la fase 5 (cola contra el tiempo,
+  casetas abiertas en escalón y espera por intervalo con dos líneas de
+  referencia) son polilíneas y rectángulos. Una librería de gráficos costaría
+  más en peso y en API que las ~200 líneas de SVG que hacen falta, y el escalón
+  de casetas abiertas habría que forzarlo igual.
+- **Las pruebas quedan separadas por entorno:** las del motor y de lo puro
+  siguen en entorno `node`, que es lo que garantiza la DEC-012 (si alguien le
+  cuela una dependencia del DOM al motor, fallan). Las de la interfaz corren en
+  `jsdom`, y solo ellas.
+- **La interfaz está en español**, como el resto del proyecto.
+- **Descarta:** Recharts, D3, Chart.js y cualquier librería de componentes;
+  y poner todas las pruebas en `jsdom`, que taparía la independencia del motor.
+
+## DEC-035 — La demanda y las casetas del operador se pueden escribir a mano en el escenario
+
+- **Fecha:** 29/10/2026
+- **Problema:** la fase 5 pide un formulario con la **demanda editable por
+  intervalo** (12 valores por sentido), pero hasta ahora un escenario describía
+  la demanda solo como `conteo` + `factorDemanda`, y las llegadas se leían del
+  conteo de campo.
+- **Decisión:** `sentidos[i].llegadas` se añade al escenario como arreglo
+  opcional. `null` (el valor por defecto) significa "las del conteo"; un arreglo
+  las sustituye. El `factorDemanda` se aplica igual en los dos casos, así que
+  conteo + factor sigue siendo la forma corta. `casetasFijas` ya existía y hace
+  lo mismo con las casetas del operador.
+- **Motivo:** el formulario tiene que poder plantear demandas que no son ningún
+  conteo (DEC-030), y el escenario es lo que se guarda y se exporta, así que la
+  demanda escrita a mano tiene que viajar dentro de él o se perdería al exportar.
+- **Trazabilidad:** un escenario con `llegadas` propias **deja de ser el conteo
+  de campo**, y la interfaz lo marca como modificado. El conteo se conserva en
+  `conteo` para saber de dónde se partió.
+- **Lo que esto NO cambia:** con `llegadas: null` el comportamiento es el de
+  siempre, y los informes de las fases 1 a 4 se regeneran idénticos.
+- **Descarta:** editar los conteos de campo de `datos.js` (que son la fuente de
+  verdad y no se tocan); y guardar la demanda editada fuera del escenario.

@@ -51,8 +51,11 @@ export const MODO_CASETAS = { PROGRAMADO: 'programado', REGLA: 'regla' };
  * @param {{ahora: number}} args.reloj reloj compartido, por referencia
  * @param {object} args.pozo pozo de casetas compartido
  * @param {object} args.arbitro quien reparte las casetas; ver `simularPeaje`
+ * @param {((tipo: string, datos: object) => void)|null} [args.anotar] grabador
+ *   de traza (fase 5). Solo observa: no toca el estado ni consume números
+ *   aleatorios, así que grabar no cambia ningún resultado (DEC-033).
  */
-export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
+export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anotar = null }) {
   const {
     id,
     etiqueta = String(id),
@@ -223,6 +226,11 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
     const caseta = pozo.tomarYEntregar(id);
     if (!caseta) return false;
     if (contandoCambios) aperturas += 1;
+    anotar?.('casetaAbre', {
+      sentidoId: id,
+      casetaId: caseta.id,
+      motivo: contandoCambios ? 'programado' : 'arranque',
+    });
     return true;
   }
 
@@ -240,12 +248,14 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
     const libre = mias.find((c) => !c.marcada && !c.vehiculo);
     if (libre) {
       if (contandoCambios) cierres += 1;
+      anotar?.('casetaCierra', { sentidoId: id, casetaId: libre.id, estaba: 'libre' });
       arbitro.liberar(libre, id);
       return 'cerrada';
     }
     const ocupada = mias.find((c) => !c.marcada && c.vehiculo);
     if (ocupada) {
       ocupada.marcada = true;
+      anotar?.('casetaMarcada', { sentidoId: id, casetaId: ocupada.id });
       return 'marcada';
     }
     return null;
@@ -308,18 +318,34 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
         sentidoId: id,
         casetaId: caseta.id,
       });
+      anotar?.('ingresoACaseta', {
+        sentidoId: id,
+        vehiculoId: vehiculo.id,
+        casetaId: caseta.id,
+        esperaSegundos: espera,
+        duracionServicioSegundos: duracion,
+        cola: enEspera(),
+      });
     }
   }
 
-  function encolar(instanteLlegada) {
-    cola.push({
+  function encolar(instanteLlegada, { inicial = false } = {}) {
+    const vehiculo = {
       id: siguienteIdVehiculo++,
       instanteLlegada,
       intervaloLlegada: indiceIntervalo(instanteLlegada),
-    });
+    };
+    cola.push(vehiculo);
     if (instanteLlegada <= horizonte) {
       colaMaximaContinua = Math.max(colaMaximaContinua, enEspera());
     }
+    anotar?.('llegada', {
+      sentidoId: id,
+      vehiculoId: vehiculo.id,
+      intervalo: vehiculo.intervaloLlegada,
+      inicial,
+      cola: enEspera(),
+    });
   }
 
   // -------------------------------------------------------------- regla ---
@@ -355,10 +381,16 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
    * Programa la apertura de una caseta ya reservada, para `t + demora`.
    * La orden no se revoca: al llegar la hora abre aunque la cola haya bajado.
    */
-  function ordenarApertura(caseta) {
+  function ordenarApertura(caseta, { porReasignacion = false } = {}) {
     casetaReservada = caseta;
     aperturaPendiente = reloj.ahora + regla.demoraAperturaSegundos;
     eventos.programar(aperturaPendiente, TIPO_EVENTO.APERTURA_CASETA, { sentidoId: id });
+    anotar?.('casetaReservada', {
+      sentidoId: id,
+      casetaId: caseta.id,
+      abreEn: aperturaPendiente,
+      porReasignacion,
+    });
   }
 
   /**
@@ -375,6 +407,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
     if (marcada) {
       marcada.marcada = false;
       cierresCancelados += 1;
+      anotar?.('cierreCancelado', { sentidoId: id, casetaId: marcada.id });
       desdeCuandoBajoUmbral = null; // cambió c efectiva: el conteo arranca de nuevo
       despachar();
       return true;
@@ -386,6 +419,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
     if (!caseta) {
       bloqueadaDesde = reloj.ahora;
       peticionesBloqueadas += 1;
+      anotar?.('peticionBloqueada', { sentidoId: id, cola: enEspera() });
       return false;
     }
     ordenarApertura(caseta);
@@ -449,7 +483,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
 
       // Cola inicial: vehículos con llegada en t = 0 (DEC-018, PEN-003). No
       // entran a la ventana móvil de ρ: son rezago, no demanda medida (DEC-027).
-      for (let i = 0; i < colaInicial; i += 1) encolar(0);
+      for (let i = 0; i < colaInicial; i += 1) encolar(0, { inicial: true });
 
       if (!porRegla) {
         for (let i = 1; i < intervalos; i += 1) {
@@ -481,13 +515,16 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
 
     manejarFinServicio(casetaId) {
       const caseta = pozo.casetas[casetaId];
+      const vehiculoId = caseta.vehiculo?.id ?? null;
       caseta.vehiculo = null;
       atendidosTotal += 1;
       if (reloj.ahora <= horizonte) salidasEnHorizonte += 1;
+      anotar?.('salida', { sentidoId: id, vehiculoId, casetaId, cola: enEspera() });
       if (caseta.marcada) {
         // La caseta marcada ya terminó: ahora sí vuelve al pozo (o se reasigna).
         if (contandoCambios) cierres += 1;
         desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
+        anotar?.('casetaCierra', { sentidoId: id, casetaId, estaba: 'marcada' });
         arbitro.liberar(caseta, id);
       }
       despachar();
@@ -508,6 +545,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
         pozo.entregar(caseta, id);
         if (contandoCambios) aperturas += 1;
         desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
+        anotar?.('casetaAbre', { sentidoId: id, casetaId: caseta.id, motivo: 'regla' });
       }
       despachar();
     },
@@ -527,6 +565,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
 
     manejarMuestreoCola(intervalo) {
       colaMuestreada[intervalo] = enEspera();
+      anotar?.('lecturaCola', { sentidoId: id, intervalo, cola: enEspera() });
     },
 
     /**
@@ -540,7 +579,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro }) {
         bloqueadaDesde = null;
       }
       if (porReasignacion) reasignacionesRecibidas += 1;
-      ordenarApertura(caseta);
+      ordenarApertura(caseta, { porReasignacion });
       return true;
     },
 

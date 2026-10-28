@@ -41,8 +41,10 @@ import { parametros } from '../config/parametros.js';
  * @property {number} [capacidadNominalPorCaseta] vehículos por caseta e
  *   intervalo con los que la regla calcula ρ (≈ 24,8)
  * @property {(estado: object) => void} [observador] se llama tras cada evento
- *   con `{instante, pozo, sentidos}`. Lo usan las pruebas de invariantes y lo
- *   usará el modo tiempo real de la fase 5 para pintar el estado.
+ *   con `{instante, evento, pozo, sentidos}`, donde `evento` trae el tipo. Lo
+ *   usan las pruebas de invariantes.
+ * @property {((tipo: string, datos: object) => void)|null} [anotar] grabador de
+ *   traza (DEC-033). Solo observa: no cambia ningún resultado.
  */
 
 /**
@@ -63,6 +65,9 @@ export function simularPeaje(config) {
     servicioNominalSegundos = parametros.servicio.mediaObservadaSegundos,
     capacidadNominalPorCaseta = capacidadNominal(),
     observador = null,
+    anotar = null,
+    /** Reloj compartido. Se inyecta para que un grabador externo lea de él. */
+    reloj = { ahora: 0 },
   } = config;
 
   if (!Array.isArray(configuraciones) || configuraciones.length !== 2) {
@@ -80,7 +85,7 @@ export function simularPeaje(config) {
   }
 
   const eventos = crearColaEventos();
-  const reloj = { ahora: 0 };
+  reloj.ahora = 0;
   const pozo = crearPozo({ total: pozoTotal });
 
   // ------------------------------------------------------------- árbitro ---
@@ -175,6 +180,7 @@ export function simularPeaje(config) {
       if (caseta && destino.recibirCaseta(caseta, { porReasignacion: true })) {
         reasignaciones += 1;
         sentidos.find((s) => s.id === deId)?.anotarReasignacionCedida();
+        anotar?.('casetaReasignada', { casetaId: caseta.id, desdeSentidoId: deId, haciaSentidoId: destino.id });
         return;
       }
       if (caseta) pozo.cancelarReserva(caseta);
@@ -215,6 +221,12 @@ export function simularPeaje(config) {
       }
       reasignaciones += 1;
       ofrecimientosPorPozo += 1;
+      anotar?.('casetaReasignada', {
+        casetaId: caseta.id,
+        desdeSentidoId: null,
+        haciaSentidoId: ganador.id,
+        desdeElPozo: true,
+      });
     }
   }
 
@@ -231,6 +243,7 @@ export function simularPeaje(config) {
         reloj,
         pozo,
         arbitro,
+        anotar,
       }),
     );
   });
@@ -238,8 +251,8 @@ export function simularPeaje(config) {
   for (const s of sentidos) s.inicializar();
   ofrecerPozoLibre();
 
-  const avisar = () => {
-    if (observador) observador({ instante: reloj.ahora, pozo, sentidos });
+  const avisar = (evento = null) => {
+    if (observador) observador({ instante: reloj.ahora, evento, pozo, sentidos });
   };
   avisar();
 
@@ -248,9 +261,9 @@ export function simularPeaje(config) {
     reloj,
     sentidos,
     alAvanzar: integrarPozo,
-    trasEvento: () => {
+    trasEvento: (evento) => {
       ofrecerPozoLibre();
-      avisar();
+      avisar(evento);
     },
   });
 

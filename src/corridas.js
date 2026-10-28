@@ -13,7 +13,33 @@
  */
 
 import { simularPeaje, correrReplicas, resumirLotePeaje } from './motor/index.js';
+import { crearGrabador, armarTraza } from './motor/traza.js';
 import { aConfiguracionPeaje, semillasDe, validarEscenario } from './config/escenario.js';
+
+/**
+ * Corre **una** réplica grabando la traza, para el modo tiempo real (DEC-033).
+ *
+ * El grabador solo observa, así que el resultado es idéntico al de correr sin
+ * grabar: hay una prueba que lo comprueba.
+ *
+ * @param {object} escenario completo
+ * @param {number} semilla
+ * @returns {object} traza serializable a JSON, según `docs/traza.md`
+ */
+export function simularTraza(escenario, semilla) {
+  validarEscenario(escenario);
+  // El reloj del motor se comparte por referencia: el grabador lee de él el
+  // instante de cada evento.
+  const reloj = { ahora: 0 };
+  const grabador = crearGrabador({ reloj });
+  const resultado = simularPeaje({
+    ...aConfiguracionPeaje(escenario),
+    semilla,
+    reloj,
+    anotar: grabador.anotar,
+  });
+  return armarTraza({ eventos: grabador.eventos, escenario, semilla, resultado });
+}
 
 /**
  * ¿Cumple una réplica el criterio de desempeño?
