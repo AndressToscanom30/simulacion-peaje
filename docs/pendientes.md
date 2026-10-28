@@ -368,3 +368,42 @@ mantiene la pregunta abierta hasta que alguien la responda.
   `null` y la interfaz muestra solo el tiempo simulado.
 - **Qué haría falta para cerrarlo:** que el contexto declare la hora de inicio
   como dato aparte, y entonces transcribirla a `datos.js` como campo.
+
+### PEN-019 — El rendimiento de la vista 3D solo está medido con WebGL por software
+
+- **Origen:** fase 6.
+- **Qué pasa:** el contenedor en el que se desarrolló **no tiene GPU**. Las
+  medidas de dibujado se tomaron con SwiftShader (WebGL por software), y dan
+  entre **74 y 118 ms por fotograma** en calidad alta, o sea 8 a 13 fotogramas
+  por segundo, a 1280×720 y 60×.
+- **Lo que sí está medido y sí vale:** la lógica de la escena cuesta **0,01 ms
+  por fotograma** de mediana (p95 0,03 ms) en el festivo, y 0,009 ms (p95 0,04)
+  en el estrés con pozo 10 y demanda ×1,6. O sea que el coste está **todo en el
+  dibujado**, no en traducir la traza.
+- **Lo que no se pudo comprobar:** que en un equipo con GPU vaya fluido. Es muy
+  probable —la escena son un puñado de cajas y un `InstancedMesh` con unas
+  cien instancias— pero **no se midió**, y no se afirma.
+- **Mientras tanto:** hay selector de calidad (alta, media, baja) que reduce
+  sombras, segmentos de las figuras y cuántos vehículos de la cola se dibujan;
+  y la vista 3D se puede ocultar, con todo lo demás funcionando igual.
+- **Qué haría falta:** abrir la interfaz en un equipo con GPU y leer el contador
+  de ms/fotograma que el propio panel muestra.
+
+### PEN-020 — El embudo de la cola puede leerse como una fila por caseta
+
+- **Origen:** fase 6, revisión de las capturas.
+- **Qué pasa:** el modelo es de **cola única** por sentido (DEC-001), pero una
+  cola de 45 vehículos dibujada en una sola fila no cabe en pantalla. Se dibuja
+  en un bloque de **7 hileras**, y a primera vista eso puede confundirse con una
+  fila por caseta, que es justo lo que el modelo **no** tiene.
+- **Qué se hizo para evitarlo (DEC-038, punto 1):** el bloque se mantiene **más
+  estrecho que la línea de casetas** y su número de hileras **no coincide** con
+  el número de casetas (7 hileras contra 6 o 10 casetas), así que la
+  correspondencia 1:1 no se sostiene ni contando. Además, la escena lleva una
+  nota fija que lo dice y la leyenda lo repite.
+- **Qué está abierto:** si conviene dibujarla en una sola fila larga y mover la
+  cámara, que sería inequívoco pero obligaría a alejarse tanto que los letreros
+  dejarían de leerse. Se probó y se descartó por eso.
+- **Mientras tanto:** se deja el bloque con su rótulo. Si en la fase 7 alguien
+  usa una captura en el documento del estudio, conviene que lleve el pie de
+  "cola única; las hileras son solo para que quepa".

@@ -9,6 +9,8 @@ conviene pasar por los tres primeros.
 | `planes/plan-actual.md` | Plan de trabajo por fases con casillas. Dice qué está hecho y qué sigue. Se marca al terminar cada intervención. |
 | `decisiones/registro.md` | Bitácora de decisiones (`DEC-001`, `DEC-002`, …) con fecha, decisión, motivo y qué descarta. Lo que está aquí no se reabre: para cambiarlo se añade una decisión nueva que diga qué supera. |
 | `ui.md` | Cómo se usa la interfaz y cómo está hecha: las tres pestañas, el formulario generado, el worker, la traza y el reloj de reproducción. |
+| `vista3d.md` | La visualización 3D: cómo se traduce la traza en escena, la leyenda, qué es cosmético, las constantes configurables y el rendimiento medido. |
+| `capturas/` | Capturas de la escena en tres instantes, para el festivo y para un caso de estrés. Generadas con WebGL por software. |
 | `traza.md` | Formato de la traza que graba el motor y reproduce la interfaz. Basta para interpretarla sin leer el motor; la fase 6 pintará el 3D desde ahí. |
 | `parametros.md` | Catálogo de los 30 parámetros del modelo: significado, unidad, valor por defecto, origen (contexto o decisión) y rango. Generado con `npm run parametros`, leyendo los valores por defecto del escenario base, así que no puede quedar desfasado. Es la especificación del formulario de la fase 5. |
 | `pendientes.md` | Preguntas abiertas y ambigüedades. Si algo no está claro se anota aquí y se sigue con la opción más razonable, dejando dicho cuál se tomó. Incluye lo que falta confirmar con la profesora. |
@@ -27,6 +29,8 @@ conviene pasar por los tres primeros.
 | `src/corridas.js` | Runner: traduce escenarios a configuración del motor, corre las réplicas y resuelve el cumplimiento. `simularTraza` graba una réplica para el modo tiempo real. |
 | `src/motor/traza.js` | Grabador de trazas y reconstrucción del estado sin usar el motor. |
 | `src/ui/` | La interfaz: `reloj.js` y `modeloFormulario.js` son puros y se prueban sin DOM; `worker/` corre el motor fuera del hilo de la pantalla; `componentes/` son los componentes de React. |
+| `src/ui/vista3d/` | La visualización 3D. `modeloEscena.js` y `geometria.js` son **puros** (sin three) y se prueban en Node; `Escena3D.jsx` es lo único que toca three y se carga en diferido. |
+| `src/config/escena3d.js` | Constantes visuales de la escena: dimensiones, duraciones, colores, calidades y cámaras. |
 | `src/motor/` | Motor de simulación en JS puro (sin React, sin DOM, sin Three.js). Corre con Node. `sentido.js` tiene la lógica de un sentido; `simulador.js` la corre sola (fases 1 y 2) y `peaje.js` corre los dos sentidos sobre el pozo común de `pozo.js` (fase 3). |
 | `scripts/simular.js` | Validación de la fase 1 (`npm run simular`). |
 | `scripts/diagnostico-festivo.js` | Diagnóstico de la cola, campo contra simulación (`npm run diagnostico`). |
@@ -51,5 +55,5 @@ npm run parametros  # regenera el catálogo de parámetros
 ```
 
 La interfaz (`npm run dev`) permite configurar cualquier parámetro, reproducir
-una réplica en tiempo real con pausa y rebobinado, y correr lotes con exportación
-a CSV y JSON. Ver `docs/ui.md`.
+una réplica en tiempo real con pausa y rebobinado —con **vista 3D** del peaje— y
+correr lotes con exportación a CSV y JSON. Ver `docs/ui.md` y `docs/vista3d.md`.

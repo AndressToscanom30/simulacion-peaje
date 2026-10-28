@@ -2,6 +2,64 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-30 — Fase 6: visualización 3D
+
+**Qué cambió:**
+
+- **DEC-036:** la escena es una **función pura de la traza y del instante**. No
+  habla con el motor y usa el reloj de reproducción de la fase 5, no uno nuevo,
+  así que la vista 3D y los tableros 2D no pueden desincronizarse.
+  **DEC-037:** `three@0.170.0` y `@react-three/fiber@8.18.0`, versiones exactas,
+  con la serie 8 verificada (la 9 exige React ≥19). **Sin drei:** `OrbitControls`
+  viene en three y el texto de los letreros se dibuja en un `<canvas>` 2D como
+  `CanvasTexture`, así que no hay ningún activo externo. Carga diferida.
+  **DEC-038:** la escena representa el **modelo**, no una foto del peaje: cola
+  única por sentido, casetas reversibles, desplazamientos cosméticos y rotulados,
+  y todos los vehículos de la misma clase. **DEC-039:** constantes visuales en
+  `src/config/escena3d.js`, y el **color nunca es la única señal**.
+- **`src/ui/vista3d/modeloEscena.js`** (puro, sin three): traduce traza + `t` en
+  vehículos con su fase y posición FIFO, casetas con su estado y cuenta atrás,
+  contadores y avisos. Avanza con el cursor del reproductor.
+- **`geometria.js`** (puro): dónde va cada cosa. Las distancias de cámara se
+  **calculan del contenido**, no son fijas.
+- **`Escena3D.jsx`**: calzada, casetas con letrero aéreo, indicador cuya figura
+  cambia con el estado, vehículos en un `InstancedMesh`, avisos y cámara con
+  órbita y cinco preajustes. **`PanelVista3D.jsx`**: carga diferida, detección
+  de WebGL, calidad ajustable, `prefers-reduced-motion`, HUD y leyenda.
+- **38 pruebas nuevas** (357 en total).
+
+**Qué vi en las capturas y corregí.** Las seis capturas se generaron con WebGL
+por software y las revisé una a una. Aparecieron **tres defectos reales**:
+
+1. *Encuadrar todo* no encuadraba todo: la cola se salía del cuadro. Primero
+   probé a alejar la cámara y **empeoró**, porque los letreros dejaban de
+   leerse; la solución fue compactar el bloque de cola y recalcular la cámara.
+2. Los vehículos que entraban a caseta en el mismo instante se dibujaban **unos
+   encima de otros**, porque todos interpolaban desde el mismo punto. Ahora
+   salen en abanico hacia su caseta y adelantados un hueco.
+3. La cuenta atrás **se salía del letrero** y el texto se emborronaba en
+   escorzo. El texto se encoge hasta caber y la textura subió a 512×256 con
+   anisotropía.
+
+Una cuarta cosa la encontraron las pruebas, no las capturas: el modelo de escena
+contaba como abiertas las casetas **reservadas**, que todavía no atienden.
+
+**Rendimiento.** La lógica es despreciable: **0,01 ms por fotograma** de mediana
+(p95 0,03 ms) en el festivo y 0,009 ms en el estrés con pozo 10 y demanda ×1,6.
+El dibujado solo está medido con **WebGL por software** (74–118 ms, 8–13 fps):
+este contenedor no tiene GPU y no puedo medir una real, así que queda en PEN-019
+en vez de afirmar que va fluido.
+
+**Qué quedó a medias:** nada de la fase 6.
+
+**Pendientes nuevos:** PEN-019 (el rendimiento del dibujado solo está medido por
+software) y PEN-020 (el embudo de la cola puede leerse como una fila por caseta;
+se mitiga con el ancho, el número de hileras y el rótulo).
+
+**Qué sigue:** fase 7, resultados y documentación del estudio. Ahí toca también
+el disparador anticipativo por tasa de llegadas, que DEC-028 dejó expresamente
+para esta fase (PEN-011).
+
 ## 2026-10-29 — Fase 5: interfaz de configuración y modo tiempo real
 
 **Qué cambió:**

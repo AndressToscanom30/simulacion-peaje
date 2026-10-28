@@ -1,19 +1,18 @@
 # Plan actual
 
-Estado: 29/10/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 30/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Fases 1 a 5 cerradas.** Siguiente: fase 6 (visualización 3D). La base está
-puesta: el modo tiempo real reproduce una **traza grabada** (DEC-033) cuyo
-formato está documentado en `docs/traza.md`, así que el 3D se pinta desde ahí
-sin tocar el motor ni duplicar la lógica. `reconstruirDesdeTraza` ya da el
-estado del peaje en cualquier instante.
+**Fases 1 a 6 cerradas.** Siguiente y última: fase 7 (resultados y documentación
+del estudio). Todo el material está: los informes de `docs/resultados/`, el
+catálogo de parámetros, la interfaz y las capturas de `docs/capturas/`.
 
 Antes de empezarla, leer en `docs/pendientes.md`: **PEN-013** (la demanda de C→P
 no se midió y es la sensibilidad que más mueve el resultado), PEN-008 (el modelo
 de cola única subestima la congestión del pico, así que todo factor de quiebre
 es una cota superior), y **PEN-016** (la cola inicial le hace de aviso temprano a
-la regla: sin ella, P→C deja de cumplir).
+la regla: sin ella, P→C deja de cumplir). Y el disparador anticipativo por tasa
+de llegadas, que **DEC-028 dejó expresamente para esta fase** (PEN-011).
 
 ## Fase 1 — Motor de un sentido con casetas fijas + validación ✅
 
@@ -146,12 +145,35 @@ Verificado: la corrida por lotes de la interfaz da los **mismos números** que
 `docs/resultados/fase4-escenarios.md` (hay una prueba que lee el informe
 publicado y compara), y `npm run build` y `npm run dev` funcionan.
 
-## Fase 6 — Visualización 3D
+## Fase 6 — Visualización 3D ✅
 
-- [ ] Escena del peaje con casetas y carriles
-- [ ] Vehículos que avanzan, hacen cola y son atendidos
-- [ ] Casetas que abren y cierran visiblemente
-- [ ] Cámara y controles
+- [x] Modelo de escena **puro**: función de la traza y del instante, sin three,
+      sin React y sin el motor; avanza con el cursor del reproductor
+- [x] Escena del peaje con una caseta por carril del pozo, letrero aéreo con
+      número, flecha del sentido y estado en texto
+- [x] Vehículos que entran, hacen cola única por sentido, pasan a caseta y salen
+- [x] Casetas que abren, se marcan y cierran visiblemente, con cuenta atrás
+      cuando están reservadas
+- [x] Avisos de reasignación y de petición bloqueada
+- [x] Cámara con órbita y cinco preajustes, con distancias calculadas del
+      contenido para que un pozo de 10 también quepa
+- [x] HUD con reloj, contadores por sentido, estado del pozo y registro de
+      eventos en texto; leyenda y nota de escena esquemática
+- [x] Integrado en la pestaña Tiempo real, compartiendo reloj y controles, con
+      interruptor para ocultarlo
+- [x] Sin WebGL, aviso claro y el resto funcionando; calidad ajustable y
+      `prefers-reduced-motion`
+- [x] Carga diferida: three no entra en el paquete principal
+- [x] 38 pruebas nuevas (357 en total) y seis capturas revisadas en
+      `docs/capturas/`
+- [x] `docs/vista3d.md`
+
+Resultado: la escena es determinista y se prueba sin WebGL. Revisando las
+capturas aparecieron tres defectos reales, corregidos: el encuadre general
+cortaba la cola, los vehículos que entraban a caseta a la vez se solapaban, y la
+cuenta atrás se salía del letrero. El rendimiento de la lógica es despreciable
+(0,01 ms por fotograma); el del dibujado solo está medido con WebGL por software
+(PEN-019).
 
 ## Fase 7 — Resultados y documentación del estudio
 

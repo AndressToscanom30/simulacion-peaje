@@ -14,7 +14,8 @@ npm test         # 319 pruebas, motor e interfaz
 **Tiempo real.** Se elige la semilla (1 por defecto), se pulsa *Simular y
 reproducir* y la réplica se reproduce con controles de iniciar, pausa, reinicio,
 velocidad (1×, 10×, 60× y una configurable) y una barra para saltar a cualquier
-instante. Arriba se ve el reloj simulado, `t = mm:ss` más la hora real del
+instante. Incluye la **vista 3D** del peaje, que comparte ese mismo reloj y se
+puede ocultar (ver `docs/vista3d.md`). Arriba se ve el reloj simulado, `t = mm:ss` más la hora real del
 conteo (el festivo arranca a las 16:25). Durante la reproducción se muestra, por
 sentido, la cola, los vehículos en servicio, los atendidos y las casetas
 abiertas; el esquema del pozo con el estado de cada caseta (en el pozo,
@@ -103,6 +104,7 @@ mide el tiempo real y se lo pasa al reloj.
 | `src/ui/formato.js` | Números con coma decimal, minutos, porcentajes, el reloj `mm:ss`, la hora del conteo y CSV. |
 | `src/ui/almacen.js` | `localStorage` con try/catch en cada acceso. |
 | `src/ui/componentes/` | Los componentes de React. Los gráficos son **SVG escrito a mano**, sin librerías (DEC-034). |
+| `src/ui/vista3d/` | La visualización 3D (fase 6). `modeloEscena.js` y `geometria.js` son puros y se prueban en Node; `Escena3D.jsx` es lo único que importa three y se carga en diferido. Ver `docs/vista3d.md`. |
 
 El motor sigue sin importar React, DOM ni nada de la interfaz (DEC-012), y las
 pruebas lo garantizan: corren en entorno `node` y solo
