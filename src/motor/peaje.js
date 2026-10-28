@@ -36,6 +36,9 @@ import { parametros } from '../config/parametros.js';
  * @property {number} [rhoReasignacion] umbral de ρ para reasignar
  * @property {number} [ventanaRhoSegundos] ventana móvil de llegadas para ρ
  * @property {number} [esperaDesempateSegundos] umbral del desempate
+ * @property {(estado: object) => void} [observador] se llama tras cada evento
+ *   con `{instante, pozo, sentidos}`. Lo usan las pruebas de invariantes y lo
+ *   usará el modo tiempo real de la fase 5 para pintar el estado.
  */
 
 /**
@@ -53,6 +56,7 @@ export function simularPeaje(config) {
     rhoReasignacion = parametros.regla.rhoReasignacion,
     ventanaRhoSegundos = parametros.regla.ventanaRhoSegundos,
     esperaDesempateSegundos = parametros.regla.esperaDesempateSegundos,
+    observador = null,
   } = config;
 
   if (!Array.isArray(configuraciones) || configuraciones.length !== 2) {
@@ -228,12 +232,20 @@ export function simularPeaje(config) {
   for (const s of sentidos) s.inicializar();
   ofrecerPozoLibre();
 
+  const avisar = () => {
+    if (observador) observador({ instante: reloj.ahora, pozo, sentidos });
+  };
+  avisar();
+
   correrCalendario({
     eventos,
     reloj,
     sentidos,
     alAvanzar: integrarPozo,
-    trasEvento: ofrecerPozoLibre,
+    trasEvento: () => {
+      ofrecerPozoLibre();
+      avisar();
+    },
   });
 
   integrarPozo(horizonte);
