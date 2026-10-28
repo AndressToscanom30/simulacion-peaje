@@ -2,6 +2,56 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-28 — Fase 3: reparto de casetas entre sentidos
+
+**Qué cambió:**
+
+- **Refactor para no duplicar la regla.** `src/motor/sentido.js` se queda con
+  toda la lógica de un sentido, sin reloj ni bucle propios; `src/motor/pozo.js`
+  es dueño de las casetas físicas y de quién tiene cada una; `simularSentido`
+  pasa a ser un envoltorio delgado con un pozo de su tamaño, y su API no cambia.
+  Verificado que el refactor es transparente: las 86 pruebas de antes siguen en
+  verde y los tres informes anteriores se regeneran con todas las cifras
+  idénticas (solo cambia la línea de la fecha).
+- **`src/motor/peaje.js`:** `simularPeaje` corre los dos sentidos en un solo
+  reloj sobre el pozo de 6. Que `c1 + c2 ≤ 6` se cumpla sale de que no hay más
+  casetas, no de una comprobación aparte. El árbitro implementa la DEC-008:
+  reserva al ordenar la apertura, peticiones bloqueadas con reintento,
+  desempate, y reasignación por ρ > 0,60 con la misma demora. Acepta un
+  `observador` que se llama tras cada evento, que es lo que usan las pruebas de
+  invariantes y lo que la fase 5 reutilizará para el modo tiempo real.
+- **`src/config/escenarios.js`:** el escenario del festivo (P→C el conteo real,
+  C→P el sustituto) y el de sanidad de día normal, compartidos por scripts y
+  pruebas.
+- **DEC-027** con los 12 casos límite que el contexto no cubre, y **DEC-024 a
+  DEC-026** sin tocar. **PEN-013** (el sustituto de C→P se midió en el sentido
+  contrario), **PEN-014** y **PEN-015** (la reasignación favorece al sentido con
+  menos casetas y casi no se activa en el pico).
+- **123 pruebas** (37 nuevas), incluida la equivalencia exacta con las fases 1 y
+  2 en los 4 conteos, los dos modos y las 30 semillas.
+- **`scripts/fase3.js`** (`npm run fase3`) → `docs/resultados/fase3-reparto.md`,
+  con 20 casos × 30 réplicas.
+
+**Qué muestra la comparación:** el pozo está agotado **56 de los 60 minutos**
+del festivo, con 1,7 peticiones bloqueadas por réplica y 32 min de espera por
+carril: la competencia que la fase 2 no podía ver es real. Con servicio base los
+tres controles cumplen la meta en los dos sentidos; la regla cuesta espera a P→C
+(0,28 → 0,44 min) y se la ahorra a C→P (0,40 → 0,34). Con servicio lento ninguno
+cumple, pero la regla baja `Wq` de P→C de 2,90 a 1,26 min. La reasignación por ρ
+no cierra la brecha reactiva de PEN-011: la **ensancha** con servicio base
+(0,07 → 0,16 min) y con servicio lento no se activa ni una vez. Y el sustituto
+de C→P decide el resultado: con domingoCP (451 veh/h) C→P pasa a 5,76 min de
+espera y 66 % de intervalos sobre el máximo tolerable, y deja de cumplir.
+
+**Qué quedó a medias:** nada de la fase 3. El escenario de sanidad confirmó que
+en día normal el pozo no se agota en ninguna de las 30 réplicas, así que la
+competencia del festivo no es un artefacto del modelo.
+
+**Qué sigue:** fase 4, escenarios y corridas por lotes: la demanda alta con los
+factores 1,10, 1,13 y 1,20, la sensibilidad de la meta y de la cola inicial, y
+la tabla comparativa de escenarios. Antes conviene leer PEN-013: sin medir C→P
+en un festivo, cualquier política que salga de la fase 4 cuelga de un supuesto.
+
 ## 2026-10-27 (2.ª intervención) — Fase 2: regla de apertura y cierre
 
 **Qué cambió:**

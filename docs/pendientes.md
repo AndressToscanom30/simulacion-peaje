@@ -248,3 +248,59 @@ mantiene la pregunta abierta hasta que alguien la responda.
   demanda que P→C en esa franja. Usar los 195 veh/h de un domingo normal podría
   estar sobreestimando o subestimando el contraflujo; no hay forma de saberlo
   con los datos que hay.
+
+### PEN-014 — La reasignación por ρ favorece sistemáticamente al sentido con menos casetas
+
+- **Origen:** experimentos de la fase 3 (`docs/resultados/fase3-reparto.md`).
+- **Qué pasa:** ρ se define como llegadas de los últimos 5 min ÷ (c × 24,8), o
+  sea que **divide por el número de casetas abiertas**. Con `c = 1` basta una
+  demanda de 15 veh/5 min para pasar del 0,60. En el festivo, C→P con su único
+  carril tiene ρ ≈ 0,66 aunque su demanda (195 veh/h) sea **una quinta parte**
+  de la de P→C (1.064 veh/h), que con 5 casetas tiene ρ ≈ 0,72.
+- **Consecuencia medida:** como la reasignación solo ofrece la caseta al **otro**
+  sentido, y C→P casi nunca libera (tiene 1 o 2), el traspaso va casi siempre de
+  P→C hacia C→P. Con servicio base, activar la reasignación mueve 2,8
+  carriles-intervalo a C→P y **empeora** la espera de P→C de 0,35 a 0,44 min,
+  ensanchando la brecha contra el operador de 0,07 a 0,16 min. Es decir: la
+  reasignación perjudica al sentido congestionado.
+- **Por qué no es un error del motor:** es exactamente lo que dice la DEC-008.
+  ρ mide **utilización**, no demanda absoluta, y un carril con 0,66 de
+  utilización está más cargado *por carril* que cinco con 0,72. La regla está
+  repartiendo bien según su propio criterio; lo que pasa es que ese criterio no
+  distingue "este sentido necesita otra caseta" de "este sentido tiene poca
+  capacidad porque poca necesita".
+- **Mientras tanto:** se deja tal cual. **No se tocó el 0,60 ni la definición de
+  ρ**, que son del contexto (DEC-008). El informe reporta el efecto, y los
+  escenarios se corren con y sin reasignación para que la diferencia esté a la
+  vista.
+- **Qué está abierto:** si la condición de reasignación debería mirar también la
+  cola o la espera estimada del sentido que recibe, no solo su ρ. Con los
+  umbrales del contexto, un sentido con cola 0 y 1 caseta puede quitarle una
+  caseta a otro con 30 vehículos esperando. Cambiarlo exige una decisión nueva
+  que diga qué supera de la DEC-008; **no se reabre aquí**.
+- **Ojo con la lectura:** con servicio lento esto no se ve, porque los dos
+  sentidos están saturados, nadie libera nada y la reasignación **no se activa
+  ni una vez** en las 30 réplicas. El efecto solo aparece cuando hay holgura
+  para que alguien cierre una caseta.
+
+### PEN-015 — La reasignación por ρ casi no se activa en el pico
+
+- **Origen:** experimentos de la fase 3.
+- **Qué pasa:** en el festivo el pozo está agotado entre 56 y 60 de los 60
+  minutos de la hora. Con servicio base hay 0,8 reasignaciones por réplica; con
+  servicio lento, **0,00**: los resultados con y sin reasignación son idénticos
+  hasta el último decimal.
+- **Por qué:** la DEC-008 reasigna **al liberarse** una caseta, y en el pico
+  nadie libera: los dos sentidos tienen cola y la ventana de cierre de 15 min no
+  se cumple nunca. La regla de reparto existe pero no tiene ocasión de aplicarse
+  justo en el escenario para el que se diseñó.
+- **La sensibilidad `ofrecerPozoPorRho` tampoco ayuda:** ofrecer las casetas que
+  ya están libres en el pozo sube las reasignaciones de 0,8 a 1,5 por réplica y
+  deja la espera del peaje casi igual (0,43 → 0,37 min en P→C, 0,34 → 0,35 en
+  C→P). Es poco porque el pozo tampoco tiene casetas libres que ofrecer.
+- **Qué está abierto:** si el reparto entre sentidos debería poder **quitar** una
+  caseta a un sentido para dársela al otro, en vez de esperar a que la suelte.
+  Eso no es lo que dice la DEC-008 y tendría que respetar el no interrumpir
+  servicios (DEC-007). **No se decide aquí.**
+- **Mientras tanto:** se reporta que la reasignación es casi inerte en el pico, y
+  el escenario sin reasignación queda como la comparación honesta.

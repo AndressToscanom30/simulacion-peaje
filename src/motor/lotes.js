@@ -79,3 +79,71 @@ export function correrYResumir(configuracionBase, semillas) {
   const replicas = correrReplicas(configuracionBase, semillas);
   return { ...resumirLote(replicas), replicasCrudas: replicas };
 }
+
+/** Medidas del pozo que se resumen entre réplicas (fase 3). */
+const MEDIDAS_POZO = [
+  'segundosAgotado',
+  'reasignaciones',
+  'entregasPorBloqueo',
+  'ofrecimientosPorPozo',
+  'bloqueosDescartados',
+  'peticionesBloqueadas',
+  'segundosBloqueados',
+];
+
+/** Medidas por sentido que se resumen entre réplicas (fase 3). */
+const MEDIDAS_SENTIDO = [
+  ...MEDIDAS_ESCALARES,
+  'peticionesBloqueadas',
+  'segundosBloqueados',
+  'reasignacionesRecibidas',
+  'reasignacionesCedidas',
+];
+
+/** Medidas del total del peaje que se resumen entre réplicas (fase 3). */
+const MEDIDAS_TOTAL = [
+  'llegadasSimuladas',
+  'caudalEnHorizonte',
+  'atendidosTotal',
+  'wqHoraSegundos',
+  'fraccionIntervalosSobreUmbral',
+  'sumaColaMaximaMuestreada',
+  'sumaColaMaximaContinua',
+  'carrilesIntervalo',
+  'cambiosDeC',
+  'aperturas',
+  'cierres',
+];
+
+const resumirCampos = (replicas, campos, extraer) =>
+  Object.fromEntries(campos.map((campo) => [campo, resumir(replicas.map((r) => extraer(r)[campo]))]));
+
+/**
+ * Corre N réplicas del peaje completo y resume las medidas por sentido, el
+ * total y el reparto del pozo.
+ *
+ * @param {object} configuracionBase config de `simularPeaje` sin `semilla`
+ * @param {number[]} semillas
+ * @param {(config: object) => object} simular normalmente `simularPeaje`
+ */
+export function correrYResumirPeaje(configuracionBase, semillas, simular) {
+  const replicas = semillas.map((semilla) => simular({ ...configuracionBase, semilla }));
+  if (replicas.length === 0) throw new RangeError('El lote no tiene réplicas.');
+
+  const numeroDeSentidos = replicas[0].sentidos.length;
+
+  return {
+    replicas: replicas.length,
+    sentidos: Array.from({ length: numeroDeSentidos }, (_, i) => ({
+      etiqueta: replicas[0].sentidos[i].etiqueta,
+      escalares: resumirCampos(replicas, MEDIDAS_SENTIDO, (r) => r.sentidos[i]),
+      tiempoPorCasetasAbiertas: Array.from(
+        { length: Math.max(...replicas.map((r) => r.sentidos[i].tiempoPorCasetasAbiertas.length)) },
+        (_, c) => resumir(replicas.map((r) => r.sentidos[i].tiempoPorCasetasAbiertas[c] ?? 0)),
+      ),
+    })),
+    total: resumirCampos(replicas, MEDIDAS_TOTAL, (r) => r.total),
+    pozo: resumirCampos(replicas, MEDIDAS_POZO, (r) => r.pozo),
+    replicasCrudas: replicas,
+  };
+}
