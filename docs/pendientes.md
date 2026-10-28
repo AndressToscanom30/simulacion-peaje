@@ -304,3 +304,33 @@ mantiene la pregunta abierta hasta que alguien la responda.
   servicios (DEC-007). **No se decide aquí.**
 - **Mientras tanto:** se reporta que la reasignación es casi inerte en el pico, y
   el escenario sin reasignación queda como la comparación honesta.
+
+### PEN-016 — La cola inicial le hace de aviso temprano a la regla: quitarla empeora la espera
+
+- **Origen:** sensibilidad E4 de la fase 4 (`docs/resultados/fase4-escenarios.md`).
+- **Qué pasa:** arrancar el festivo **sin** los 23 vehículos en cola, que era una
+  sensibilidad pensada para ver cuánto pesaba el rezago, **empeora** la espera de
+  P→C: pasa de 0,47 a 1,07 min con servicio base, y la del peaje de 0,47 a
+  0,91 min. Con servicio lento el efecto es mayor (+1,56 min en el peaje).
+- **Por qué, con los números al lado:** con la cola inicial, P→C abre **1,40**
+  casetas de media y acumula **53,4** carriles-intervalo; empezando vacío abre
+  **0,67** y se queda en **48,4**. La cola de arranque está cruzando el umbral de
+  apertura en `t = 0` y disparando la orden de abrir antes de que el pico llegue.
+  Sin ella, el umbral se cruza más tarde, y cuando la caseta abre cinco minutos
+  después, la cola ya creció.
+- **Y encima la pierde el que la necesita:** la caseta que P→C no pide se la
+  queda C→P, que pasa de 15,4 a 19,8 carriles-intervalo y baja su espera de 0,48
+  a 0,21 min. Es PEN-014 otra vez: con una sola caseta, C→P siempre tiene ρ por
+  encima del 0,60.
+- **Qué junta esto:** es PEN-011 (la regla es reactiva y el operador era
+  anticipativo) y PEN-014 (ρ favorece al sentido con menos casetas) actuando a la
+  vez, y medido.
+- **Lo que NO significa:** que convenga empezar con cola. Significa que la regla
+  **depende de que la congestión ya se haya manifestado** para reaccionar. Un
+  festivo que arranque con el peaje vacío y la demanda subiendo es el caso malo
+  para esta política, no el bueno.
+- **Mientras tanto:** se reporta tal cual. **No se tocó nada.** La sensibilidad
+  queda en la matriz con su explicación generada.
+- **Qué está abierto:** lo mismo que PEN-011, el disparador anticipativo por
+  tasa de llegadas, que la DEC-028 dejó para la fase 7. Este resultado le da
+  más peso: no es una mejora cosmética, es la diferencia entre cumplir y no.

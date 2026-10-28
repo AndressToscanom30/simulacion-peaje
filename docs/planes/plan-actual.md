@@ -1,15 +1,18 @@
 # Plan actual
 
-Estado: 27/10/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 28/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Fases 1, 2 y 3 cerradas.** Siguiente: fase 4 (escenarios y corridas por
-lotes). Antes de empezarla, leer en `docs/pendientes.md`: **PEN-013** (la
-demanda de C→P no se midió y el sustituto decide el resultado del reparto: es la
-incertidumbre dominante), PEN-008 (el modelo de cola única subestima la
-congestión del pico, así que las casetas que salgan de aquí son cota inferior),
-PEN-014 y PEN-015 (la reasignación por ρ favorece al sentido con menos casetas y
-casi no se activa en el pico).
+**Fases 1 a 4 cerradas.** Siguiente: fase 5 (interfaz de configuración y modo
+tiempo real). La base ya está puesta: todo valor del modelo es configurable
+(DEC-030), el escenario es un objeto serializable a JSON con validación en
+castellano, y `docs/parametros.md` es la especificación del formulario.
+
+Antes de empezarla, leer en `docs/pendientes.md`: **PEN-013** (la demanda de C→P
+no se midió y es la sensibilidad que más mueve el resultado), PEN-008 (el modelo
+de cola única subestima la congestión del pico, así que todo factor de quiebre
+es una cota superior), y **PEN-016** (la cola inicial le hace de aviso temprano a
+la regla: sin ella, P→C deja de cumplir).
 
 ## Fase 1 — Motor de un sentido con casetas fijas + validación ✅
 
@@ -83,15 +86,33 @@ por ρ es casi inerte en el pico (PEN-015) y cuando actúa favorece al sentido c
 menos casetas (PEN-014). Lo que decide el resultado es el sustituto de C→P, que
 no se midió (PEN-013).
 
-## Fase 4 — Escenarios y corridas por lotes
+## Fase 4 — Escenarios y corridas por lotes ✅
 
-- [ ] Escenario 1: operación real observada (validación)
-- [ ] Escenario 2: operación con la regla propuesta
-- [ ] Escenario 3: demanda alta con factores 1,10, 1,13 y 1,20, con la regla y
-      con 5 casetas fijas
-- [ ] Escenario 4: sensibilidad de demora, meta de espera y cola inicial 0
-- [ ] 30 réplicas con las mismas semillas (1…30) en todos los escenarios
-- [ ] Tabla comparativa de escenarios con intervalos de confianza
+- [x] Escenario como objeto declarativo serializable a JSON, con escenario base
+      más sobreescrituras, validación en castellano e importación/exportación
+- [x] Configurabilidad total: pozo, tope por sentido, servicio, umbrales,
+      demora, ventana, ρ, meta, réplicas y semillas (DEC-030)
+- [x] Tablas de umbrales que siguen al tope por sentido (DEC-031), reproduciendo
+      los valores del contexto para c de 1 a 5
+- [x] `docs/parametros.md`: los 30 parámetros con su valor por defecto leído del
+      escenario base, origen y rango. Especificación del formulario de la fase 5
+- [x] E1 operador; E2 regla sin y con reasignación
+- [x] E3 demanda alta con factores 1,10, 1,13 y 1,20, con la regla y con casetas
+      fijas, más un caso con reasignación
+- [x] E4 dieciocho sensibilidades: demora, meta de evaluación, umbrales ×0,6 y
+      ×1,4, ventana de cierre, cola inicial 0, factor de C→P y sustitutos
+- [x] E5 barrido de estrés de 1,00 a 1,60 con pozo de 6 y de 8
+- [x] 30 réplicas con las mismas semillas (1…30) en todos los escenarios
+- [x] Tabla comparativa de 160 escenarios con IC al 95 %
+      → `docs/resultados/fase4-escenarios.md`
+- [x] 198 pruebas en verde, con las regresiones de las fases 1, 2 y 3 intactas
+
+Resultado: con el servicio medido cumplen 33 de 80 escenarios; con el servicio
+lento, 4 de 80. El quiebre está en **×1,10** de demanda con el pozo de 6, y un
+pozo de 8 lo desplaza a **×1,55** solo si la regla puede mover las casetas (con
+casetas fijas no lo desplaza nada, porque el cuello es C→P clavado en 1). La
+sensibilidad que más mueve el resultado es el sustituto de C→P (+6,94 min), no
+ningún parámetro de la regla.
 
 ## Fase 5 — Interfaz de configuración y modo tiempo real
 

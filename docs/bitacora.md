@@ -2,6 +2,67 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-28 (2.ª intervención) — Fase 4: escenarios, corridas por lotes y configurabilidad total
+
+**Qué cambió:**
+
+- **Decisiones de la usuaria.** **DEC-028**: PEN-014 y PEN-015 quedan como
+  hallazgo, no se rediseña la reasignación, y el disparador anticipativo por
+  tasa de PEN-011 queda para la fase 7. **DEC-029**: la demanda de C→P en el
+  festivo pasa a ser el conteo del viernes (238 veh/h, medido en **ese**
+  sentido) × un factor configurable; supera solo el valor por defecto de la
+  sección 7, con nota en el contexto que remite a la decisión. **DEC-030**:
+  configurabilidad total.
+- **`src/config/escenario.js`:** un escenario es un objeto declarativo
+  serializable a JSON, sin funciones. Escenario base más sobreescrituras,
+  `validarEscenario` que devuelve todos los problemas juntos y en castellano, y
+  JSON de ida y vuelta sin pérdida.
+- **DEC-031:** las tablas de umbrales siguen al tope por sentido con dos
+  fórmulas rotuladas, `abrir(c) = 5c − 1` y `cerrar(c) = ⌊abrir(c−1)/2⌋`, que
+  **reproducen exactamente los ocho valores del contexto** para `c` de 1 a 5 y
+  los extienden hacia arriba.
+- **Auditoría de números en la lógica:** `src/motor/` no tenía ninguno del
+  modelo, solo constantes de los métodos. Se añadieron las conversiones de
+  unidades como constantes exportadas, las etiquetas de los regímenes se derivan
+  de sus propios números, y el árbitro del peaje acepta por configuración el
+  servicio y la capacidad nominales.
+- **`docs/parametros.md`** (`npm run parametros`): los 30 parámetros con
+  significado, unidad, **valor por defecto leído del escenario base**, origen y
+  rango. Es la especificación del formulario de la fase 5.
+- **Catálogo de 160 escenarios** (80 casos × 2 regímenes) en
+  `src/config/escenarios.js`, y **`src/corridas.js`** como runner que traduce
+  escenarios a configuración del motor.
+- **198 pruebas** (75 nuevas). Encontraron dos fallos reales, corregidos en
+  **DEC-032**: en modo programado un sentido podía abrir más casetas que su tope
+  (con tope 2 y las casetas iniciales del base tomaba 4 del pozo), y la
+  validación de umbrales usaba `valor >= 0`, que en JavaScript acepta `null`.
+- **`scripts/fase4.js`** (`npm run fase4`) →
+  `docs/resultados/fase4-escenarios.md`.
+
+**Qué muestra la matriz:** con el servicio medido cumplen **33 de 80**
+escenarios; con el servicio lento, **4 de 80**. El quiebre está en **×1,10** de
+demanda con el pozo de 6 (las dos configuraciones de control), y con servicio
+lento ya no se cumple ni al factor 1,0. Un **pozo de 8 desplaza el quiebre a
+×1,55 solo si la regla puede mover las casetas**: con casetas fijas no lo
+desplaza nada, porque el cuello de botella es C→P clavado en 1 caseta y dar más
+casetas a P→C no lo arregla. La sensibilidad que más mueve el resultado es el
+**sustituto de C→P** (+6,94 min con domingoCP), por encima de cualquier
+parámetro de la regla; la demora apenas mueve 0,15 min. La reasignación por ρ
+sigue casi inerte también con demanda alta, lo que confirma PEN-015.
+
+**Hallazgo nuevo (PEN-016):** quitar la cola inicial del festivo **empeora** la
+espera de P→C, de 0,47 a 1,07 min. La cola de arranque le hacía de aviso
+temprano a una regla que es reactiva: sin ella P→C abre 0,67 casetas en vez de
+1,40, y la que no pide se la queda el contraflujo. Es PEN-011 y PEN-014
+actuando a la vez, y medido.
+
+**Qué quedó a medias:** nada de la fase 4.
+
+**Qué sigue:** fase 5, la interfaz de configuración y el modo tiempo real. La
+base está puesta: el escenario es serializable y validable, `parametros.md` es
+la especificación del formulario, y `simularPeaje` ya acepta un `observador`
+que se llama tras cada evento, que es lo que necesita el modo tiempo real.
+
 ## 2026-10-28 — Fase 3: reparto de casetas entre sentidos
 
 **Qué cambió:**
