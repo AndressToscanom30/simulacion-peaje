@@ -17,4 +17,10 @@ export { simularPeaje } from './peaje.js';
 export { crearSentido, validarConfiguracionSentido } from './sentido.js';
 export { media, desviacion, minimo, maximo, semiamplitudIc95, resumir } from './estadisticas.js';
 export { erlangB, erlangC, mmc, mmcDeConteo, moda } from './mmc.js';
-export { correrReplicas, resumirLote, correrYResumir, correrYResumirPeaje } from './lotes.js';
+export {
+  correrReplicas,
+  resumirLote,
+  correrYResumir,
+  correrYResumirPeaje,
+  resumirLotePeaje,
+} from './lotes.js';

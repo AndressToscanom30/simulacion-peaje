@@ -13,7 +13,9 @@
     "simular": "node scripts/simular.js",
     "diagnostico": "node scripts/diagnostico-festivo.js",
     "fase2": "node scripts/fase2.js",
-    "fase3": "node scripts/fase3.js"
+    "fase3": "node scripts/fase3.js",
+    "parametros": "node scripts/parametros.js",
+    "fase4": "node scripts/fase4.js"
   },
   "dependencies": {
     "react": "18.3.1",

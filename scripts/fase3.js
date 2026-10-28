@@ -33,6 +33,15 @@ import {
   REGIMENES_SERVICIO,
 } from '../src/config/escenarios.js';
 
+/**
+ * El informe de la fase 3 se publicó con `domingoPC` como sustituto de C→P, que
+ * era el valor por defecto de entonces. La DEC-029 cambió ese valor por defecto
+ * a `viernes`, así que aquí se **fija explícitamente** para que este informe
+ * siga siendo reproducible. La comparación con el sustituto nuevo está en la
+ * fase 4.
+ */
+const SUSTITUTO_FASE3 = 'domingoPC';
+
 const AQUI = dirname(fileURLToPath(import.meta.url));
 const SALIDA = resolve(AQUI, '..', 'docs', 'resultados', 'fase3-reparto.md');
 
@@ -59,7 +68,7 @@ for (const claveServicio of ['base', 'lento']) {
     servicio,
     nombre: 'operador',
     descripcion: 'P→C copia las casetas observadas; C→P fijo en 1 caseta',
-    sentidos: escenarioFestivo({ control: 'operador', servicio }),
+    sentidos: escenarioFestivo({ control: 'operador', servicio, sustituto: SUSTITUTO_FASE3 }),
     peaje: {},
   });
   casos.push({
@@ -67,7 +76,7 @@ for (const claveServicio of ['base', 'lento']) {
     servicio,
     nombre: 'regla sin reasignación',
     descripcion: 'la regla por cola en los dos sentidos; el pozo es solo almacén',
-    sentidos: escenarioFestivo({ control: 'regla', servicio }),
+    sentidos: escenarioFestivo({ control: 'regla', servicio, sustituto: SUSTITUTO_FASE3 }),
     peaje: { reasignacionActiva: false },
   });
   casos.push({
@@ -75,7 +84,7 @@ for (const claveServicio of ['base', 'lento']) {
     servicio,
     nombre: 'regla con reasignación',
     descripcion: 'la regla más el traspaso por ρ > 0,60 al liberarse una caseta',
-    sentidos: escenarioFestivo({ control: 'regla', servicio }),
+    sentidos: escenarioFestivo({ control: 'regla', servicio, sustituto: SUSTITUTO_FASE3 }),
     peaje: { reasignacionActiva: true },
   });
 
@@ -89,6 +98,7 @@ for (const claveServicio of ['base', 'lento']) {
       sentidos: escenarioFestivo({
         control: 'regla',
         servicio,
+        sustituto: SUSTITUTO_FASE3,
         demoraAperturaSegundos: demoraMinutos * SEGUNDOS_POR_MINUTO,
       }),
       peaje: { reasignacionActiva: true },
@@ -99,7 +109,7 @@ for (const claveServicio of ['base', 'lento']) {
     servicio,
     nombre: 'ofrecerPozoPorRho',
     descripcion: 'como (c) pero ofreciendo por ρ las casetas ya libres del pozo',
-    sentidos: escenarioFestivo({ control: 'regla', servicio }),
+    sentidos: escenarioFestivo({ control: 'regla', servicio, sustituto: SUSTITUTO_FASE3 }),
     peaje: { reasignacionActiva: true, ofrecerPozoPorRho: true },
   });
   casos.push({
@@ -204,7 +214,7 @@ w('- **regla con reasignación**: igual, más el traspaso directo al otro sentid
 w('  si tiene ρ > 0,60 y le caben casetas (DEC-008).');
 w();
 w('La demanda de C→P en el festivo **no se midió** (contexto, sección 7): va el');
-w(`conteo del domingo 1:00–2:00 p. m. (domingoPC, ${conteos.domingoPC.llegadas.reduce((a, b) => a + b, 0)} veh/h), que además se`);
+w(`conteo del domingo 1:00–2:00 p. m. (domingoPC, ${conteos[SUSTITUTO_FASE3].llegadas.reduce((a, b) => a + b, 0)} veh/h), que además se`);
 w('tomó en el sentido contrario al que sustituye. **Todo el reparto cuelga de ese');
 w('supuesto** (PEN-013), y por eso hay una sensibilidad que lo cambia.');
 w();
@@ -468,7 +478,7 @@ for (const claveServicio of ['base', 'lento']) {
     w();
     w('La razón está en la definición de ρ, que divide por `c`: con **1 caseta**,');
     w(
-      `C→P tiene ρ = ${n(conteos[p.sustitutoFestivoCP.conteo].llegadas.reduce((a, b) => a + b, 0) / 12 / capacidadPorCaseta, 2)}, por encima del 0,60, aunque su demanda sea una fracción`,
+      `C→P tiene ρ = ${n(conteos[SUSTITUTO_FASE3].llegadas.reduce((a, b) => a + b, 0) / p.tiempo.intervalos / capacidadPorCaseta, 2)}, por encima del 0,60, aunque su demanda sea una fracción`,
     );
     w('de la de P→C. Así que cada vez que P→C libera una caseta, C→P cumple la');
     w('condición y se la lleva; y como C→P casi nunca libera (tiene 1 o 2), el');
@@ -502,7 +512,7 @@ w();
 {
   const refBase = busca('comparacion', 'base', 'regla con reasignación').resumen;
   const altBase = busca('sensibilidad', 'base', 'sustituto domingoCP').resumen;
-  const totalDomingoPC = conteos.domingoPC.llegadas.reduce((a, b) => a + b, 0);
+  const totalDomingoPC = conteos[SUSTITUTO_FASE3].llegadas.reduce((a, b) => a + b, 0);
   const totalDomingoCP = conteos.domingoCP.llegadas.reduce((a, b) => a + b, 0);
 
   w('La demanda de C→P en el festivo no se midió (PEN-013). Cambiar el conteo');

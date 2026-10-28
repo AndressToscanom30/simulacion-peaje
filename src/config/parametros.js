@@ -8,8 +8,10 @@
 
 import { DURACION_INTERVALO_SEGUNDOS, INTERVALOS_POR_CONTEO } from './datos.js';
 
-const SEGUNDOS_POR_MINUTO = 60;
-const MINUTOS_POR_HORA = 60;
+/** Conversiones de unidades. No son parámetros del modelo: son aritmética. */
+export const SEGUNDOS_POR_MINUTO = 60;
+export const MINUTOS_POR_HORA = 60;
+export const SEGUNDOS_POR_HORA = SEGUNDOS_POR_MINUTO * MINUTOS_POR_HORA;
 
 /** Horizonte de una corrida, en segundos: la hora observada. */
 export const HORIZONTE_SEGUNDOS = DURACION_INTERVALO_SEGUNDOS * INTERVALOS_POR_CONTEO;
@@ -88,6 +90,19 @@ export const parametros = {
     abrirSiColaMayorQue: { 1: 4, 2: 9, 3: 14, 4: 19, 5: null },
     cerrarSiColaMenorQue: { 1: null, 2: 2, 3: 4, 4: 7, 5: 9 },
 
+    /**
+     * Coeficientes con los que se generan las tablas de arriba para topes por
+     * sentido distintos de 5 (DEC-031). Reproducen exactamente los ocho valores
+     * del contexto para c de 1 a 5:
+     *   abrir(c)  = abrirPendiente · c + abrirDesplazamiento = 5c − 1
+     *   cerrar(c) = ⌊abrir(c − 1) / divisorCierre⌋
+     */
+    formulaUmbrales: {
+      abrirPendiente: 5,
+      abrirDesplazamiento: -1,
+      divisorCierre: 2,
+    },
+
     /** Demora entre decidir abrir y tener la caseta operando (caso base 5 min). */
     demoraAperturaSegundos: 5 * SEGUNDOS_POR_MINUTO,
     /** Sensibilidad de la demora: 0, 5 y 10 min. */
@@ -144,13 +159,19 @@ export const parametros = {
 
   /**
    * Demanda del festivo en Cúcuta→Pamplona: **no se midió** (contexto,
-   * sección 7). Se sustituye por el conteo del domingo 1:00–2:00 p. m.
-   * (domingoPC, 195 veh/h), arrancando con 1 caseta. Ver PEN-013.
+   * sección 7). Por defecto se sustituye por el conteo del **viernes
+   * 02/10/2026** (`viernes`, 238 veh/h) × un factor configurable, porque ese sí
+   * se midió en el sentido C→P (DEC-029). Arranca con 1 caseta.
+   *
+   * `domingoPC` (195 veh/h, el sustituto anterior) y `domingoCP` (451 veh/h)
+   * quedan como alternativas de sensibilidad. Ver PEN-013.
    */
   sustitutoFestivoCP: {
-    conteo: 'domingoPC',
+    conteo: 'viernes',
+    factorDemanda: 1,
     colaInicial: 0,
     casetasIniciales: 1,
+    alternativas: ['domingoPC', 'domingoCP'],
   },
 
   // ------------------------------------------------------------- corridas ---
@@ -199,7 +220,7 @@ export function tasaServicioVehSegundo(servicio = parametros.servicio) {
 
 /** Tasa de servicio μ por caseta, en veh/h (≈ 297,48). */
 export function tasaServicioVehHora(servicio = parametros.servicio) {
-  return (MINUTOS_POR_HORA * SEGUNDOS_POR_MINUTO) / servicio.mediaObservadaSegundos;
+  return SEGUNDOS_POR_HORA / servicio.mediaObservadaSegundos;
 }
 
 /** Capacidad de una caseta en un intervalo de 5 min (≈ 24,8 veh). */

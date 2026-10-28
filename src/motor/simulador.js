@@ -63,9 +63,10 @@ export function simularSentido(config) {
    * quién competir, así que reservar es tomar del pozo y liberar es devolver.
    */
   const arbitro = {
-    capacidadNominalPorCaseta: capacidadNominal(),
-    servicioNominalSegundos: parametros.servicio.mediaObservadaSegundos,
-    ventanaRhoSegundos: parametros.regla.ventanaRhoSegundos,
+    capacidadNominalPorCaseta: config.capacidadNominalPorCaseta ?? capacidadNominal(),
+    servicioNominalSegundos:
+      config.servicioNominalSegundos ?? parametros.servicio.mediaObservadaSegundos,
+    ventanaRhoSegundos: config.ventanaRhoSegundos ?? parametros.regla.ventanaRhoSegundos,
     reservar: (id) => pozo.reservar(id),
     liberar: (caseta) => pozo.devolver(caseta),
   };

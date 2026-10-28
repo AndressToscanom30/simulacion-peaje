@@ -476,3 +476,113 @@ tomaron durante el desarrollo.
   usar el servicio real en ρ y en la espera estimada; contar la cola inicial
   como demanda reciente; y presentar la suma de colas máximas como cola
   simultánea.
+
+## DEC-028 — PEN-014 y PEN-015 quedan como hallazgo: no se rediseña la reasignación
+
+- **Fecha:** 28/10/2026
+- **Decisión de la usuaria.** Los dos hallazgos de la fase 3 sobre la
+  reasignación por ρ se **documentan y se dejan como están**:
+  - **PEN-014** (ρ divide por `c`, así que favorece al sentido con menos
+    casetas) y **PEN-015** (en el pico casi no se activa, porque nadie libera
+    casetas) **no reabren la DEC-008**. La condición de reasignación sigue
+    siendo ρ > 0,60 tal cual, sin mirar cola ni espera estimada del que recibe.
+  - El **disparador anticipativo por tasa de llegadas** de PEN-011 (abrir la
+    2.ª en 21 llegadas/5 min, la 3.ª en 46, la 4.ª en 70, la 5.ª en 95) queda
+    para la **fase 7**, como material de interpretación. **No se implementa.**
+- **Motivo:** son hallazgos del estudio, no defectos a corregir. Rediseñar la
+  regla a mitad del trabajo cambiaría el objeto de estudio y dejaría sin sentido
+  las comparaciones ya publicadas de las fases 2 y 3. Lo que aportan es
+  precisamente mostrar los límites de la política del contexto.
+- **Qué implica para los informes:** la reasignación se sigue corriendo con y
+  sin activar, para que su efecto (o su inercia) quede a la vista en cada
+  escenario. Que salga casi inerte es un resultado, no un fallo.
+- **Descarta:** añadir cola o espera estimada a la condición de reasignación;
+  permitir quitar una caseta a un sentido para dársela al otro; y añadir el
+  disparador por tasa de llegadas antes de la fase 7.
+
+## DEC-029 — La demanda de C→P en el festivo pasa a ser `viernes` × factor configurable
+
+- **Fecha:** 28/10/2026
+- **Decisión de la usuaria.** La demanda de Cúcuta→Pamplona en el festivo, que
+  **no se midió**, se sustituye por defecto por el conteo del **viernes
+  02/10/2026 (`viernes`, 238 veh/h)** multiplicado por un **factor
+  configurable**, por defecto **1,0**. Cola inicial 0 y 1 caseta inicial, como
+  antes.
+- **Supera:** **solo el valor por defecto** del sustituto que fijaba la sección 7
+  del contexto (que era `domingoPC`, 195 veh/h). Todo lo demás de la sección 7
+  sigue en pie.
+- **Motivo:** `viernes` se midió **en el sentido Cúcuta→Pamplona**, que es justo
+  el que sustituye; `domingoPC` se había medido en Pamplona→Cúcuta, el sentido
+  contrario (PEN-013). Cambiar al conteo del sentido correcto quita un supuesto
+  de los dos que había. Sigue siendo un supuesto de similitud entre un viernes
+  normal y el contraflujo de un festivo, y por eso el factor es configurable: no
+  hay razón para creer que las dos demandas sean idénticas.
+- **Alternativas que quedan como sensibilidad:** `domingoPC` (195 veh/h, el
+  sustituto anterior) y `domingoCP` (451 veh/h, un domingo en el sentido
+  correcto). Las dos se corren en la fase 4 y van rotuladas como sensibilidad.
+- **Trazabilidad:** se añadió una nota en la sección 7 de
+  `docs/contexto/contexto-inicial.md` que remite a esta decisión, sin cambiar
+  ningún valor del documento. PEN-013 queda actualizado.
+- **Descarta:** `domingoPC` como valor por defecto; y dar por hecho que la
+  demanda del contraflujo del festivo es exactamente la de un viernes.
+
+## DEC-030 — Configurabilidad total: todo valor del modelo es un parámetro
+
+- **Fecha:** 28/10/2026
+- **Decisión de la usuaria.** **Todo** valor del modelo debe poder configurarse,
+  incluidos los que hasta ahora eran estructurales:
+  - tamaño del pozo (más de 6 casetas),
+  - tope por sentido (más de 5),
+  - factores de demanda por sentido,
+  - media y forma del servicio,
+  - umbrales de abrir y cerrar, demora y ventana de cierre,
+  - ρ de reasignación, meta y máximo tolerable,
+  - réplicas y semillas.
+- **Para qué:** permite **escenarios de estrés por configuración** (¿y si el
+  peaje tuviera 8 casetas? ¿y si el tope por sentido fuera 7?) y es la base del
+  formulario de configuración de la fase 5, que no puede pedirle al usuario un
+  valor que el motor tenga escrito dentro.
+- **Los valores por defecto siguen siendo los del contexto.** Configurable no
+  significa cambiado: sin tocar nada, el modelo es el de siempre, y las pruebas
+  de regresión de las fases 1, 2 y 3 lo garantizan.
+- **Cómo se cumple:** un escenario es un objeto declarativo serializable a JSON
+  (`src/config/escenario.js`), con escenario base más sobreescrituras, validación
+  con mensajes en español, y un catálogo de parámetros en `docs/parametros.md`.
+  Ningún número del modelo queda escrito dentro de `src/motor/` ni de
+  `scripts/`.
+- **Descarta:** constantes del modelo escritas dentro de la lógica; un pozo de 6
+  o un tope de 5 fijados en el código; y escenarios que solo se puedan definir
+  escribiendo JavaScript.
+
+## DEC-031 — Extensión de las tablas de umbrales para topes mayores de 5 casetas
+
+- **Fecha:** 28/10/2026
+- **Problema:** la DEC-030 permite configurar el tope por sentido por encima de
+  5, pero las tablas de umbrales del contexto (sección 4) solo llegan a 5
+  casetas. Con un tope de 7 no hay umbral definido para `c` = 5 ni 6.
+- **Decisión:** las tablas se generan con dos fórmulas, **rotuladas y
+  editables**, que **reproducen exactamente los ocho valores del contexto** para
+  `c` de 1 a 5 y los extienden hacia arriba:
+  - **Abrir otra si la cola supera:** `abrir(c) = 5c − 1`
+    → 4, 9, 14, 19 para `c` = 1…4, y 24, 29, 34… en adelante. En el tope, `null`.
+  - **Cerrar una si la cola baja de:** `cerrar(c) = ⌊abrir(c − 1) / 2⌋`
+    → 2, 4, 7, 9 para `c` = 2…5, y 12, 14… en adelante. En el mínimo, `null`.
+- **Por qué estas dos y no otras:** no se eligieron para que cuadraran, se
+  **derivaron de los valores del contexto y los reproducen sin excepción**:
+  - abrir: 5·1−1 = 4, 5·2−1 = 9, 5·3−1 = 14, 5·4−1 = 19. Los cuatro exactos.
+  - cerrar: ⌊4/2⌋ = 2, ⌊9/2⌋ = 4, ⌊14/2⌋ = 7, ⌊19/2⌋ = 9. Los cuatro exactos.
+  La primera dice que cada caseta extra se justifica con unos 5 vehículos más de
+  cola, que es coherente con la derivación M/M/c de la sección 4. La segunda es
+  la histéresis: se cierra cuando la cola baja a la mitad del umbral con el que
+  se habría abierto esa misma caseta, así que abrir y cerrar no se solapan.
+- **Lo que esto NO cambia:** **ningún valor de `c` = 1 a 5.** Con el tope por
+  defecto de 5, las tablas generadas son idénticas a las de la DEC-006, y las
+  pruebas de regresión de las fases 2 y 3 lo comprueban.
+- **Editable:** las tablas se pueden dar a mano en el escenario y entonces las
+  fórmulas no se usan. Un escenario con tope mayor de 5 y tablas escritas a mano
+  es válido; lo que no es válido es un tope sin umbral para algún `c`.
+- **Rotulado:** cualquier informe que corra con tope mayor de 5 debe decir que
+  los umbrales por encima de 5 son **extrapolados**, no del contexto.
+- **Descarta:** repetir el umbral de 5 casetas para todos los topes mayores;
+  dejar `null` (que impediría abrir más allá de 5 con tope 7); e inventar
+  valores sin relación con los del contexto.

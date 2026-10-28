@@ -1,0 +1,337 @@
+/**
+ * Catálogo de los parámetros del modelo: qué significa cada uno, en qué unidad,
+ * de dónde sale y qué rango admite (DEC-030).
+ *
+ * Los **valores por defecto no están aquí**: se leen del escenario base, para
+ * que este catálogo no pueda quedar desfasado. Lo usa `npm run parametros` para
+ * generar `docs/parametros.md`, y será la base del formulario de la fase 5.
+ *
+ * `ruta` es la ruta dentro del objeto escenario, tal como la pediría un
+ * formulario. `origen` dice si el valor viene del contexto o de una decisión.
+ *
+ * JS puro: no importa React, ni DOM, ni Three.js.
+ */
+
+export const GRUPOS = {
+  sentidos: 'Demanda por sentido',
+  servicio: 'Servicio',
+  pozo: 'Pozo de casetas',
+  regla: 'Regla de apertura y cierre',
+  tiempo: 'Tiempo',
+  desempeno: 'Criterio de desempeño',
+  corridas: 'Corridas',
+};
+
+/**
+ * Un parámetro por entrada. `rango` es texto: describe qué se acepta, no una
+ * validación (la validación está en `validarEscenario`).
+ */
+export const CATALOGO_PARAMETROS = [
+  // --------------------------------------------------- demanda por sentido ---
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].conteo',
+    nombre: 'Conteo base',
+    significado:
+      'Qué conteo de campo da las llegadas del sentido, intervalo por intervalo.',
+    unidad: '—',
+    origen: 'Contexto, sección 10',
+    rango: 'viernes, domingoCP, domingoPC, festivoPC',
+  },
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].factorDemanda',
+    nombre: 'Factor de demanda',
+    significado:
+      'Multiplica la tasa de llegadas de todos los intervalos del sentido. 1 = la demanda contada.',
+    unidad: 'adimensional',
+    origen: 'Contexto, secciones 3 y 7; DEC-029 para C→P',
+    rango: '> 0',
+  },
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].colaInicial',
+    nombre: 'Cola inicial',
+    significado:
+      'Vehículos ya esperando en t = 0. Su espera cuenta desde 0 y no entran en la ventana de ρ.',
+    unidad: 'vehículos',
+    origen: 'Contexto, sección 6; DEC-018 y DEC-027 punto 8',
+    rango: 'entero ≥ 0',
+  },
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].casetasIniciales',
+    nombre: 'Casetas iniciales',
+    significado: 'Casetas abiertas en t = 0 en ese sentido.',
+    unidad: 'casetas',
+    origen: 'Contexto, sección 6',
+    rango: 'entre el mínimo y el tope por sentido',
+  },
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].modo',
+    nombre: 'Modo de control de c(t)',
+    significado:
+      '"programado" copia las casetas del conteo (o las fijas); "regla" las decide con la regla por cola.',
+    unidad: '—',
+    origen: 'Contexto, sección 4',
+    rango: 'programado | regla',
+  },
+  {
+    grupo: 'sentidos',
+    ruta: 'sentidos[i].casetasFijas',
+    nombre: 'Casetas fijas por intervalo',
+    significado:
+      'En modo programado, sustituye las casetas observadas por un arreglo propio. null = las observadas.',
+    unidad: 'casetas por intervalo',
+    origen: 'Contexto, sección 7 (escenario de 5 casetas fijas)',
+    rango: 'null o un arreglo con tantas posiciones como intervalos',
+  },
+
+  // ------------------------------------------------------------- servicio ---
+  {
+    grupo: 'servicio',
+    ruta: 'servicio.gammaForma',
+    nombre: 'Forma de la gamma (k)',
+    significado:
+      'Parámetro de forma del tiempo de atención. Fija el coeficiente de variación: CV = 1/√k.',
+    unidad: 'adimensional',
+    origen: 'Contexto, sección 3; DEC-004',
+    rango: '> 0',
+  },
+  {
+    grupo: 'servicio',
+    ruta: 'servicio.gammaEscalaSegundos',
+    nombre: 'Escala de la gamma (θ)',
+    significado:
+      'Parámetro de escala del tiempo de atención. La media que se genera es k × θ.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 3; DEC-004. Para el servicio lento, DEC-025',
+    rango: '> 0',
+  },
+  {
+    grupo: 'servicio',
+    ruta: 'servicio.mediaNominalSegundos',
+    nombre: 'Tiempo de atención nominal',
+    significado:
+      'El que la regla usa para ρ y para la espera estimada. Es el que el operador conoce, así que NO cambia en el escenario de servicio lento.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 3; DEC-027 punto 7',
+    rango: '> 0',
+  },
+  {
+    grupo: 'servicio',
+    ruta: 'servicio.regimen',
+    nombre: 'Nombre del régimen',
+    significado: 'Etiqueta del régimen de servicio, solo para los informes.',
+    unidad: '—',
+    origen: 'DEC-025',
+    rango: 'texto libre',
+  },
+
+  // ----------------------------------------------------------------- pozo ---
+  {
+    grupo: 'pozo',
+    ruta: 'pozo.total',
+    nombre: 'Casetas del pozo',
+    significado:
+      'Casetas de efectivo que los dos sentidos se reparten. De aquí sale que c1 + c2 nunca pase de este número.',
+    unidad: 'casetas',
+    origen: 'Contexto, sección 2; DEC-002. Configurable por DEC-030',
+    rango: 'entero ≥ 2 × mínimo por sentido',
+  },
+  {
+    grupo: 'pozo',
+    ruta: 'pozo.minimoPorSentido',
+    nombre: 'Mínimo por sentido',
+    significado: 'Casetas que un sentido nunca baja de tener abiertas.',
+    unidad: 'casetas',
+    origen: 'Contexto, sección 2; DEC-002',
+    rango: 'entero ≥ 1 y ≤ tope por sentido',
+  },
+  {
+    grupo: 'pozo',
+    ruta: 'pozo.maximoPorSentido',
+    nombre: 'Tope por sentido',
+    significado:
+      'Casetas que un sentido nunca pasa de tener abiertas. Por encima de 5 los umbrales son extrapolados (DEC-031).',
+    unidad: 'casetas',
+    origen: 'Contexto, sección 2; DEC-002. Configurable por DEC-030',
+    rango: 'entero entre el mínimo y el tamaño del pozo',
+  },
+
+  // ---------------------------------------------------------------- regla ---
+  {
+    grupo: 'regla',
+    ruta: 'regla.abrirSiColaMayorQue',
+    nombre: 'Umbrales de apertura',
+    significado:
+      'Con c casetas abiertas, se abre otra si la cola supera este valor. null en el tope. Si se deja en null entero, se generan con la fórmula 5c − 1.',
+    unidad: 'vehículos, por número de casetas',
+    origen: 'Contexto, sección 4; DEC-006. Extensión por DEC-031',
+    rango: 'enteros ≥ 0, uno por cada c del mínimo al tope − 1',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.cerrarSiColaMenorQue',
+    nombre: 'Umbrales de cierre',
+    significado:
+      'Con c casetas abiertas, se cierra una si la cola baja de este valor. null en el mínimo. Si se deja en null, se generan con ⌊abrir(c − 1)/2⌋.',
+    unidad: 'vehículos, por número de casetas',
+    origen: 'Contexto, sección 4; DEC-006. Extensión por DEC-031',
+    rango: 'enteros ≥ 0, uno por cada c del mínimo + 1 al tope',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.factorUmbrales',
+    nombre: 'Factor de los umbrales',
+    significado:
+      'Multiplica los dos umbrales generados, para sensibilidad. Se redondea al entero, porque la cola son vehículos.',
+    unidad: 'adimensional',
+    origen: 'DEC-030 (no está en el contexto; es solo sensibilidad)',
+    rango: '> 0',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.demoraAperturaSegundos',
+    nombre: 'Demora de apertura',
+    significado:
+      'Tiempo entre ordenar la apertura y tener la caseta operando. La caseta queda reservada desde que se ordena.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 4; DEC-007. Sensibilidad 0, 5 y 10 min',
+    rango: '≥ 0',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.ventanaCierreSegundos',
+    nombre: 'Ventana de cierre',
+    significado:
+      'La cola tiene que estar bajo el umbral este tiempo seguido para cerrar una caseta. Se reinicia si sube o si cambia c.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 4; DEC-007 y DEC-026 punto 3',
+    rango: '≥ 0',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.rhoReasignacion',
+    nombre: 'ρ de reasignación',
+    significado:
+      'Una caseta liberada pasa al otro sentido si su ρ supera este valor y le caben casetas.',
+    unidad: 'adimensional',
+    origen: 'Contexto, sección 4; DEC-008',
+    rango: '≥ 0',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.ventanaRhoSegundos',
+    nombre: 'Ventana móvil de ρ',
+    significado: 'Cuánto hacia atrás se cuentan las llegadas para calcular ρ.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 4 ("últimos 5 min")',
+    rango: '> 0',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.reasignacionActiva',
+    nombre: 'Reasignación activada',
+    significado:
+      'Si una caseta liberada puede pasar al otro sentido por ρ. Apagada, el pozo es solo almacén.',
+    unidad: 'sí/no',
+    origen: 'DEC-008. El valor por defecto apagado, por PEN-015',
+    rango: 'true | false',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.ofrecerPozoPorRho',
+    nombre: 'Ofrecer el pozo libre por ρ',
+    significado:
+      'Si una caseta que ya estaba libre se ofrece por ρ sin esperar a que otra se libere. La DEC-008 literal es false.',
+    unidad: 'sí/no',
+    origen: 'DEC-027 punto 11 (solo sensibilidad)',
+    rango: 'true | false',
+  },
+  {
+    grupo: 'regla',
+    ruta: 'regla.esperaDesempateSegundos',
+    nombre: 'Espera del desempate',
+    significado:
+      'Cuando los dos sentidos piden caseta, gana el que supere esta espera estimada, empezando por el peor.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 4; DEC-008 y DEC-027 punto 9',
+    rango: '> 0',
+  },
+
+  // --------------------------------------------------------------- tiempo ---
+  {
+    grupo: 'tiempo',
+    ruta: 'tiempo.duracionIntervaloSegundos',
+    nombre: 'Duración del intervalo',
+    significado:
+      'Cada tramo de conteo. Fija la tasa de llegadas por tramo y la unidad de los carriles-intervalo.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 10',
+    rango: '> 0',
+  },
+  {
+    grupo: 'tiempo',
+    ruta: 'tiempo.intervalos',
+    nombre: 'Intervalos del horizonte',
+    significado:
+      'Tramos que dura una réplica. El horizonte es intervalos × duración; con 12 × 300 s es la hora observada.',
+    unidad: 'intervalos',
+    origen: 'Contexto, secciones 6 y 10',
+    rango: 'entero ≥ 1, igual al largo de los conteos',
+  },
+
+  // ------------------------------------------------------------ desempeño ---
+  {
+    grupo: 'desempeno',
+    ruta: 'desempeno.metaWqSegundos',
+    nombre: 'Meta de espera',
+    significado:
+      'Espera media en cola que se busca. Se evalúa en cada sentido. Solo afecta al veredicto, no a la regla.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 5; DEC-009',
+    rango: '> 0 y ≤ máximo tolerable',
+  },
+  {
+    grupo: 'desempeno',
+    ruta: 'desempeno.maximoTolerableWqSegundos',
+    nombre: 'Máximo tolerable',
+    significado:
+      'Espera por encima de la cual un intervalo cuenta como incumplido. Sí entra en el motor, que cuenta esos intervalos.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 5; DEC-009',
+    rango: '> 0',
+  },
+  {
+    grupo: 'desempeno',
+    ruta: 'desempeno.fraccionIntervalosSobreMaximoAceptada',
+    nombre: 'Fracción de intervalos aceptada',
+    significado: 'Proporción de intervalos que se acepta por encima del máximo tolerable.',
+    unidad: 'fracción',
+    origen: 'Contexto, sección 5; DEC-009',
+    rango: 'entre 0 y 1',
+  },
+
+  // ------------------------------------------------------------- corridas ---
+  {
+    grupo: 'corridas',
+    ruta: 'corridas.replicas',
+    nombre: 'Réplicas',
+    significado: 'Corridas independientes del escenario, para promediar.',
+    unidad: 'réplicas',
+    origen: 'Contexto, sección 6; DEC-010',
+    rango: 'entero ≥ 1',
+  },
+  {
+    grupo: 'corridas',
+    ruta: 'corridas.primeraSemilla',
+    nombre: 'Primera semilla',
+    significado:
+      'Semilla de la primera réplica; las demás son consecutivas. Las mismas semillas en todos los escenarios dan números aleatorios comunes.',
+    unidad: '—',
+    origen: 'Contexto, sección 6; DEC-010 y DEC-011',
+    rango: 'entero',
+  },
+];

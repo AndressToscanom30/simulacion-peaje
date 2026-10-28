@@ -71,6 +71,8 @@ Se dispara por **cola observada** (total de vehículos esperando en todas las ca
 
 Demanda de Cúcuta→Pamplona en el festivo: **no se midió**; se usa el conteo del domingo 1:00–2:00 p. m. (195 veh/h) como sustituto. Arranca con 1 caseta.
 
+> **Nota del 28/10/2026 (DEC-029).** El sustituto por defecto pasó a ser el conteo del **viernes 02/10/2026 (238 veh/h) × un factor configurable**, porque ese sí se midió en el sentido Cúcuta→Pamplona. El domingo 1:00–2:00 p. m. (195 veh/h) se había medido en Pamplona→Cúcuta, el sentido contrario. Queda como alternativa de sensibilidad junto con domingoCP (451 veh/h). Esto cambia **solo el valor por defecto**; el resto de esta sección sigue igual. Ver `docs/decisiones/registro.md` (DEC-029) y PEN-013.
+
 ## 8. Limitaciones declaradas
 
 - Los 50 tiempos de atención son de un solo sentido (Cúcuta→Pamplona) y se usan en todos los casos.

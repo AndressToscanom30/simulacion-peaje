@@ -11,12 +11,14 @@ import { resumir } from './estadisticas.js';
 /**
  * Corre una réplica por semilla.
  *
- * @param {object} configuracionBase config de `simularSentido` sin `semilla`
+ * @param {object} configuracionBase configuración sin `semilla`
  * @param {number[]} semillas
+ * @param {(config: object) => object} [simular=simularSentido] motor a usar:
+ *   `simularSentido` para un sentido, `simularPeaje` para los dos
  * @returns {object[]} una réplica por semilla
  */
-export function correrReplicas(configuracionBase, semillas) {
-  return semillas.map((semilla) => simularSentido({ ...configuracionBase, semilla }));
+export function correrReplicas(configuracionBase, semillas, simular = simularSentido) {
+  return semillas.map((semilla) => simular({ ...configuracionBase, semilla }));
 }
 
 /** Medidas escalares que se resumen entre réplicas. */
@@ -127,7 +129,16 @@ const resumirCampos = (replicas, campos, extraer) =>
  * @param {(config: object) => object} simular normalmente `simularPeaje`
  */
 export function correrYResumirPeaje(configuracionBase, semillas, simular) {
-  const replicas = semillas.map((semilla) => simular({ ...configuracionBase, semilla }));
+  return resumirLotePeaje(correrReplicas(configuracionBase, semillas, simular));
+}
+
+/**
+ * Resume un lote de réplicas del peaje completo: por sentido, el total y el
+ * reparto del pozo.
+ *
+ * @param {object[]} replicas salidas de `simularPeaje`
+ */
+export function resumirLotePeaje(replicas) {
   if (replicas.length === 0) throw new RangeError('El lote no tiene réplicas.');
 
   const numeroDeSentidos = replicas[0].sentidos.length;

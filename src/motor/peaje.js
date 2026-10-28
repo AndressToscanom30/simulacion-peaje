@@ -36,6 +36,10 @@ import { parametros } from '../config/parametros.js';
  * @property {number} [rhoReasignacion] umbral de ρ para reasignar
  * @property {number} [ventanaRhoSegundos] ventana móvil de llegadas para ρ
  * @property {number} [esperaDesempateSegundos] umbral del desempate
+ * @property {number} [servicioNominalSegundos] tiempo de atención con el que la
+ *   regla estima la espera: el que el operador conoce, no el real (DEC-027)
+ * @property {number} [capacidadNominalPorCaseta] vehículos por caseta e
+ *   intervalo con los que la regla calcula ρ (≈ 24,8)
  * @property {(estado: object) => void} [observador] se llama tras cada evento
  *   con `{instante, pozo, sentidos}`. Lo usan las pruebas de invariantes y lo
  *   usará el modo tiempo real de la fase 5 para pintar el estado.
@@ -56,6 +60,8 @@ export function simularPeaje(config) {
     rhoReasignacion = parametros.regla.rhoReasignacion,
     ventanaRhoSegundos = parametros.regla.ventanaRhoSegundos,
     esperaDesempateSegundos = parametros.regla.esperaDesempateSegundos,
+    servicioNominalSegundos = parametros.servicio.mediaObservadaSegundos,
+    capacidadNominalPorCaseta = capacidadNominal(),
     observador = null,
   } = config;
 
@@ -177,8 +183,8 @@ export function simularPeaje(config) {
   }
 
   const arbitro = {
-    capacidadNominalPorCaseta: capacidadNominal(),
-    servicioNominalSegundos: parametros.servicio.mediaObservadaSegundos,
+    capacidadNominalPorCaseta,
+    servicioNominalSegundos,
     ventanaRhoSegundos,
 
     reservar: (id) => pozo.reservar(id),
