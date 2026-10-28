@@ -334,3 +334,37 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Qué está abierto:** lo mismo que PEN-011, el disparador anticipativo por
   tasa de llegadas, que la DEC-028 dejó para la fase 7. Este resultado le da
   más peso: no es una mejora cosmética, es la diferencia entre cumplir y no.
+
+### PEN-017 — La interfaz reproduce una traza completa, así que el horizonte está acotado por la memoria
+
+- **Origen:** fase 5, DEC-033.
+- **Qué pasa:** el modo tiempo real graba la réplica entera antes de reproducirla.
+  Una hora simulada del festivo son unos **4.300 eventos**, que en memoria no es
+  nada, y la réplica tarda decenas de milisegundos. Pero el tamaño de la traza
+  crece con el horizonte y con la demanda: un horizonte de 12 horas con demanda
+  ×1,5 serían del orden de 10⁵ eventos.
+- **Mientras tanto:** con el horizonte del estudio (12 intervalos de 5 min) no
+  hay problema, y la ventaja de poder pausar y **rebobinar** compensa de sobra.
+- **Qué haría falta si el horizonte creciera:** grabar por tramos y reproducir a
+  medida que se graba, o grabar solo los eventos de caseta y las lecturas de
+  cola, reconstruyendo los vehículos por interpolación. Lo segundo rompería la
+  fase 6, que necesita los vehículos uno a uno.
+- **Qué está abierto:** nada que haga falta ahora. Queda anotado para que quien
+  suba el horizonte sepa qué va a encontrarse.
+
+### PEN-018 — La hora del conteo se lee de la etiqueta del dato, no de un campo propio
+
+- **Origen:** fase 5. El modo tiempo real muestra el reloj simulado como la hora
+  real del conteo más el tiempo transcurrido (el festivo arranca a las 16:25).
+- **Qué pasa:** esa hora de arranque **no está como campo** en `datos.js`: se lee
+  de la etiqueta del conteo (`'Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25'`)
+  con una expresión regular.
+- **Por qué se hizo así:** el tramo horario es parte del dato de campo y ya está
+  en el documento de contexto; añadir un campo `horaInicio` sería duplicarlo, y
+  `datos.js` es transcripción de la fuente de verdad, que no se edita por
+  comodidad de la interfaz.
+- **El riesgo:** si alguien reescribe una etiqueta y le cambia el formato de la
+  hora, el reloj dejará de mostrarla. **No se rompe nada**: la función devuelve
+  `null` y la interfaz muestra solo el tiempo simulado.
+- **Qué haría falta para cerrarlo:** que el contexto declare la hora de inicio
+  como dato aparte, y entonces transcribirla a `datos.js` como campo.

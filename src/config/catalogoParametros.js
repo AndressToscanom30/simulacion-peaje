@@ -12,14 +12,30 @@
  * JS puro: no importa React, ni DOM, ni Three.js.
  */
 
+/** Secciones del formulario de configuración, en el orden en que se muestran. */
 export const GRUPOS = {
-  sentidos: 'Demanda por sentido',
+  demanda: 'Demanda',
   servicio: 'Servicio',
-  pozo: 'Pozo de casetas',
+  pozo: 'Pozo y casetas',
   regla: 'Regla de apertura y cierre',
-  tiempo: 'Tiempo',
+  reparto: 'Reparto entre sentidos',
   desempeno: 'Criterio de desempeño',
-  corridas: 'Corridas',
+  corrida: 'Corrida',
+};
+
+/**
+ * Tipos de control del formulario. El formulario se genera a partir de esto,
+ * no escribiendo los campos a mano.
+ */
+export const CONTROLES = {
+  ENTERO: 'entero',
+  NUMERO: 'numero',
+  BOOLEANO: 'booleano',
+  CONTEO: 'conteo',
+  MODO: 'modo',
+  SERIE_INTERVALOS: 'serieIntervalos',
+  TABLA_UMBRALES: 'tablaUmbrales',
+  TEXTO: 'texto',
 };
 
 /**
@@ -29,7 +45,8 @@ export const GRUPOS = {
 export const CATALOGO_PARAMETROS = [
   // --------------------------------------------------- demanda por sentido ---
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.CONTEO,
     ruta: 'sentidos[i].conteo',
     nombre: 'Conteo base',
     significado:
@@ -39,7 +56,10 @@ export const CATALOGO_PARAMETROS = [
     rango: 'viernes, domingoCP, domingoPC, festivoPC',
   },
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.NUMERO,
+    paso: 0.05,
+    minimo: 0.05,
     ruta: 'sentidos[i].factorDemanda',
     nombre: 'Factor de demanda',
     significado:
@@ -49,7 +69,9 @@ export const CATALOGO_PARAMETROS = [
     rango: '> 0',
   },
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.ENTERO,
+    minimo: 0,
     ruta: 'sentidos[i].colaInicial',
     nombre: 'Cola inicial',
     significado:
@@ -59,7 +81,9 @@ export const CATALOGO_PARAMETROS = [
     rango: 'entero ≥ 0',
   },
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
     ruta: 'sentidos[i].casetasIniciales',
     nombre: 'Casetas iniciales',
     significado: 'Casetas abiertas en t = 0 en ese sentido.',
@@ -68,7 +92,8 @@ export const CATALOGO_PARAMETROS = [
     rango: 'entre el mínimo y el tope por sentido',
   },
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.MODO,
     ruta: 'sentidos[i].modo',
     nombre: 'Modo de control de c(t)',
     significado:
@@ -78,7 +103,19 @@ export const CATALOGO_PARAMETROS = [
     rango: 'programado | regla',
   },
   {
-    grupo: 'sentidos',
+    grupo: 'demanda',
+    control: CONTROLES.SERIE_INTERVALOS,
+    ruta: 'sentidos[i].llegadas',
+    nombre: 'Llegadas por intervalo',
+    significado:
+      'Demanda escrita a mano, un valor por intervalo. null = las del conteo. El factor se aplica igual sobre estas.',
+    unidad: 'vehículos por intervalo',
+    origen: 'DEC-035',
+    rango: 'null o un arreglo de valores ≥ 0 con tantas posiciones como intervalos',
+  },
+  {
+    grupo: 'demanda',
+    control: CONTROLES.SERIE_INTERVALOS,
     ruta: 'sentidos[i].casetasFijas',
     nombre: 'Casetas fijas por intervalo',
     significado:
@@ -91,6 +128,9 @@ export const CATALOGO_PARAMETROS = [
   // ------------------------------------------------------------- servicio ---
   {
     grupo: 'servicio',
+    control: CONTROLES.NUMERO,
+    paso: 0.01,
+    minimo: 0.01,
     ruta: 'servicio.gammaForma',
     nombre: 'Forma de la gamma (k)',
     significado:
@@ -101,6 +141,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'servicio',
+    control: CONTROLES.NUMERO,
+    paso: 0.01,
+    minimo: 0.01,
     ruta: 'servicio.gammaEscalaSegundos',
     nombre: 'Escala de la gamma (θ)',
     significado:
@@ -111,6 +154,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'servicio',
+    control: CONTROLES.NUMERO,
+    paso: 0.01,
+    minimo: 0.01,
     ruta: 'servicio.mediaNominalSegundos',
     nombre: 'Tiempo de atención nominal',
     significado:
@@ -121,6 +167,7 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'servicio',
+    control: CONTROLES.TEXTO,
     ruta: 'servicio.regimen',
     nombre: 'Nombre del régimen',
     significado: 'Etiqueta del régimen de servicio, solo para los informes.',
@@ -132,6 +179,9 @@ export const CATALOGO_PARAMETROS = [
   // ----------------------------------------------------------------- pozo ---
   {
     grupo: 'pozo',
+    control: CONTROLES.ENTERO,
+    minimo: 2,
+    maximo: 10,
     ruta: 'pozo.total',
     nombre: 'Casetas del pozo',
     significado:
@@ -142,6 +192,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'pozo',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    maximo: 10,
     ruta: 'pozo.minimoPorSentido',
     nombre: 'Mínimo por sentido',
     significado: 'Casetas que un sentido nunca baja de tener abiertas.',
@@ -151,6 +204,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'pozo',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    maximo: 10,
     ruta: 'pozo.maximoPorSentido',
     nombre: 'Tope por sentido',
     significado:
@@ -163,6 +219,7 @@ export const CATALOGO_PARAMETROS = [
   // ---------------------------------------------------------------- regla ---
   {
     grupo: 'regla',
+    control: CONTROLES.TABLA_UMBRALES,
     ruta: 'regla.abrirSiColaMayorQue',
     nombre: 'Umbrales de apertura',
     significado:
@@ -173,6 +230,7 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'regla',
+    control: CONTROLES.TABLA_UMBRALES,
     ruta: 'regla.cerrarSiColaMenorQue',
     nombre: 'Umbrales de cierre',
     significado:
@@ -183,6 +241,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'regla',
+    control: CONTROLES.NUMERO,
+    paso: 0.1,
+    minimo: 0.1,
     ruta: 'regla.factorUmbrales',
     nombre: 'Factor de los umbrales',
     significado:
@@ -193,6 +254,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'regla',
+    control: CONTROLES.ENTERO,
+    minimo: 0,
+    paso: 60,
     ruta: 'regla.demoraAperturaSegundos',
     nombre: 'Demora de apertura',
     significado:
@@ -203,6 +267,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'regla',
+    control: CONTROLES.ENTERO,
+    minimo: 0,
+    paso: 60,
     ruta: 'regla.ventanaCierreSegundos',
     nombre: 'Ventana de cierre',
     significado:
@@ -212,7 +279,10 @@ export const CATALOGO_PARAMETROS = [
     rango: '≥ 0',
   },
   {
-    grupo: 'regla',
+    grupo: 'reparto',
+    control: CONTROLES.NUMERO,
+    paso: 0.05,
+    minimo: 0,
     ruta: 'regla.rhoReasignacion',
     nombre: 'ρ de reasignación',
     significado:
@@ -222,7 +292,10 @@ export const CATALOGO_PARAMETROS = [
     rango: '≥ 0',
   },
   {
-    grupo: 'regla',
+    grupo: 'reparto',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    paso: 60,
     ruta: 'regla.ventanaRhoSegundos',
     nombre: 'Ventana móvil de ρ',
     significado: 'Cuánto hacia atrás se cuentan las llegadas para calcular ρ.',
@@ -231,7 +304,8 @@ export const CATALOGO_PARAMETROS = [
     rango: '> 0',
   },
   {
-    grupo: 'regla',
+    grupo: 'reparto',
+    control: CONTROLES.BOOLEANO,
     ruta: 'regla.reasignacionActiva',
     nombre: 'Reasignación activada',
     significado:
@@ -241,7 +315,9 @@ export const CATALOGO_PARAMETROS = [
     rango: 'true | false',
   },
   {
-    grupo: 'regla',
+    grupo: 'reparto',
+    control: CONTROLES.BOOLEANO,
+    sensibilidad: true,
     ruta: 'regla.ofrecerPozoPorRho',
     nombre: 'Ofrecer el pozo libre por ρ',
     significado:
@@ -251,7 +327,10 @@ export const CATALOGO_PARAMETROS = [
     rango: 'true | false',
   },
   {
-    grupo: 'regla',
+    grupo: 'reparto',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    paso: 30,
     ruta: 'regla.esperaDesempateSegundos',
     nombre: 'Espera del desempate',
     significado:
@@ -263,7 +342,10 @@ export const CATALOGO_PARAMETROS = [
 
   // --------------------------------------------------------------- tiempo ---
   {
-    grupo: 'tiempo',
+    grupo: 'corrida',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    paso: 60,
     ruta: 'tiempo.duracionIntervaloSegundos',
     nombre: 'Duración del intervalo',
     significado:
@@ -273,7 +355,9 @@ export const CATALOGO_PARAMETROS = [
     rango: '> 0',
   },
   {
-    grupo: 'tiempo',
+    grupo: 'corrida',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
     ruta: 'tiempo.intervalos',
     nombre: 'Intervalos del horizonte',
     significado:
@@ -286,6 +370,9 @@ export const CATALOGO_PARAMETROS = [
   // ------------------------------------------------------------ desempeño ---
   {
     grupo: 'desempeno',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    paso: 15,
     ruta: 'desempeno.metaWqSegundos',
     nombre: 'Meta de espera',
     significado:
@@ -296,6 +383,9 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'desempeno',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    paso: 15,
     ruta: 'desempeno.maximoTolerableWqSegundos',
     nombre: 'Máximo tolerable',
     significado:
@@ -306,6 +396,10 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'desempeno',
+    control: CONTROLES.NUMERO,
+    paso: 0.01,
+    minimo: 0,
+    maximo: 1,
     ruta: 'desempeno.fraccionIntervalosSobreMaximoAceptada',
     nombre: 'Fracción de intervalos aceptada',
     significado: 'Proporción de intervalos que se acepta por encima del máximo tolerable.',
@@ -316,7 +410,10 @@ export const CATALOGO_PARAMETROS = [
 
   // ------------------------------------------------------------- corridas ---
   {
-    grupo: 'corridas',
+    grupo: 'corrida',
+    control: CONTROLES.ENTERO,
+    minimo: 1,
+    maximo: 200,
     ruta: 'corridas.replicas',
     nombre: 'Réplicas',
     significado: 'Corridas independientes del escenario, para promediar.',
@@ -325,7 +422,8 @@ export const CATALOGO_PARAMETROS = [
     rango: 'entero ≥ 1',
   },
   {
-    grupo: 'corridas',
+    grupo: 'corrida',
+    control: CONTROLES.ENTERO,
     ruta: 'corridas.primeraSemilla',
     nombre: 'Primera semilla',
     significado:

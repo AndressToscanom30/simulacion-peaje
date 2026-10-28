@@ -24,12 +24,7 @@ const miEscenario = construirEscenario({
 validarEscenario(miEscenario);
 ```
 
-## Demanda por sentido
-
-Hay un juego de estos por sentido. El **primero** de la lista usa el flujo
-original del PRNG, así que un escenario con el segundo sentido sin demanda
-reproduce exactamente el de un sentido solo (DEC-027, punto 1). Los valores
-por defecto van como `P→C / C→P`.
+## Demanda
 
 | Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
 |---|---|---|---|---|---|---|
@@ -38,6 +33,7 @@ por defecto van como `P→C / C→P`.
 | **Cola inicial** | `sentidos[i].colaInicial` | Vehículos ya esperando en t = 0. Su espera cuenta desde 0 y no entran en la ventana de ρ. | vehículos | `23` / `0` | Contexto, sección 6; DEC-018 y DEC-027 punto 8 | entero ≥ 0 |
 | **Casetas iniciales** | `sentidos[i].casetasIniciales` | Casetas abiertas en t = 0 en ese sentido. | casetas | `4` / `1` | Contexto, sección 6 | entre el mínimo y el tope por sentido |
 | **Modo de control de c(t)** | `sentidos[i].modo` | "programado" copia las casetas del conteo (o las fijas); "regla" las decide con la regla por cola. | — | `regla` / `regla` | Contexto, sección 4 | programado | regla |
+| **Llegadas por intervalo** | `sentidos[i].llegadas` | Demanda escrita a mano, un valor por intervalo. null = las del conteo. El factor se aplica igual sobre estas. | vehículos por intervalo | `null` / `null` | DEC-035 | null o un arreglo de valores ≥ 0 con tantas posiciones como intervalos |
 | **Casetas fijas por intervalo** | `sentidos[i].casetasFijas` | En modo programado, sustituye las casetas observadas por un arreglo propio. null = las observadas. | casetas por intervalo | `null` / `null` | Contexto, sección 7 (escenario de 5 casetas fijas) | null o un arreglo con tantas posiciones como intervalos |
 
 ## Servicio
@@ -49,7 +45,7 @@ por defecto van como `P→C / C→P`.
 | **Tiempo de atención nominal** | `servicio.mediaNominalSegundos` | El que la regla usa para ρ y para la espera estimada. Es el que el operador conoce, así que NO cambia en el escenario de servicio lento. | segundos | `12,1016` | Contexto, sección 3; DEC-027 punto 7 | > 0 |
 | **Nombre del régimen** | `servicio.regimen` | Etiqueta del régimen de servicio, solo para los informes. | — | `base` | DEC-025 | texto libre |
 
-## Pozo de casetas
+## Pozo y casetas
 
 | Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
 |---|---|---|---|---|---|---|
@@ -66,18 +62,16 @@ por defecto van como `P→C / C→P`.
 | **Factor de los umbrales** | `regla.factorUmbrales` | Multiplica los dos umbrales generados, para sensibilidad. Se redondea al entero, porque la cola son vehículos. | adimensional | `1` | DEC-030 (no está en el contexto; es solo sensibilidad) | > 0 |
 | **Demora de apertura** | `regla.demoraAperturaSegundos` | Tiempo entre ordenar la apertura y tener la caseta operando. La caseta queda reservada desde que se ordena. | segundos | `300` (5 min) | Contexto, sección 4; DEC-007. Sensibilidad 0, 5 y 10 min | ≥ 0 |
 | **Ventana de cierre** | `regla.ventanaCierreSegundos` | La cola tiene que estar bajo el umbral este tiempo seguido para cerrar una caseta. Se reinicia si sube o si cambia c. | segundos | `900` (15 min) | Contexto, sección 4; DEC-007 y DEC-026 punto 3 | ≥ 0 |
+
+## Reparto entre sentidos
+
+| Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
+|---|---|---|---|---|---|---|
 | **ρ de reasignación** | `regla.rhoReasignacion` | Una caseta liberada pasa al otro sentido si su ρ supera este valor y le caben casetas. | adimensional | `0,6` | Contexto, sección 4; DEC-008 | ≥ 0 |
 | **Ventana móvil de ρ** | `regla.ventanaRhoSegundos` | Cuánto hacia atrás se cuentan las llegadas para calcular ρ. | segundos | `300` (5 min) | Contexto, sección 4 ("últimos 5 min") | > 0 |
 | **Reasignación activada** | `regla.reasignacionActiva` | Si una caseta liberada puede pasar al otro sentido por ρ. Apagada, el pozo es solo almacén. | sí/no | `false` | DEC-008. El valor por defecto apagado, por PEN-015 | true | false |
 | **Ofrecer el pozo libre por ρ** | `regla.ofrecerPozoPorRho` | Si una caseta que ya estaba libre se ofrece por ρ sin esperar a que otra se libere. La DEC-008 literal es false. | sí/no | `false` | DEC-027 punto 11 (solo sensibilidad) | true | false |
 | **Espera del desempate** | `regla.esperaDesempateSegundos` | Cuando los dos sentidos piden caseta, gana el que supere esta espera estimada, empezando por el peor. | segundos | `150` (2,5 min) | Contexto, sección 4; DEC-008 y DEC-027 punto 9 | > 0 |
-
-## Tiempo
-
-| Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
-|---|---|---|---|---|---|---|
-| **Duración del intervalo** | `tiempo.duracionIntervaloSegundos` | Cada tramo de conteo. Fija la tasa de llegadas por tramo y la unidad de los carriles-intervalo. | segundos | `300` (5 min) | Contexto, sección 10 | > 0 |
-| **Intervalos del horizonte** | `tiempo.intervalos` | Tramos que dura una réplica. El horizonte es intervalos × duración; con 12 × 300 s es la hora observada. | intervalos | `12` | Contexto, secciones 6 y 10 | entero ≥ 1, igual al largo de los conteos |
 
 ## Criterio de desempeño
 
@@ -87,10 +81,12 @@ por defecto van como `P→C / C→P`.
 | **Máximo tolerable** | `desempeno.maximoTolerableWqSegundos` | Espera por encima de la cual un intervalo cuenta como incumplido. Sí entra en el motor, que cuenta esos intervalos. | segundos | `150` (2,5 min) | Contexto, sección 5; DEC-009 | > 0 |
 | **Fracción de intervalos aceptada** | `desempeno.fraccionIntervalosSobreMaximoAceptada` | Proporción de intervalos que se acepta por encima del máximo tolerable. | fracción | `0,05` | Contexto, sección 5; DEC-009 | entre 0 y 1 |
 
-## Corridas
+## Corrida
 
 | Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
 |---|---|---|---|---|---|---|
+| **Duración del intervalo** | `tiempo.duracionIntervaloSegundos` | Cada tramo de conteo. Fija la tasa de llegadas por tramo y la unidad de los carriles-intervalo. | segundos | `300` (5 min) | Contexto, sección 10 | > 0 |
+| **Intervalos del horizonte** | `tiempo.intervalos` | Tramos que dura una réplica. El horizonte es intervalos × duración; con 12 × 300 s es la hora observada. | intervalos | `12` | Contexto, secciones 6 y 10 | entero ≥ 1, igual al largo de los conteos |
 | **Réplicas** | `corridas.replicas` | Corridas independientes del escenario, para promediar. | réplicas | `30` | Contexto, sección 6; DEC-010 | entero ≥ 1 |
 | **Primera semilla** | `corridas.primeraSemilla` | Semilla de la primera réplica; las demás son consecutivas. Las mismas semillas en todos los escenarios dan números aleatorios comunes. | — | `1` | Contexto, sección 6; DEC-010 y DEC-011 | entero |
 
@@ -137,6 +133,7 @@ Esto es lo que `construirEscenario()` devuelve sin sobreescrituras:
       "colaInicial": 23,
       "casetasIniciales": 4,
       "modo": "regla",
+      "llegadas": null,
       "casetasFijas": null
     },
     {
@@ -146,6 +143,7 @@ Esto es lo que `construirEscenario()` devuelve sin sobreescrituras:
       "colaInicial": 0,
       "casetasIniciales": 1,
       "modo": "regla",
+      "llegadas": null,
       "casetasFijas": null
     }
   ],

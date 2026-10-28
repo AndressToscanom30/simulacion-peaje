@@ -1,12 +1,13 @@
 # Plan actual
 
-Estado: 28/10/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 29/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Fases 1 a 4 cerradas.** Siguiente: fase 5 (interfaz de configuración y modo
-tiempo real). La base ya está puesta: todo valor del modelo es configurable
-(DEC-030), el escenario es un objeto serializable a JSON con validación en
-castellano, y `docs/parametros.md` es la especificación del formulario.
+**Fases 1 a 5 cerradas.** Siguiente: fase 6 (visualización 3D). La base está
+puesta: el modo tiempo real reproduce una **traza grabada** (DEC-033) cuyo
+formato está documentado en `docs/traza.md`, así que el 3D se pinta desde ahí
+sin tocar el motor ni duplicar la lógica. `reconstruirDesdeTraza` ya da el
+estado del peaje en cualquier instante.
 
 Antes de empezarla, leer en `docs/pendientes.md`: **PEN-013** (la demanda de C→P
 no se midió y es la sensibilidad que más mueve el resultado), PEN-008 (el modelo
@@ -114,12 +115,36 @@ casetas fijas no lo desplaza nada, porque el cuello es C→P clavado en 1). La
 sensibilidad que más mueve el resultado es el sustituto de C→P (+6,94 min), no
 ningún parámetro de la regla.
 
-## Fase 5 — Interfaz de configuración y modo tiempo real
+## Fase 5 — Interfaz de configuración y modo tiempo real ✅
 
-- [ ] Formulario de configuración de datos y parámetros
-- [ ] Modo tiempo real con tiempo simulado: 1×, 10×, 60×, pausa y reinicio
-- [ ] Modo por lotes desde la interfaz, con barra de progreso
-- [ ] Tableros de resultados (cola, espera, casetas abiertas en el tiempo)
+- [x] Traza versionada que graba el motor, documentada en `docs/traza.md`
+- [x] Grabador que no cambia ningún resultado, comprobado en 5 escenarios × 30 semillas
+- [x] Reconstrucción desde la traza, que coincide con el motor en atendidos,
+      cola máxima y carriles-intervalo
+- [x] Web Worker con trabajos de traza y de lote, progreso y cancelación
+- [x] Reloj de reproducción puro: 1×, 10×, 60× y configurable, pausa, reinicio y
+      salto a cualquier instante
+- [x] Formulario **generado** desde `catalogoParametros.js`, en siete secciones,
+      con unidad, valor por defecto, rango y origen de cada campo
+- [x] Validación en línea con todos los problemas juntos, marcado de lo que
+      difiere del base y restablecer por campo y total
+- [x] Demanda editable por intervalo, casetas del operador y tablas de umbrales
+- [x] Selector de escenarios del catálogo, importar y exportar JSON, y
+      `localStorage` con try/catch
+- [x] Pozo de hasta 10 casetas y topes mayores de 5, probados con 8 y 10
+- [x] Modo tiempo real: controles, reloj simulado con la hora del conteo, estado
+      en vivo por sentido y esquema 2D de las casetas
+- [x] Tableros en SVG propio: cola por sentido, casetas abiertas en escalón y
+      espera por intervalo contra la meta y el máximo tolerable
+- [x] Modo por lotes con barra de progreso, cancelación, comparación contra una
+      referencia y exportación CSV y JSON
+- [x] Panel fijo de supuestos y rótulos de sensibilidad
+- [x] 319 pruebas en verde, con las regresiones de las fases 1 a 4 intactas
+- [x] `docs/ui.md` y `docs/traza.md`
+
+Verificado: la corrida por lotes de la interfaz da los **mismos números** que
+`docs/resultados/fase4-escenarios.md` (hay una prueba que lee el informe
+publicado y compara), y `npm run build` y `npm run dev` funcionan.
 
 ## Fase 6 — Visualización 3D
 

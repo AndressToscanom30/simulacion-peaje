@@ -94,6 +94,8 @@ export const ESCENARIO_BASE = Object.freeze({
       colaInicial: 23,
       casetasIniciales: 4,
       modo: MODO.REGLA,
+      /** Llegadas por intervalo escritas a mano; `null` = las del conteo (DEC-035). */
+      llegadas: null,
       /** En modo programado, casetas fijas por intervalo; `null` = las observadas. */
       casetasFijas: null,
     },
@@ -104,6 +106,7 @@ export const ESCENARIO_BASE = Object.freeze({
       colaInicial: 0,
       casetasIniciales: 1,
       modo: MODO.REGLA,
+      llegadas: null,
       casetasFijas: null,
     },
   ],
@@ -305,6 +308,15 @@ export function problemasDelEscenario(escenario) {
       if (s.modo !== MODO.PROGRAMADO && s.modo !== MODO.REGLA) {
         errores.push(`${donde}: \`modo\` tiene que ser "${MODO.PROGRAMADO}" o "${MODO.REGLA}", llegó "${s.modo}".`);
       }
+      if (s.llegadas !== null && s.llegadas !== undefined) {
+        if (!Array.isArray(s.llegadas) || s.llegadas.length !== e.tiempo?.intervalos) {
+          errores.push(
+            `${donde}: \`llegadas\` tiene que ser null o un arreglo de ${e.tiempo?.intervalos} posiciones, una por intervalo.`,
+          );
+        } else if (s.llegadas.some((x) => !Number.isFinite(x) || x < 0)) {
+          errores.push(`${donde}: \`llegadas\` no admite valores negativos ni no numéricos.`);
+        }
+      }
       if (s.casetasFijas !== null && s.casetasFijas !== undefined) {
         if (!Array.isArray(s.casetasFijas) || s.casetasFijas.length !== e.tiempo?.intervalos) {
           errores.push(
@@ -414,6 +426,7 @@ export function problemasDelEscenario(escenario) {
   }
   if (entero(t.intervalos) && Array.isArray(e.sentidos)) {
     for (const s of e.sentidos) {
+      if (Array.isArray(s.llegadas)) continue; // ya se comprobó su largo
       const largo = conteos[s.conteo]?.llegadas.length;
       if (largo !== undefined && largo !== t.intervalos) {
         errores.push(
@@ -516,7 +529,7 @@ export function aConfiguracionPeaje(escenario) {
     return {
       etiqueta: s.etiqueta,
       conteo: s.conteo,
-      llegadas: conteo.llegadas,
+      llegadas: s.llegadas ?? conteo.llegadas,
       casetasProgramadas: s.casetasFijas ?? conteo.casetas,
       modoCasetas: s.modo,
       ...(porRegla

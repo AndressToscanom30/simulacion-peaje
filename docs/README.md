@@ -8,6 +8,8 @@ conviene pasar por los tres primeros.
 | `contexto/contexto-inicial.md` | **Fuente de verdad.** Modelo, parámetros, regla de apertura y cierre, criterios de desempeño, escenarios, limitaciones y datos de campo. Lo que dice está decidido y no se reabre. No se edita para "arreglar" un resultado. |
 | `planes/plan-actual.md` | Plan de trabajo por fases con casillas. Dice qué está hecho y qué sigue. Se marca al terminar cada intervención. |
 | `decisiones/registro.md` | Bitácora de decisiones (`DEC-001`, `DEC-002`, …) con fecha, decisión, motivo y qué descarta. Lo que está aquí no se reabre: para cambiarlo se añade una decisión nueva que diga qué supera. |
+| `ui.md` | Cómo se usa la interfaz y cómo está hecha: las tres pestañas, el formulario generado, el worker, la traza y el reloj de reproducción. |
+| `traza.md` | Formato de la traza que graba el motor y reproduce la interfaz. Basta para interpretarla sin leer el motor; la fase 6 pintará el 3D desde ahí. |
 | `parametros.md` | Catálogo de los 30 parámetros del modelo: significado, unidad, valor por defecto, origen (contexto o decisión) y rango. Generado con `npm run parametros`, leyendo los valores por defecto del escenario base, así que no puede quedar desfasado. Es la especificación del formulario de la fase 5. |
 | `pendientes.md` | Preguntas abiertas y ambigüedades. Si algo no está claro se anota aquí y se sigue con la opción más razonable, dejando dicho cuál se tomó. Incluye lo que falta confirmar con la profesora. |
 | `bitacora.md` | Una entrada por intervención: fecha, qué cambió, qué quedó a medias y qué sigue. Sirve para retomar el trabajo sin releer todo el repo. |
@@ -22,7 +24,9 @@ conviene pasar por los tres primeros.
 | `src/config/escenario.js` | Qué es un escenario: objeto declarativo serializable a JSON, escenario base más sobreescrituras, validación y tablas de umbrales. |
 | `src/config/escenarios.js` | Cómo se arman los dos sentidos a partir de los conteos, y el catálogo de los 160 escenarios de la fase 4. |
 | `src/config/catalogoParametros.js` | Metadatos de cada parámetro (significado, unidad, origen, rango) con los que se genera `docs/parametros.md`. |
-| `src/corridas.js` | Runner: traduce escenarios a configuración del motor, corre las réplicas y resuelve el cumplimiento. Lo usarán también la interfaz y el modo tiempo real. |
+| `src/corridas.js` | Runner: traduce escenarios a configuración del motor, corre las réplicas y resuelve el cumplimiento. `simularTraza` graba una réplica para el modo tiempo real. |
+| `src/motor/traza.js` | Grabador de trazas y reconstrucción del estado sin usar el motor. |
+| `src/ui/` | La interfaz: `reloj.js` y `modeloFormulario.js` son puros y se prueban sin DOM; `worker/` corre el motor fuera del hilo de la pantalla; `componentes/` son los componentes de React. |
 | `src/motor/` | Motor de simulación en JS puro (sin React, sin DOM, sin Three.js). Corre con Node. `sentido.js` tiene la lógica de un sentido; `simulador.js` la corre sola (fases 1 y 2) y `peaje.js` corre los dos sentidos sobre el pozo común de `pozo.js` (fase 3). |
 | `scripts/simular.js` | Validación de la fase 1 (`npm run simular`). |
 | `scripts/diagnostico-festivo.js` | Diagnóstico de la cola, campo contra simulación (`npm run diagnostico`). |
@@ -30,7 +34,7 @@ conviene pasar por los tres primeros.
 | `scripts/fase3.js` | Experimentos de la fase 3, reparto entre sentidos (`npm run fase3`). |
 | `scripts/fase4.js` | Matriz de escenarios de la fase 4 (`npm run fase4`). |
 | `scripts/parametros.js` | Genera `docs/parametros.md` (`npm run parametros`). |
-| `src/` (resto) | Interfaz React. Todavía es un cascarón. |
+| `src/App.jsx` | Las tres pestañas de la interfaz: tiempo real, por lotes y configuración. |
 
 ## Comandos
 
@@ -45,3 +49,7 @@ npm run fase3       # reparto de las 6 casetas entre los dos sentidos
 npm run fase4       # matriz de 160 escenarios y punto de quiebre
 npm run parametros  # regenera el catálogo de parámetros
 ```
+
+La interfaz (`npm run dev`) permite configurar cualquier parámetro, reproducir
+una réplica en tiempo real con pausa y rebobinado, y correr lotes con exportación
+a CSV y JSON. Ver `docs/ui.md`.

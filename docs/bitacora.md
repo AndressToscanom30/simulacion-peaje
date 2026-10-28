@@ -2,6 +2,66 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-29 — Fase 5: interfaz de configuración y modo tiempo real
+
+**Qué cambió:**
+
+- **DEC-033:** el modo tiempo real **reproduce una traza grabada**, no simula
+  paso a paso. El motor corre la réplica completa en un Web Worker con un
+  grabador, y la interfaz la reproduce con un reloj de reproducción. Así es
+  determinista, pausable y **rebobinable**, y la fase 6 pintará el 3D desde la
+  misma traza. **DEC-034:** dependencias mínimas (gráficos en SVG propio,
+  `jsdom` solo en los archivos de interfaz, interfaz en castellano).
+  **DEC-035:** `sentidos[i].llegadas` opcional en el escenario, para editar la
+  demanda por intervalo sin tocar los conteos de campo.
+- **Traza.** El observador del peaje ahora recibe el evento con su tipo, y un
+  gancho `anotar` anota cada punto interesante: llegada, ingreso a caseta,
+  salida, caseta reservada, abre, marcada, cierra, reasignada, cierre cancelado,
+  petición bloqueada y lectura de cola. `src/motor/traza.js` tiene el grabador,
+  el formato versionado y la reconstrucción del estado. `docs/traza.md` lo
+  documenta campo por campo.
+- **Worker y reloj.** `src/ui/worker/` con los trabajos separados del cable de
+  mensajes (y un cliente que corre en el mismo hilo si no hay Workers), y
+  `src/ui/reloj.js` con un reloj de reproducción **puro**, al que el tiempo se le
+  inyecta, más un reproductor con cursor sobre los eventos.
+- **Formulario generado.** `src/config/catalogoParametros.js` pasó a traer el
+  tipo de control de cada parámetro y se reagrupó en las siete secciones de la
+  fase 5. `src/ui/modeloFormulario.js` genera los 38 campos, dice qué difiere
+  del base y restablece por campo. Al subir el tope por sentido, las tablas de
+  umbrales se regeneran solas (DEC-031).
+- **Interfaz.** Tres pestañas (tiempo real, por lotes, configuración), panel fijo
+  de supuestos, rótulos de sensibilidad en el servicio lento y en los sustitutos
+  de C→P, esquema 2D de las casetas, tres gráficos en SVG propio y la cola
+  observada superpuesta rotulada como no comparable (DEC-024). El modo por lotes
+  trae progreso, cancelación, comparación contra una referencia y exportación
+  CSV y JSON.
+- **319 pruebas** (121 nuevas). Una corrigió un fallo de mi propia prueba de
+  invariantes; las demás pasaron a la primera salvo selectores ambiguos.
+
+**Qué se verificó:**
+
+- **Grabar no cambia ningún resultado:** cinco escenarios × 30 semillas, con y
+  sin grabador, dan las mismas medidas y los mismos números aleatorios usados.
+- **Reconstruir desde la traza coincide con el motor** en atendidos, cola máxima
+  y carriles-intervalo, en cuatro escenarios × 30 semillas.
+- **La corrida por lotes de la interfaz da los mismos números que
+  `fase4-escenarios.md`**: hay una prueba que lee el informe publicado y compara
+  el `Wq` del peaje de E2 en los dos regímenes.
+- Los informes de las fases 1 a 4 se regeneran idénticos, `npm run build` pasa y
+  `npm run dev` sirve la interfaz.
+- Pozo de 8 y de 10 con topes de 7 y 9, configurados desde el formulario, quedan
+  válidos y con los umbrales extendidos y rotulados como extrapolados.
+
+**Qué quedó a medias:** nada de la fase 5. El 3D **no está** y no debía estarlo:
+es la fase 6. Lo que hay es un esquema 2D mínimo de casetas.
+
+**Pendientes nuevos:** PEN-017 (la traza completa acota el horizonte por memoria;
+con el del estudio no hay problema) y PEN-018 (la hora del conteo se lee de la
+etiqueta del dato, no de un campo propio; si cambia el formato, el reloj muestra
+solo el tiempo simulado y no se rompe nada).
+
+**Qué sigue:** fase 6, la visualización 3D, que se pinta desde la traza.
+
 ## 2026-10-28 (2.ª intervención) — Fase 4: escenarios, corridas por lotes y configurabilidad total
 
 **Qué cambió:**
