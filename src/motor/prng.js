@@ -44,3 +44,30 @@ export function crearPrng(semilla) {
     },
   };
 }
+
+/**
+ * Deriva la semilla del flujo `indice` a partir de la semilla de la réplica.
+ *
+ * Cada sentido del peaje usa su propio flujo (DEC-027): así lo que pase en uno
+ * no corre los números aleatorios del otro, y un escenario con dos sentidos
+ * reproduce exactamente el de un sentido solo cuando el otro no tiene demanda.
+ *
+ * El índice 0 devuelve la semilla tal cual, que es la que usaban las fases 1
+ * y 2: por eso sus resultados se mantienen. Los demás se mezclan con la
+ * constante de la razón áurea (la misma que usa mulberry32 internamente), que
+ * separa bien semillas pequeñas y consecutivas como las 1…30 de las réplicas.
+ *
+ * @param {number} semilla semilla de la réplica
+ * @param {number} indice flujo: 0 es el original
+ */
+export function derivarSemilla(semilla, indice) {
+  if (!Number.isInteger(indice) || indice < 0) {
+    throw new RangeError(`El índice del flujo debe ser un entero no negativo, llegó: ${indice}`);
+  }
+  if (indice === 0) return semilla >>> 0;
+
+  let x = (semilla + Math.imul(indice, 0x9e3779b9)) >>> 0;
+  x = Math.imul(x ^ (x >>> 16), 0x21f0aaad) >>> 0;
+  x = Math.imul(x ^ (x >>> 15), 0x735a2d97) >>> 0;
+  return (x ^ (x >>> 15)) >>> 0;
+}

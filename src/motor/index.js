@@ -8,10 +8,13 @@
  * con Node (DEC-012).
  */
 
-export { crearPrng } from './prng.js';
+export { crearPrng, derivarSemilla } from './prng.js';
 export { uniformeAbierto, uniformeEnRango, exponencial, normalEstandar, gamma } from './aleatorios.js';
 export { crearColaEventos, TIPO_EVENTO, PRIORIDAD_EVENTO } from './colaEventos.js';
-export { simularSentido, MODO_CASETAS } from './simulador.js';
+export { simularSentido, MODO_CASETAS, capacidadNominal, correrCalendario } from './simulador.js';
+export { crearPozo } from './pozo.js';
+export { simularPeaje } from './peaje.js';
+export { crearSentido, validarConfiguracionSentido } from './sentido.js';
 export { media, desviacion, minimo, maximo, semiamplitudIc95, resumir } from './estadisticas.js';
 export { erlangB, erlangC, mmc, mmcDeConteo, moda } from './mmc.js';
 export { correrReplicas, resumirLote, correrYResumir } from './lotes.js';

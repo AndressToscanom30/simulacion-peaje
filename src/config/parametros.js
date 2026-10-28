@@ -122,6 +122,37 @@ export const parametros = {
     fraccionIntervalosSobreMaximoAceptada: 0.05,
   },
 
+  // ---------------------------------------------------- reparto del pozo ---
+  /**
+   * Reparto de casetas entre los dos sentidos (fase 3, DEC-002 y DEC-008).
+   * Los umbrales de ρ y del desempate viven en `regla`, que es donde los pone
+   * el contexto; aquí van los del motor de dos sentidos.
+   */
+  pozo: {
+    /**
+     * Si una caseta liberada puede pasar al otro sentido por ρ (DEC-008).
+     * Apagarlo deja el pozo como simple almacén y sirve de comparación.
+     */
+    reasignacionActiva: true,
+    /**
+     * Si una caseta **ya libre en el pozo** se ofrece por ρ sin esperar a que
+     * se libere otra. La lectura literal de la DEC-008 es `false`: solo
+     * contempla reasignar al liberarse una caseta. `true` es sensibilidad.
+     */
+    ofrecerPozoPorRho: false,
+  },
+
+  /**
+   * Demanda del festivo en Cúcuta→Pamplona: **no se midió** (contexto,
+   * sección 7). Se sustituye por el conteo del domingo 1:00–2:00 p. m.
+   * (domingoPC, 195 veh/h), arrancando con 1 caseta. Ver PEN-013.
+   */
+  sustitutoFestivoCP: {
+    conteo: 'domingoPC',
+    colaInicial: 0,
+    casetasIniciales: 1,
+  },
+
   // ------------------------------------------------------------- corridas ---
   /** Réplicas y semillas (DEC-010). Las mismas semillas en todos los escenarios. */
   corridas: {

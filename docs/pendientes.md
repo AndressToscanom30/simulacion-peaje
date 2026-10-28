@@ -221,3 +221,30 @@ mantiene la pregunta abierta hasta que alguien la responda.
   personal de ese 7,4 % compensa. El parámetro `ventanaCierreSegundos` ya es
   editable; la fase 4 puede correrlo como sensibilidad, igual que la demora.
 - **Mientras tanto:** se deja en los 15 min del contexto. **No se ajustó.**
+
+### PEN-013 — El sustituto de la demanda de Cúcuta→Pamplona se midió en el sentido contrario
+
+- **Origen:** fase 3. La sección 7 del contexto fija que la demanda de
+  Cúcuta→Pamplona en el festivo **no se midió** y que se use el conteo del
+  domingo 1:00–2:00 p. m. (195 veh/h) como sustituto.
+- **Qué pasa:** ese conteo (`domingoPC`) se tomó en **Pamplona→Cúcuta**, que es
+  justo el sentido opuesto al que sustituye. Se está usando el flujo de un
+  sentido para representar al otro, en otro día y otra franja horaria. Es un
+  **supuesto de similitud de flujo, no una medición de C→P.**
+- **Por qué importa aquí y no antes:** en las fases 1 y 2 cada sentido se
+  simulaba solo, así que este dato no entraba. En la fase 3 los dos sentidos
+  compiten por el pozo de 6 casetas, y **cuánta demanda tiene C→P decide cuántas
+  casetas le quedan a P→C**. Todo el resultado del reparto cuelga de este
+  supuesto.
+- **Mientras tanto:** se usa `domingoPC` tal cual, como fija el contexto, y el
+  sustituto es un **parámetro** (`parametros.sustitutoFestivoCP`). La fase 3 lo
+  corre además con `domingoCP` (451 veh/h), que es el conteo de un domingo en el
+  sentido **correcto** C→P, para ver cuánto cambia la conclusión. Ese segundo
+  caso no lo prevé la sección 7 y va rotulado como sensibilidad.
+- **Qué haría falta:** contar C→P en un festivo, en la misma franja en que se
+  contó P→C.
+- **Ojo con la lectura:** el retorno de un festivo es asimétrico por naturaleza
+  (la gente vuelve a la ciudad), así que es esperable que C→P tenga **menos**
+  demanda que P→C en esa franja. Usar los 195 veh/h de un domingo normal podría
+  estar sobreestimando o subestimando el contraflujo; no hay forma de saberlo
+  con los datos que hay.

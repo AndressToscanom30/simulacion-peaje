@@ -409,3 +409,70 @@ tomaron durante el desarrollo.
   teniendo una caseta marcada; conservar la ventana de 15 min al cambiar `c`;
   marcar una caseta ocupada habiendo una libre; revocar una apertura ordenada; y
   contar las casetas del arranque como aperturas.
+
+## DEC-027 — Casos límite del reparto de casetas entre sentidos
+
+- **Fecha:** 28/10/2026
+- **Contexto:** la sección 4 fija la reasignación por ρ > 0,60 y el desempate,
+  pero no dice cómo se reserva una caseta, qué pasa si el pozo está agotado, ni
+  con qué números decide el operador. Cada caso se decidió así y tiene prueba.
+
+1. **Un flujo de PRNG por sentido.** Cada sentido saca sus números de un flujo
+   propio derivado de la semilla de la réplica (`derivarSemilla`). El **primero**
+   de la lista usa la semilla tal cual, que es la de las fases 1 y 2. Así lo que
+   pase en un sentido no corre los números del otro, y un escenario de dos
+   sentidos en el que el segundo no tiene demanda reproduce **exactamente** el
+   de un sentido solo. Con un flujo compartido eso sería imposible y las
+   comparaciones entre escenarios perderían los números aleatorios comunes.
+2. **Ordenar una apertura exige reservar la caseta en ese momento.** La caseta
+   queda apartada desde que se da la orden y abre en `t + demora`. No se puede
+   ordenar una apertura "a ver si hay carril cuando toque": el personal se mueve
+   a una caseta concreta.
+3. **Si el pozo está agotado, la petición queda bloqueada**, no se pierde: se
+   reintenta cuando el pozo libere una caseta. Se cuenta cuántas veces pasa y
+   cuántos segundos estuvo cada sentido esperando carril.
+4. **Una petición bloqueada se revalida al reintentarla.** Si la cola ya bajó
+   del umbral, se descarta. Esto **no** contradice DEC-026 punto 10 (una
+   apertura ordenada no se revoca): ahí la orden se dio y el personal se movió;
+   aquí nunca llegó a darse, porque no había carril.
+5. **Una petición bloqueada cuenta como apertura pendiente**, así que no se
+   acumulan dos peticiones por sentido (sección 4: una sola apertura pendiente).
+6. **Orden al liberarse una caseta:** primero las **peticiones bloqueadas**, con
+   el desempate de la DEC-008 si las dos están bloqueadas; después la
+   **reasignación por ρ** al otro sentido; y si nadie la quiere, vuelve al pozo.
+   La petición bloqueada va antes porque es demanda explícita (la cola pasó el
+   umbral), mientras ρ > 0,60 es un indicador más indirecto.
+7. **ρ y la espera estimada se calculan con los valores nominales**, 12,1016 s
+   por vehículo y 24,8 veh por caseta y 5 min, **también en el escenario de
+   servicio lento** (DEC-025). El operador decide con lo que conoce, y no conoce
+   el servicio real del pico; si la regla usara los 15,5 s estaría usando
+   información que en la realidad no tendría.
+8. **La cola inicial no entra en la ventana móvil de ρ.** Los 23 vehículos del
+   festivo son rezago, no llegadas medidas en los últimos 5 min. Contarlos
+   inflaría ρ al arrancar y haría que se leyera como demanda lo que es atraso.
+9. **Desempate:** entre los candidatos que superan los 2,5 min de espera
+   estimada gana el de mayor espera ("empezando por el peor"); si ninguno los
+   supera, el de mayor cola total; a igualdad, el de menor identificador, para
+   que el resultado no dependa del orden del arreglo.
+10. **Una caseta marcada para cerrar sigue siendo del sentido** hasta que
+    termine su servicio en curso; solo entonces vuelve al pozo, y es en ese
+    momento cuando puede reasignarse. Mientras atiende, el carril está ocupado y
+    no se le puede prometer a nadie.
+11. **`ofrecerPozoPorRho` por defecto `false`.** La DEC-008 solo contempla
+    reasignar **al liberarse** una caseta, así que una caseta que ya estaba
+    libre en el pozo no se le ofrece a nadie por iniciativa propia. El `true`
+    existe solo como sensibilidad y va rotulado como tal.
+12. **Totales del peaje:** `Wq` se pondera por vehículos atendidos, que es la
+    espera media de un vehículo cualquiera del peaje; el % de intervalos sobre
+    el máximo tolerable se calcula sobre los intervalos de los dos sentidos
+    juntos; los carriles-intervalo y los cambios de `c` se suman. Las colas
+    máximas se **suman** y van rotuladas como suma: los dos máximos no tienen
+    por qué darse en el mismo instante, así que el total es una cota superior de
+    la cola simultánea del peaje, no una medición de ella.
+
+- **Descarta:** un solo flujo de PRNG para los dos sentidos; ordenar aperturas
+  sin reservar carril; perder una petición cuando el pozo está agotado;
+  consumarla sin revalidarla; reasignar antes de atender una petición bloqueada;
+  usar el servicio real en ρ y en la espera estimada; contar la cola inicial
+  como demanda reciente; y presentar la suma de colas máximas como cola
+  simultánea.
