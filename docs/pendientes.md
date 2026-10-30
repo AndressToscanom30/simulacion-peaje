@@ -371,21 +371,31 @@ mantiene la pregunta abierta hasta que alguien la responda.
 
 ### PEN-019 — El rendimiento de la vista 3D solo está medido con WebGL por software
 
-- **Origen:** fase 6.
+- **Origen:** fase 6; revisado con el modelo del carro (DEC-040).
 - **Qué pasa:** el contenedor en el que se desarrolló **no tiene GPU**. Las
   medidas de dibujado se tomaron con SwiftShader (WebGL por software), y dan
-  entre **74 y 118 ms por fotograma** en calidad alta, o sea 8 a 13 fotogramas
-  por segundo, a 1280×720 y 60×.
+  entre **74 y 118 ms por fotograma** en calidad alta con las cajas de la fase 6,
+  o sea 8 a 13 fotogramas por segundo, a 1280×720 y 60×.
+- **Con el modelo del carro** las medidas en ese mismo contenedor se van a
+  **30–1 200 ms por fotograma** según el encuadre, y son tan ruidosas que no
+  sirven para comparar calidades: en una tanda la calidad media (3 043
+  triángulos por coche) salió **más lenta** que la alta (10 727), que es
+  imposible y delata que lo que se está midiendo es el rasterizador por
+  software, no la escena. Lo que sí se puede afirmar es lo que se cuenta: seis
+  objetos de dibujo y 10 727 triángulos por vehículo en calidad alta, 3 043 en
+  media.
 - **Lo que sí está medido y sí vale:** la lógica de la escena cuesta **0,01 ms
   por fotograma** de mediana (p95 0,03 ms) en el festivo, y 0,009 ms (p95 0,04)
   en el estrés con pozo 10 y demanda ×1,6. O sea que el coste está **todo en el
   dibujado**, no en traducir la traza.
-- **Lo que no se pudo comprobar:** que en un equipo con GPU vaya fluido. Es muy
-  probable —la escena son un puñado de cajas y un `InstancedMesh` con unas
-  cien instancias— pero **no se midió**, y no se afirma.
+- **Lo que no se pudo comprobar:** que en un equipo con GPU vaya fluido. Es
+  probable —seis objetos de dibujo y hasta unas cien instancias, poco más de un
+  millón de triángulos por fotograma en el peor caso— pero **no se midió**, y no
+  se afirma.
 - **Mientras tanto:** hay selector de calidad (alta, media, baja) que reduce
-  sombras, segmentos de las figuras y cuántos vehículos de la cola se dibujan;
-  y la vista 3D se puede ocultar, con todo lo demás funcionando igual.
+  sombras, segmentos de las figuras, cuántos vehículos de la cola se dibujan y
+  **cuánto detalle del modelo del carro** se carga (en baja, cajas); y la vista
+  3D se puede ocultar, con todo lo demás funcionando igual.
 - **Qué haría falta:** abrir la interfaz en un equipo con GPU y leer el contador
   de ms/fotograma que el propio panel muestra.
 
@@ -407,3 +417,39 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** se deja el bloque con su rótulo. Si en la fase 7 alguien
   usa una captura en el documento del estudio, conviene que lleve el pie de
   "cola única; las hileras son solo para que quepa".
+
+### PEN-021 — El archivo del carro pesa 10,9 MB y se descarga entero
+
+- **Origen:** DEC-040, al usar `public/models/carro.glb`.
+- **Qué pasa:** de los 10,9 MB del archivo, **5,1 MB son texturas PNG** que la
+  escena **no usa**: los 26 materiales se reducen a seis materiales planos
+  porque a la escala de la escena un coche ocupa unos pocos píxeles. Aun así el
+  navegador se descarga el archivo entero, texturas incluidas, porque se usa tal
+  como la usuaria lo puso.
+- **Qué se hizo para que no moleste:** la vista 3D entera va con carga diferida,
+  así que el archivo **solo se pide al abrirla**; mientras llega se dibujan
+  cajas, y si falla la carga se siguen dibujando cajas con un aviso en texto.
+- **Qué está abierto:** generar un `.glb` derivado sin texturas y ya
+  simplificado (quedaría en unos cientos de kB) sería mucho más rápido de
+  descargar, pero significa **añadir un archivo derivado** al repositorio y
+  decidir cómo se regenera cuando cambie el original. No se hizo por no tocar el
+  activo de la usuaria ni meter un paso de construcción sin que lo decida ella.
+- **Mientras tanto:** se deja el archivo tal cual, y la cuenta de triángulos que
+  el panel muestra deja claro cuánto se está tirando al cargarlo.
+
+### PEN-022 — El coche queda pequeño al lado de las casetas
+
+- **Origen:** DEC-040, revisión de las capturas.
+- **Qué pasa:** el modelo se escala al **largo de vehículo de la escena** (1,8
+  unidades), que es el que tenía la caja de la fase 6 y el que casa con la
+  separación de 2 unidades entre vehículos de la cola. Con las proporciones
+  reales de un coche eso da 0,68 de ancho y 0,49 de alto, contra una cabina de
+  caseta de 2,6 de alto: en la escena el coche se ve **más pequeño respecto a la
+  caseta** de lo que se vería en el peaje real.
+- **Por qué no se tocó:** la escena **no está a escala** y nunca lo estuvo
+  (DEC-038): las distancias son esquemáticas y la separación de la cola está
+  elegida para que quepan 45 vehículos en pantalla. Agrandar el coche lo haría
+  solaparse con el de delante; achicar las casetas es cambiar el trazado que se
+  fijó en la fase 6, y eso no entra en «usar el modelo del carro».
+- **Mientras tanto:** `carro.factorDeLargo` en `src/config/escena3d.js` permite
+  probarlo en un momento; si se sube, hay que subir también `cola.separacion`.

@@ -2,6 +2,63 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-30 — Vista libre y modelo del carro
+
+Dos encargos sobre la vista 3D ya cerrada: **que la vista sea libre** y **que se
+use el modelo de `public/models/carro.glb`**. No se tocó el motor ni ningún
+resultado.
+
+**Qué cambió:**
+
+- **DEC-041 — cámara libre.** El defecto era de fondo: `Camara` interpolaba
+  hacia el preajuste en **todos los fotogramas**, así que `OrbitControls` estaba
+  puesto pero cualquier órbita se deshacía sola en medio segundo. Ahora los
+  preajustes son **viajes**: un clic lleva la cámara al encuadre y el primer
+  arrastre corta el viaje. Un clic en el mismo botón vuelve a pedirlo, así que
+  los botones sirven además para **recentrar**; el panel rotula «Vista libre»
+  mientras la cámara no está en un preajuste. Órbita completa (de casi cenital a
+  casi nadiral), zoom y desplazamiento, con los topes sacados del contenido en
+  `limitesDeNavegacion` y el punto al que mira acotado a un cubo: se mira desde
+  donde sea, pero el peaje no se pierde de vista.
+- **DEC-040 — el modelo del carro.** Supera un punto de la DEC-037 («sin modelos
+  ni texturas externas») y solo ese. El archivo no se usa tal cual: trae 47
+  primitivas, 26 materiales y **82 602 triángulos**, y en la escena puede haber
+  más de cien vehículos. `modeloCarro.js` hornea las matrices de mundo —se puede
+  porque la piel del archivo es un resto del exportador: ningún nodo la
+  referencia y ninguna primitiva trae `JOINTS_0`—, agrupa los materiales en seis
+  **papeles** por el nombre, tira interior, motor y chasis (el 22 % de la malla),
+  normaliza tamaño y orientación, fusiona por papel y **simplifica por rejilla**.
+  Resultado medido en el navegador: **10 727 triángulos y 6 objetos de dibujo**
+  para toda la escena. Solo la carrocería se tiñe con el color del vehículo.
+- Las **cajas** de la fase 6 siguen ahí como red de seguridad: mientras el
+  archivo se descarga, si falla, y en calidad baja. El panel dice en texto qué
+  se está dibujando. La escena nunca se queda vacía por un archivo.
+
+**Qué vi en las capturas y corregí.** Al orbitar por debajo de la calzada la
+escena desaparecía: un plano opaco —o a dos caras, que fue el primer intento—
+deja la vista en una losa negra justo cuando más libre es, que es lo contrario
+de «verlo todo desde cualquier ángulo». La calzada se dibuja ahora dos veces: la
+cara de arriba opaca y un **reverso translúcido** que no escribe profundidad, con
+las marcas de carril a dos caras y una **luz de hemisferio** que ilumina las caras
+que miran hacia abajo. Desde abajo se ven las casetas y los coches a través del
+asfalto. También se dejó de dibujar las instancias sobrantes (antes se escondían
+a `y = -1000`): con 10 727 triángulos por coche, cada instancia de más cuenta.
+
+**Lo que no cuadró y queda anotado.** Las medidas de ms/fotograma de este
+contenedor, que dibuja por software, se volvieron inservibles para comparar: en
+una tanda la calidad media (3 043 triángulos) salió más lenta que la alta
+(10 727). Lo que se puede afirmar es lo que se cuenta, no lo que se cronometra
+aquí: está en PEN-019. Y dos cosas nuevas: el archivo pesa 10,9 MB con 5,1 MB de
+texturas que la escena no usa (PEN-021), y el coche queda pequeño al lado de las
+casetas porque se escala al largo de vehículo de la escena, que es el que casa
+con la separación de la cola (PEN-022).
+
+**Pruebas:** 373 (16 nuevas). Los papeles de los 26 materiales del archivo, el
+simplificador por rejilla (reducción, caja, triángulos degenerados o repetidos,
+normales unitarias) y los topes de navegación, incluida la comprobación de que
+**los cinco preajustes caben dentro de los topes** en tres tamaños de pozo y las
+tres calidades: si no, tocar el ratón después de un preajuste daría un salto.
+
 ## 2026-10-30 — Fase 6: visualización 3D
 
 **Qué cambió:**

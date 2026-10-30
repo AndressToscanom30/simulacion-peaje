@@ -175,6 +175,32 @@ cuenta atrás se salía del letrero. El rendimiento de la lógica es despreciabl
 (0,01 ms por fotograma); el del dibujado solo está medido con WebGL por software
 (PEN-019).
 
+## Ajuste de la vista 3D — cámara libre y modelo del carro ✅
+
+Pedido después de cerrar la fase 6, sin tocar el motor ni los resultados.
+
+- [x] **Cámara libre** (DEC-041): se orbita desde cualquier ángulo, se acerca y
+      se desplaza; los preajustes pasan a ser viajes a un encuadre y sirven para
+      recentrar. Antes la cámara se interpolaba al preajuste en cada fotograma y
+      deshacía sola cualquier órbita
+- [x] Topes sacados del contenido (`limitesDeNavegacion`), con el punto al que
+      mira acotado para que el peaje no se pueda perder de vista
+- [x] Reverso translúcido de la calzada y luz de hemisferio, para que desde
+      abajo se siga viendo el modelo entero en vez del asfalto
+- [x] **Modelo del carro** de `public/models/carro.glb` (DEC-040), preparado al
+      cargarlo: 26 materiales a 6 papeles, interior y motor descartados,
+      normalizado y simplificado por rejilla de **82 602 a 10 727 triángulos**
+- [x] Cajas como red de seguridad mientras carga, si falla y en calidad baja,
+      con el estado en texto en el panel
+- [x] 16 pruebas nuevas (373 en total) y `docs/capturas/` regeneradas, con tres
+      capturas más de la vista libre
+- [x] `docs/vista3d.md`, PEN-021 y PEN-022
+
+Resultado: el motor, la traza y los informes de las fases 1 a 4 quedan intactos.
+Lo que se vio al revisar las capturas y se corrigió: desde abajo la calzada
+opaca tapaba la escena entera, que es justo lo contrario de «verlo todo desde
+cualquier ángulo».
+
 ## Fase 7 — Resultados y documentación del estudio
 
 - [ ] Interpretación de los resultados y política recomendada

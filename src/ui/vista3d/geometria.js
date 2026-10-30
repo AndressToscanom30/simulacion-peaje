@@ -152,6 +152,46 @@ export function fondoDeLaCola(cola = ESCENA_3D.cola) {
 export const anchoDeLaPlaza = (pozoTotal) => pozoTotal * ESCENA_3D.plaza.separacionCarriles;
 
 /**
+ * Medida de referencia de la escena: la mayor de sus dos extensiones, el ancho
+ * de la línea de casetas y el fondo de las dos colas ajustado a la proporción
+ * de la pantalla.
+ *
+ * De aquí salen los encuadres, los topes de la navegación libre y la niebla,
+ * así que con un pozo de 10 todo se abre solo, sin números fijos.
+ */
+export function medidaDeReferencia(pozoTotal, cola = ESCENA_3D.cola) {
+  return Math.max(anchoDeLaPlaza(pozoTotal) * 0.8, fondoDeLaCola(cola) * 1.55);
+}
+
+/**
+ * Topes de la navegación libre (DEC-041).
+ *
+ * La cámara puede orbitar desde cualquier ángulo —también por debajo de la
+ * calzada—, pero el punto al que mira se queda dentro de un cubo centrado en
+ * la plaza: así no hay forma de desplazarse hasta perder el peaje de vista.
+ *
+ * @param {number} pozoTotal
+ * @param {object} [cola] constantes de la cola, por si la calidad las recorta
+ */
+export function limitesDeNavegacion(pozoTotal, cola = ESCENA_3D.cola) {
+  const { navegacion } = ESCENA_3D;
+  const referencia = medidaDeReferencia(pozoTotal, cola);
+  const lado = referencia * navegacion.factorLimiteObjetivo;
+
+  return {
+    referencia,
+    distanciaMinima: navegacion.distanciaMinima,
+    distanciaMaxima: referencia * navegacion.factorDistanciaMaxima,
+    anguloPolarMinimo: Math.PI * navegacion.anguloPolarMinimo,
+    anguloPolarMaximo: Math.PI * navegacion.anguloPolarMaximo,
+    objetivoMinimo: [-lado, navegacion.alturaMinimaObjetivo, -lado],
+    objetivoMaximo: [lado, navegacion.alturaMaximaObjetivo, lado],
+    nieblaDesde: referencia * ESCENA_3D.niebla.desde,
+    nieblaHasta: referencia * ESCENA_3D.niebla.hasta,
+  };
+}
+
+/**
  * Encuadre de cámara para un preajuste.
  *
  * Las distancias **se calculan del contenido**, no son números fijos: con un
@@ -183,7 +223,7 @@ export function encuadre(clave, pozoTotal, cola = ESCENA_3D.cola) {
   const preajuste = ESCENA_3D.camaras[clave] ?? ESCENA_3D.camaras.todo;
   // La vista lateral se mide con el ancho; las demás, con el fondo de las dos
   // colas, que es lo que de verdad hay que encuadrar.
-  const referencia = preajuste.lado ? ancho : Math.max(ancho * 0.8, fondo * 1.55);
+  const referencia = preajuste.lado ? ancho : medidaDeReferencia(pozoTotal, cola);
 
   if (preajuste.lado) {
     return {

@@ -766,3 +766,83 @@ tomaron durante el desarrollo.
   eventos en los mismos instantes.
 - **Descarta:** constantes visuales dentro de los componentes; y estados que
   solo se distingan por color.
+
+## DEC-040 — Los vehículos usan `public/models/carro.glb`, simplificado al cargarlo
+
+- **Fecha:** 29/10/2026
+- **Decisión de la usuaria.** Los vehículos se dibujan con el **modelo 3D de
+  carro** que ella puso en `public/models/carro.glb`, no con cajas.
+- **Supera la DEC-037 en un punto y solo en uno.** Deja de valer «sin modelos ni
+  texturas externas»: hay un modelo glTF y se carga. Todo lo demás de la DEC-037
+  sigue en pie —fiber de la serie 8, sin `drei`, carga diferida, letreros
+  dibujados en un `<canvas>` sin fuentes externas— y el resto de la escena
+  (calzada, casetas, letreros, indicadores) sigue siendo **procedural**.
+- **El archivo no se usa tal cual.** Trae 47 primitivas, 26 materiales,
+  26 texturas PNG y **82 602 triángulos**: dibujarlo así para ciento y pico de
+  vehículos no se sostiene. Al cargarlo (`src/ui/vista3d/modeloCarro.js`):
+  1. se hornea la matriz de mundo de cada malla en sus vértices, que se puede
+     porque la piel del archivo es un resto del exportador (ningún nodo la
+     referencia y ninguna primitiva trae `JOINTS_0`);
+  2. los 26 materiales se agrupan por nombre en seis **papeles** —carrocería,
+     cromados, cristales, neumáticos, faros y plásticos—, y se tiran los que no
+     se ven desde fuera (interior, motor y chasis: el 22 % de la malla);
+  3. el modelo se escala del tamaño con que viene (4,8 cm) al largo de vehículo
+     de la escena, con la base a ras de suelo y el morro hacia delante; el eje
+     largo se **detecta**, no se da por sabido;
+  4. cada papel se fusiona en una geometría y se **simplifica por rejilla**
+     (agrupamiento por celdas: una celda, un vértice). Resultado: **10 727
+     triángulos** y **6 objetos de dibujo** para toda la escena, con
+     `InstancedMesh`.
+- **Las texturas del archivo no se usan.** A la escala de la escena un coche
+  ocupa unos pocos píxeles; cada papel lleva un material plano de
+  `ESCENA_3D.carro.roles`. Solo la **carrocería** recibe el color del vehículo,
+  para poder seguir uno con la vista (DEC-038, punto 4): los cristales y los
+  neumáticos conservan el suyo.
+- **Las cajas siguen siendo la red de seguridad.** Mientras el modelo se
+  descarga, si el archivo falta o si falla la carga, y en la calidad baja, los
+  vehículos se dibujan como antes. El panel dice en texto qué se está
+  dibujando. La escena **nunca** se queda vacía por un archivo.
+- **No cambia ninguna medida.** El modelo entra donde estaba la caja, con el
+  mismo largo y la misma posición: el trazado de la plaza y de las colas no se
+  ha tocado, y el motor no sabe que existe.
+- **Descarta:** dibujar el archivo sin simplificarlo; usar sus 26 materiales y
+  sus texturas; recortar el archivo original (es de la usuaria y se usa tal como
+  está); y quitar el camino de cajas.
+
+## DEC-041 — La cámara es libre: se orbita el modelo desde cualquier ángulo
+
+- **Fecha:** 29/10/2026
+- **Decisión de la usuaria.** La vista tiene que ser **libre**: el modelo se ve
+  desde cualquier ángulo, entero.
+- **Lo que estaba mal.** La cámara se interpolaba hacia el preajuste en **todos
+  los fotogramas**, así que cualquier órbita se deshacía sola en medio segundo:
+  `OrbitControls` estaba puesto, pero no servía de nada.
+- **Los preajustes pasan a ser viajes, no modos.** Un clic lleva la cámara a ese
+  encuadre; en cuanto se arrastra, el viaje se corta y manda el ratón. Un clic
+  en el mismo botón vuelve a pedir el viaje, así que los botones **también
+  sirven para recentrar**. El panel rotula «Vista libre» cuando la cámara ya no
+  está en un preajuste.
+- **Se puede mirar desde donde sea**, incluido **por debajo de la calzada**: el
+  ángulo polar va de casi cenital a casi nadiral. Eso obliga a cambiar la
+  calzada, que se dibuja ahora dos veces: la cara de arriba opaca, como estaba,
+  y un **reverso translúcido** que no escribe profundidad. Desde abajo se ven
+  las casetas y los vehículos **a través** de la calzada, que sigue leyéndose
+  como suelo. Con una losa opaca —o con el plano a dos caras— lo único visible
+  desde abajo sería el asfalto, y lo pedido es ver el modelo desde cualquier
+  ángulo, no quedarse mirando el reverso. Las marcas de carril sí van a dos
+  caras: dibujan la planta sobre el velo. Y se añade una **luz de hemisferio**,
+  que es la que ilumina las caras que miran hacia abajo.
+- **Lo único acotado es el punto al que mira**, que se queda dentro de un cubo
+  centrado en la plaza, y el acercamiento y el alejamiento. Así se cumple la
+  otra mitad de lo pedido —«viendo todo el modelo»—: no hay forma de
+  desplazarse hasta perder el peaje de vista. Los topes **no son números
+  fijos**: `limitesDeNavegacion` los saca del tamaño del contenido, igual que
+  los encuadres (DEC-039), así que con un pozo de 10 se abren solos.
+- **La niebla se aparta.** Empieza más allá de cualquier encuadre de preajuste,
+  y al tope de alejamiento vela el centro de la escena menos de un 10 %: mirar
+  el peaje entero no lo deja en bruma. Sigue sirviendo para que los extremos de
+  la calzada se pierdan en vez de cortarse en seco.
+- **`prefers-reduced-motion` sigue mandando** (DEC-039): con él, el viaje al
+  preajuste es instantáneo en vez de suave. La navegación a mano no se recorta.
+- **Descarta:** una cámara que vuelva sola al preajuste; limitar la órbita al
+  hemisferio de arriba; y topes de distancia fijos.

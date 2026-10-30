@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ESCENA_3D, ESTADOS_CASETA, FASES_VEHICULO } from '../../config/escena3d.js';
 import { crearModeloEscena } from './modeloEscena.js';
 import { PREAJUSTES_CAMARA } from './geometria.js';
@@ -50,11 +50,29 @@ function prefiereOscuro() {
  */
 export default function PanelVista3D({ traza, escenario, instante, visible, alCambiarVisible }) {
   const [preajuste, setPreajuste] = useState('todo');
+  /**
+   * Cada clic en un preajuste es una **petición** nueva, aunque sea el mismo
+   * botón: así el botón vuelve a servir para recentrar después de orbitar a
+   * mano (DEC-041).
+   */
+  const [peticionCamara, setPeticionCamara] = useState(0);
+  const [camaraLibre, setCamaraLibre] = useState(false);
   const [claveCalidad, setClaveCalidad] = useState('alta');
   const [msPorFotograma, setMsPorFotograma] = useState(null);
+  const [estadoCarro, setEstadoCarro] = useState({ carro: null, cargando: false, error: null });
   const [soportaWebGL] = useState(() => hayWebGL());
   const reducirMovimiento = useMemo(() => prefiereMenosMovimiento(), []);
   const oscuro = useMemo(() => prefiereOscuro(), []);
+
+  /** Pide un encuadre: la cámara viaja hasta él y deja de estar libre. */
+  const pedirEncuadre = useCallback((clave) => {
+    setPreajuste(clave);
+    setPeticionCamara((n) => n + 1);
+    setCamaraLibre(false);
+  }, []);
+
+  const alTomarElMando = useCallback(() => setCamaraLibre(true), []);
+  const alCargarCarro = useCallback((estado) => setEstadoCarro(estado), []);
 
   const calidad = ESCENA_3D.calidades[claveCalidad];
 
@@ -100,14 +118,20 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
                 <button
                   key={p.clave}
                   type="button"
-                  className={preajuste === p.clave ? 'activo' : undefined}
-                  onClick={() => setPreajuste(p.clave)}
-                  aria-pressed={preajuste === p.clave}
+                  className={!camaraLibre && preajuste === p.clave ? 'activo' : undefined}
+                  onClick={() => pedirEncuadre(p.clave)}
+                  aria-pressed={!camaraLibre && preajuste === p.clave}
+                  title="Lleva la cámara a este encuadre; después se puede seguir girando a mano"
                 >
                   {p.etiqueta}
                 </button>
               ))}
             </span>
+            {camaraLibre && (
+              <span className="nota" role="status">
+                Vista libre
+              </span>
+            )}
             <label>
               Calidad:
               <select value={claveCalidad} onChange={(evento) => setClaveCalidad(evento.target.value)}>
@@ -149,9 +173,12 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
                 escena={escena}
                 pozoTotal={traza.metadatos.pozoTotal}
                 preajuste={preajuste}
+                peticionCamara={peticionCamara}
                 calidad={calidad}
                 reducirMovimiento={reducirMovimiento}
                 alMedirFotograma={setMsPorFotograma}
+                alTomarElMando={alTomarElMando}
+                alCargarCarro={alCargarCarro}
                 oscuro={oscuro}
               />
             </Suspense>
@@ -166,6 +193,18 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
           />
 
           <Leyenda />
+
+          <p className="nota">
+            <strong>La vista es libre:</strong> arrastra para orbitar el peaje desde cualquier
+            ángulo, la rueda acerca y aleja, y con el botón derecho o la rueda pulsada se
+            desplaza. Por debajo de la calzada se sigue viendo todo: el asfalto se vuelve
+            translúcido visto desde abajo. Los botones de cámara llevan a un encuadre y{' '}
+            <strong>sirven para recentrar</strong> cuando te hayas perdido. El punto al que
+            mira la cámara no sale del peaje, así que el modelo no se puede perder de vista
+            (DEC-041).
+          </p>
+
+          <EstadoDelCarro estado={estadoCarro} calidad={calidad} />
 
           <p className="etiqueta-sensibilidad">
             <strong>Escena esquemática:</strong> el tránsito entre cola y caseta es cosmético.
@@ -184,6 +223,46 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
         </>
       )}
     </section>
+  );
+}
+
+/**
+ * Qué se está dibujando como vehículo: el modelo de `public/models/carro.glb`,
+ * cajas mientras llega, o cajas porque no se pudo cargar (DEC-040).
+ */
+function EstadoDelCarro({ estado, calidad }) {
+  if (!calidad.carro) {
+    return (
+      <p className="nota">
+        <strong>Calidad {calidad.etiqueta}:</strong> los vehículos se dibujan como cajas. El
+        modelo 3D del carro se usa en las calidades media y alta.
+      </p>
+    );
+  }
+  if (estado.error) {
+    return (
+      <p className="nota" role="status">
+        <strong>No se pudo cargar el modelo del carro</strong> ({ESCENA_3D.carro.ruta}), así que
+        los vehículos se dibujan como cajas. Todo lo demás —la simulación, los tableros y las
+        medidas— no depende del modelo.
+      </p>
+    );
+  }
+  if (estado.cargando || !estado.carro) {
+    return (
+      <p className="nota" role="status">
+        Cargando el modelo 3D del carro… hasta que llegue, los vehículos son cajas.
+      </p>
+    );
+  }
+  return (
+    <p className="nota">
+      <strong>Vehículos:</strong> el modelo de <code>{ESCENA_3D.carro.ruta}</code>, simplificado
+      de {num(estado.carro.triangulosDelArchivo, 0)} a {num(estado.carro.triangulos, 0)}{' '}
+      triángulos en {estado.carro.piezas.length} grupo(s) de material para poder dibujar
+      cientos de copias (DEC-040). El color de la carrocería varía con el identificador del
+      vehículo, solo para poder seguir uno con la vista.
+    </p>
   );
 }
 
@@ -314,9 +393,10 @@ function Leyenda() {
             ))}
           </ul>
           <p className="nota">
-            El color y el tamaño varían con el identificador del vehículo, solo para poder
-            seguir uno con la vista. Todos son de la misma clase: la categoría no entra al
-            modelo (DEC-003).
+            Todos usan el mismo modelo 3D (DEC-040); el color de la carrocería y el largo
+            varían con el identificador del vehículo, solo para poder seguir uno con la
+            vista. Todos son de la misma clase: la categoría no entra al modelo (DEC-003),
+            así que el coche que se ve no dice nada del vehículo simulado.
           </p>
         </div>
       </div>
