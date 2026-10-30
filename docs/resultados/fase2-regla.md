@@ -1,9 +1,9 @@
 # Fase 2: la regla de apertura y cierre contra la operación real
 
-Generado por `npm run fase2` el 2026-10-28.
+Generado por `npm run fase2` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
-16 casos, **30 réplicas** cada uno, semillas 1 a 30,
+21 casos, **30 réplicas** cada uno, semillas 1 a 30,
 **las mismas en todos los casos** (DEC-010): las comparaciones usan números
 aleatorios comunes, así que las diferencias entre casos no son ruido de
 semillas distintas.
@@ -17,6 +17,11 @@ semillas distintas.
   tuvo abiertas en cada intervalo del conteo. Es la operación real.
 - **regla** = modo por regla: `c(t)` lo decide la regla por cola de la
   sección 4, arrancando con las casetas del primer intervalo observado.
+- **regla+tasa** = la misma regla **más el disparador anticipativo por tasa
+  de llegadas** (DEC-046): abre también cuando las llegadas de los últimos
+  5 min cruzan el umbral de la sección 4 (21 / 46 / 70 / 95), sin esperar a
+  que la cola cruce el suyo. Se dispara lo que ocurra primero. La columna
+  **Anticipadas** cuenta las aperturas que solo explica la tasa.
 - **servicio base** = 12,1016 s, el medido. **servicio lento** = 15,5 s, que
   es una **hipótesis de sensibilidad** (DEC-025, PEN-010), no una medición ni
   una calibración. Solo se aplica al festivo, que es el escenario de pico.
@@ -39,10 +44,11 @@ Viernes 02/10/2026, Cúcuta→Pamplona, 12:00–13:00
 - Casetas iniciales de la regla: 2
 - Demora de apertura: 5 min
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador | 0,03 ± 0,00 | 0,0 % ± 0,0 % | 0,8 ± 0,4 | 3,7 ± 0,4 | 24,0 ± 0,0 | 0,0 | 0,0 | 0,0 | 0,0 |
-| regla | 0,07 ± 0,03 | 0,0 % ± 0,0 % | 2,1 ± 0,8 | 5,5 ± 1,0 | 22,7 ± 0,6 | 0,5 | 0,6 | 1,1 | 0,0 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador | 0,03 ± 0,00 | 0,0 % ± 0,0 % | 0,8 ± 0,4 | 3,7 ± 0,4 | 24,0 ± 0,0 | 0,0 | 0,0 | 0,0 | 0,0 | 0,0 |
+| regla | 0,07 ± 0,03 | 0,0 % ± 0,0 % | 2,1 ± 0,8 | 5,5 ± 1,0 | 22,7 ± 0,6 | 0,5 | 0,0 | 0,6 | 1,1 | 0,0 |
+| regla+tasa | 0,06 ± 0,02 | 0,0 % ± 0,0 % | 1,8 ± 0,7 | 5,0 ± 1,0 | 22,8 ± 0,5 | 0,7 | 0,7 | 0,7 | 1,4 | 0,0 |
 
 ¿Cumple el criterio de desempeño?
 
@@ -50,6 +56,7 @@ Viernes 02/10/2026, Cúcuta→Pamplona, 12:00–13:00
 |---|---|---|---|
 | operador | sí | sí | sí |
 | regla | sí | sí | sí |
+| regla+tasa | sí | sí | sí |
 
 ### domingoCP
 
@@ -61,10 +68,11 @@ Domingo 13/09/2026, Cúcuta→Pamplona, 11:50–12:50
 - Casetas iniciales de la regla: 3
 - Demora de apertura: 5 min
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador | 0,13 ± 0,02 | 0,0 % ± 0,0 % | 5,8 ± 1,3 | 9,6 ± 1,2 | 28,0 ± 0,0 | 1,0 | 1,0 | 2,0 | 0,0 |
-| regla | 0,10 ± 0,02 | 0,0 % ± 0,0 % | 5,2 ± 1,5 | 9,5 ± 1,5 | 30,7 ± 0,8 | 0,5 | 1,3 | 1,8 | 0,0 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador | 0,13 ± 0,02 | 0,0 % ± 0,0 % | 5,8 ± 1,3 | 9,6 ± 1,2 | 28,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 2,0 | 0,0 |
+| regla | 0,10 ± 0,02 | 0,0 % ± 0,0 % | 5,2 ± 1,5 | 9,5 ± 1,5 | 30,7 ± 0,8 | 0,5 | 0,0 | 1,3 | 1,8 | 0,0 |
+| regla+tasa | 0,09 ± 0,02 | 0,0 % ± 0,0 % | 4,7 ± 1,4 | 8,9 ± 1,5 | 31,8 ± 0,7 | 1,0 | 0,9 | 1,5 | 2,5 | 0,0 |
 
 ¿Cumple el criterio de desempeño?
 
@@ -72,6 +80,7 @@ Domingo 13/09/2026, Cúcuta→Pamplona, 11:50–12:50
 |---|---|---|---|
 | operador | sí | sí | sí |
 | regla | sí | sí | sí |
+| regla+tasa | sí | sí | sí |
 
 ### domingoPC
 
@@ -83,10 +92,11 @@ Domingo 13/09/2026, Pamplona→Cúcuta, 13:00–14:00
 - Casetas iniciales de la regla: 2
 - Demora de apertura: 5 min
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador | 0,28 ± 0,06 | 0,3 % ± 0,5 % | 4,6 ± 1,1 | 7,6 ± 1,2 | 14,0 ± 0,0 | 0,0 | 1,0 | 1,0 | 0,0 |
-| regla | 0,09 ± 0,02 | 0,0 % ± 0,0 % | 2,4 ± 0,8 | 5,4 ± 0,7 | 21,0 ± 0,6 | 0,8 | 1,2 | 2,0 | 0,0 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador | 0,28 ± 0,06 | 0,3 % ± 0,5 % | 4,6 ± 1,1 | 7,6 ± 1,2 | 14,0 ± 0,0 | 0,0 | 0,0 | 1,0 | 1,0 | 0,0 |
+| regla | 0,09 ± 0,02 | 0,0 % ± 0,0 % | 2,4 ± 0,8 | 5,4 ± 0,7 | 21,0 ± 0,6 | 0,8 | 0,0 | 1,2 | 2,0 | 0,0 |
+| regla+tasa | 0,08 ± 0,02 | 0,0 % ± 0,0 % | 2,1 ± 0,8 | 5,0 ± 0,8 | 21,5 ± 0,5 | 0,9 | 0,5 | 1,2 | 2,1 | 0,0 |
 
 ¿Cumple el criterio de desempeño?
 
@@ -94,6 +104,7 @@ Domingo 13/09/2026, Pamplona→Cúcuta, 13:00–14:00
 |---|---|---|---|
 | operador | sí | sí | sí |
 | regla | sí | sí | sí |
+| regla+tasa | sí | sí | sí |
 
 ### festivoPC
 
@@ -105,12 +116,14 @@ Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25
 - Casetas iniciales de la regla: 4
 - Demora de apertura: 5 min
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador | 0,28 ± 0,04 | 0,0 % ± 0,0 % | 21,4 ± 2,9 | 29,3 ± 2,8 | 55,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 35,0 |
-| regla | 0,32 ± 0,03 | 0,0 % ± 0,0 % | 26,5 ± 3,3 | 36,1 ± 3,3 | 55,6 ± 0,4 | 1,9 | 1,6 | 3,5 | 37,8 |
-| operador · lento | 2,90 ± 0,45 | 50,0 % ± 10,7 % | 83,2 ± 11,3 | 93,8 ± 11,2 | 55,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 35,0 |
-| regla · lento | 1,23 ± 0,21 | 9,2 % ± 5,8 % | 46,8 ± 6,8 | 55,2 ± 6,8 | 58,9 ± 0,2 | 1,1 | 0,1 | 1,1 | 54,3 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador | 0,28 ± 0,04 | 0,0 % ± 0,0 % | 21,4 ± 2,9 | 29,3 ± 2,8 | 55,0 ± 0,0 | 1,0 | 0,0 | 0,0 | 1,0 | 35,0 |
+| regla | 0,32 ± 0,03 | 0,0 % ± 0,0 % | 26,5 ± 3,3 | 36,1 ± 3,3 | 55,6 ± 0,4 | 1,9 | 0,0 | 1,6 | 3,5 | 37,8 |
+| regla+tasa | 0,23 ± 0,03 | 0,0 % ± 0,0 % | 20,5 ± 2,8 | 29,4 ± 2,7 | 57,2 ± 0,2 | 2,3 | 1,6 | 1,3 | 3,6 | 46,1 |
+| operador · lento | 2,90 ± 0,45 | 50,0 % ± 10,7 % | 83,2 ± 11,3 | 93,8 ± 11,2 | 55,0 ± 0,0 | 1,0 | 0,0 | 0,0 | 1,0 | 35,0 |
+| regla · lento | 1,23 ± 0,21 | 9,2 % ± 5,8 % | 46,8 ± 6,8 | 55,2 ± 6,8 | 58,9 ± 0,2 | 1,1 | 0,0 | 0,1 | 1,1 | 54,3 |
+| regla+tasa · lento | 1,19 ± 0,22 | 8,6 % ± 5,8 % | 45,6 ± 6,7 | 53,9 ± 6,8 | 58,9 ± 0,1 | 1,0 | 0,1 | 0,0 | 1,1 | 54,6 |
 
 ¿Cumple el criterio de desempeño?
 
@@ -118,8 +131,43 @@ Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25
 |---|---|---|---|
 | operador | sí | sí | sí |
 | regla | sí | sí | sí |
+| regla+tasa | sí | sí | sí |
 | operador · lento | **no** | **no** | **no** |
 | regla · lento | **no** | **no** | **no** |
+| regla+tasa · lento | **no** | **no** | **no** |
+
+## El disparador anticipativo por tasa (DEC-046)
+
+La regla por cola es **reactiva**: espera a que la cola cruce el umbral y
+después tarda la demora en tener la caseta abierta. El operador real fue
+**anticipativo** (PEN-011). El disparador por tasa es lo que cierra esa
+diferencia: abre cuando la **demanda** cruza el umbral, sin esperar a que la
+cola se forme.
+
+Los umbrales no son nuevos: son los cuatro que deriva la sección 4 del
+contexto por M/M/c con `Wq ≤ 1 min` (21 / 46 / 70 / 95 llegadas por 5 min
+para abrir la 2.ª, 3.ª, 4.ª y 5.ª caseta).
+
+### servicio base (12,10 s)
+
+| Conteo | Wq operador | Wq regla | Wq regla+tasa | Δ tasa vs. regla | ¿Gana al operador? | Carriles regla | Carriles regla+tasa | Anticipadas |
+|---|---|---|---|---|---|---|---|---|
+| viernes | 0,03 | 0,07 | **0,06** | -0,01 | **no** | 22,7 | 22,8 | 0,67 |
+| domingoCP | 0,13 | 0,10 | **0,09** | -0,01 | sí | 30,7 | 31,8 | 0,90 |
+| domingoPC | 0,28 | 0,09 | **0,08** | -0,02 | sí | 21,0 | 21,5 | 0,47 |
+| festivoPC | 0,28 | 0,32 | **0,23** | -0,09 | sí | 55,6 | 57,2 | 1,63 |
+
+**En el festivo**, el disparador baja `Wq` de 0,32 a 0,23 min (÷1,37), con 1,63 aperturas anticipadas por réplica y 1,7 carriles-intervalo de diferencia.
+Contra el operador (0,28 min), la regla con el disparador **queda por delante**, que es justo lo que la regla por cola sola no conseguía con la demora de 5 min.
+
+### servicio lento (15,5 s, sensibilidad)
+
+| Conteo | Wq operador | Wq regla | Wq regla+tasa | Δ tasa vs. regla | ¿Gana al operador? | Carriles regla | Carriles regla+tasa | Anticipadas |
+|---|---|---|---|---|---|---|---|---|
+| festivoPC | 2,90 | 1,23 | **1,19** | -0,04 | sí | 58,9 | 58,9 | 0,07 |
+
+**En el festivo**, el disparador baja `Wq` de 1,23 a 1,19 min (÷1,03), con 0,07 aperturas anticipadas por réplica y 0,1 carriles-intervalo de diferencia.
+Contra el operador (2,90 min), la regla con el disparador **queda por delante**, como ya lo estaba sin el disparador.
 
 ## Sensibilidad de la demora de apertura (festivo)
 
@@ -129,21 +177,21 @@ como sensibilidad: 0, 5 y 10 min.
 
 ### servicio base (12,10 s)
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador (referencia) | 0,28 ± 0,04 | 0,0 % ± 0,0 % | 21,4 ± 2,9 | 29,3 ± 2,8 | 55,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 35,0 |
-| regla · demora 0 min | 0,19 ± 0,02 | 0,0 % ± 0,0 % | 17,0 ± 3,1 | 26,6 ± 2,1 | 56,7 ± 0,5 | 1,9 | 1,5 | 3,4 | 43,6 |
-| regla · demora 5 min | 0,32 ± 0,03 | 0,0 % ± 0,0 % | 26,5 ± 3,3 | 36,1 ± 3,3 | 55,6 ± 0,4 | 1,9 | 1,6 | 3,5 | 37,8 |
-| regla · demora 10 min | 0,31 ± 0,03 | 0,0 % ± 0,0 % | 22,9 ± 2,8 | 33,0 ± 2,7 | 54,6 ± 0,6 | 1,6 | 1,2 | 2,8 | 33,0 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador (referencia) | 0,28 ± 0,04 | 0,0 % ± 0,0 % | 21,4 ± 2,9 | 29,3 ± 2,8 | 55,0 ± 0,0 | 1,0 | 0,0 | 0,0 | 1,0 | 35,0 |
+| regla · demora 0 min | 0,19 ± 0,02 | 0,0 % ± 0,0 % | 17,0 ± 3,1 | 26,6 ± 2,1 | 56,7 ± 0,5 | 1,9 | 0,0 | 1,5 | 3,4 | 43,6 |
+| regla · demora 5 min | 0,32 ± 0,03 | 0,0 % ± 0,0 % | 26,5 ± 3,3 | 36,1 ± 3,3 | 55,6 ± 0,4 | 1,9 | 0,0 | 1,6 | 3,5 | 37,8 |
+| regla · demora 10 min | 0,31 ± 0,03 | 0,0 % ± 0,0 % | 22,9 ± 2,8 | 33,0 ± 2,7 | 54,6 ± 0,6 | 1,6 | 0,0 | 1,2 | 2,8 | 33,0 |
 
 ### servicio lento (15,5 s, sensibilidad)
 
-| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |
-|---|---|---|---|---|---|---|---|---|---|
-| operador (referencia) | 2,90 ± 0,45 | 50,0 % ± 10,7 % | 83,2 ± 11,3 | 93,8 ± 11,2 | 55,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 35,0 |
-| regla · demora 0 min | 0,95 ± 0,20 | 6,7 % ± 5,0 % | 39,9 ± 6,7 | 47,7 ± 6,8 | 59,9 ± 0,1 | 1,1 | 0,1 | 1,2 | 59,6 |
-| regla · demora 5 min | 1,23 ± 0,21 | 9,2 % ± 5,8 % | 46,8 ± 6,8 | 55,2 ± 6,8 | 58,9 ± 0,2 | 1,1 | 0,1 | 1,1 | 54,3 |
-| regla · demora 10 min | 1,40 ± 0,23 | 12,8 % ± 5,7 % | 50,2 ± 7,0 | 57,9 ± 6,9 | 58,0 ± 0,0 | 1,0 | 0,0 | 1,0 | 49,9 |
+| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| operador (referencia) | 2,90 ± 0,45 | 50,0 % ± 10,7 % | 83,2 ± 11,3 | 93,8 ± 11,2 | 55,0 ± 0,0 | 1,0 | 0,0 | 0,0 | 1,0 | 35,0 |
+| regla · demora 0 min | 0,95 ± 0,20 | 6,7 % ± 5,0 % | 39,9 ± 6,7 | 47,7 ± 6,8 | 59,9 ± 0,1 | 1,1 | 0,0 | 0,1 | 1,2 | 59,6 |
+| regla · demora 5 min | 1,23 ± 0,21 | 9,2 % ± 5,8 % | 46,8 ± 6,8 | 55,2 ± 6,8 | 58,9 ± 0,2 | 1,1 | 0,0 | 0,1 | 1,1 | 54,3 |
+| regla · demora 10 min | 1,40 ± 0,23 | 12,8 % ± 5,7 % | 50,2 ± 7,0 | 57,9 ± 6,9 | 58,0 ± 0,0 | 1,0 | 0,0 | 0,0 | 1,0 | 49,9 |
 
 ## Lectura
 

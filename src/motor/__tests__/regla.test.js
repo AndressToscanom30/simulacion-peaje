@@ -3,6 +3,12 @@ import { simularSentido, MODO_CASETAS } from '../simulador.js';
 import { correrReplicas } from '../lotes.js';
 import { conteos } from '../../config/datos.js';
 import { parametros, configuracionRegla, semillasReplicas } from '../../config/parametros.js';
+import {
+  construirEscenario,
+  problemasDelEscenario,
+  umbralAbrirPorTasa,
+} from '../../config/escenario.js';
+import { capacidadNominal } from '../simulador.js';
 
 const p = parametros;
 const SEGUNDOS_POR_MINUTO = 60;
@@ -357,5 +363,162 @@ describe('el modo programado no cambió', () => {
       conteos.festivoPC.casetas.reduce((a, b) => a + b, 0),
       6,
     );
+  });
+});
+
+// ===========================================================================
+// Disparador anticipativo por tasa de llegadas (DEC-046)
+// ===========================================================================
+
+describe('disparador por tasa: la tabla de umbrales', () => {
+  it('la fórmula reproduce los cuatro valores del contexto (21 / 46 / 70 / 95)', () => {
+    const cap = capacidadNominal();
+    const obtenidos = [1, 2, 3, 4].map((c) => umbralAbrirPorTasa(c, cap));
+    expect(obtenidos).toEqual([21, 46, 70, 95]);
+  });
+
+  it('ningún otro desplazamiento entero los reproduce', () => {
+    const cap = capacidadNominal();
+    for (const tasaDesplazamiento of [0, 1, 2, 3, 5, 6, 7]) {
+      const otros = [1, 2, 3, 4].map((c) =>
+        umbralAbrirPorTasa(c, cap, { tasaDesplazamiento }),
+      );
+      expect(otros).not.toEqual([21, 46, 70, 95]);
+    }
+  });
+
+  it('la tabla del escenario base es la del contexto', () => {
+    const e = construirEscenario();
+    expect(e.regla.abrirSiTasaMayorQue).toEqual({ 1: 21, 2: 46, 3: 70, 4: 95, 5: null });
+  });
+
+  it('sigue al tope por sentido, como las tablas de cola (DEC-031)', () => {
+    const e = construirEscenario({ pozo: { total: 16, minimoPorSentido: 1, maximoPorSentido: 8 } });
+    const tabla = e.regla.abrirSiTasaMayorQue;
+    // Umbral para cada c de 1 a 7, y nada en el tope.
+    for (let c = 1; c <= 7; c += 1) expect(typeof tabla[c]).toBe('number');
+    expect(tabla[8]).toBeNull();
+    // Monótona creciente: más casetas, más demanda hace falta para abrir otra.
+    for (let c = 2; c <= 7; c += 1) expect(tabla[c]).toBeGreaterThan(tabla[c - 1]);
+  });
+
+  it('el escenario base trae el disparador apagado', () => {
+    expect(construirEscenario().regla.disparadorPorTasa).toBe(false);
+    expect(parametros.regla.disparadorPorTasa).toBe(false);
+  });
+});
+
+describe('disparador por tasa: comportamiento del motor', () => {
+  /** Umbrales de cola inalcanzables: lo único que puede abrir es la tasa. */
+  const SIN_COLA = { abrirSiColaMayorQue: { 1: 1e9, 2: 1e9, 3: 1e9, 4: 1e9, 5: null } };
+
+  it('apagado, no anticipa ninguna apertura', () => {
+    const r = simularSentido(conRegla('festivoPC', { colaInicial: 23 }));
+    expect(r.aperturasAnticipadas).toBe(0);
+  });
+
+  it('abre por tasa aunque la cola no cruce nunca su umbral', () => {
+    // Demanda sostenida muy por encima de los 21 veh/5 min de c = 1.
+    const config = sintetica({
+      llegadasPorIntervalo: 60,
+      casetasIniciales: 1,
+      regla: { ...SIN_COLA, disparadorPorTasa: true },
+    });
+    const r = simularSentido(config);
+    expect(r.aperturasAnticipadas).toBeGreaterThan(0);
+    expect(Math.max(...nivelesVisitados(r))).toBeGreaterThan(1);
+  });
+
+  it('con el disparador apagado y los mismos umbrales, no abre nada', () => {
+    const r = simularSentido(
+      sintetica({ llegadasPorIntervalo: 60, casetasIniciales: 1, regla: SIN_COLA }),
+    );
+    expect(r.aperturas).toBe(0);
+    expect(nivelesVisitados(r)).toEqual([1]);
+  });
+
+  it('no dispara por la cola inicial: mide demanda, no rezago (DEC-027)', () => {
+    // Sin llegadas, la ventana móvil está vacía por mucha cola heredada que haya.
+    const r = simularSentido(
+      sintetica({
+        llegadasPorIntervalo: 0,
+        colaInicial: 80,
+        casetasIniciales: 1,
+        regla: { ...SIN_COLA, disparadorPorTasa: true },
+      }),
+    );
+    expect(r.aperturasAnticipadas).toBe(0);
+    expect(r.aperturas).toBe(0);
+  });
+
+  it('no abre por tasa estando en el tope de casetas', () => {
+    const r = simularSentido(
+      sintetica({
+        llegadasPorIntervalo: 300,
+        casetasIniciales: p.casetas.maximoPorSentido,
+        regla: { ...SIN_COLA, disparadorPorTasa: true },
+      }),
+    );
+    expect(nivelesVisitados(r)).toEqual([p.casetas.maximoPorSentido]);
+    expect(r.aperturas).toBe(0);
+  });
+
+  it('en el festivo anticipa aperturas y pasa más tiempo en el tope', () => {
+    const sin = simularSentido(conRegla('festivoPC', { colaInicial: 23 }));
+    const con = simularSentido(
+      conRegla('festivoPC', { colaInicial: 23, regla: { disparadorPorTasa: true } }),
+    );
+    expect(con.aperturasAnticipadas).toBeGreaterThan(0);
+    expect(con.tiempoEnMaximoCasetas).toBeGreaterThanOrEqual(sin.tiempoEnMaximoCasetas);
+  });
+
+  it('apagado, el resultado es idéntico a no tener la tabla siquiera', () => {
+    // Es la garantía de que leer la ventana móvil no tiene efectos laterales:
+    // si los tuviera, cambiaría el ρ del árbitro y con él la fase 3.
+    const conTabla = simularSentido(conRegla('festivoPC', { colaInicial: 23 }));
+    const reglaSinTabla = { ...configuracionRegla() };
+    delete reglaSinTabla.abrirSiTasaMayorQue;
+    delete reglaSinTabla.disparadorPorTasa;
+    const sinTabla = simularSentido(
+      conRegla('festivoPC', { colaInicial: 23, regla: reglaSinTabla }),
+    );
+    expect(conTabla.wqHoraSegundos).toBe(sinTabla.wqHoraSegundos);
+    expect(conTabla.carrilesIntervalo).toBe(sinTabla.carrilesIntervalo);
+    expect(conTabla.numerosAleatoriosUsados).toBe(sinTabla.numerosAleatoriosUsados);
+  });
+
+  it('es reproducible: misma semilla, mismo resultado', () => {
+    const uno = simularSentido(
+      conRegla('festivoPC', { colaInicial: 23, regla: { disparadorPorTasa: true } }),
+    );
+    const dos = simularSentido(
+      conRegla('festivoPC', { colaInicial: 23, regla: { disparadorPorTasa: true } }),
+    );
+    expect(uno).toEqual(dos);
+  });
+
+  it('exige la tabla si está encendido', () => {
+    expect(() =>
+      simularSentido(
+        conRegla('festivoPC', {
+          regla: { disparadorPorTasa: true, abrirSiTasaMayorQue: undefined },
+        }),
+      ),
+    ).toThrow(/abrirSiTasaMayorQue/);
+  });
+
+  it('el escenario rechaza encenderlo con la tabla a medias', () => {
+    // Solo el umbral de c = 1: faltan los de c = 2, 3 y 4.
+    const problemas = problemasDelEscenario(
+      construirEscenario({ regla: { disparadorPorTasa: true, abrirSiTasaMayorQue: { 1: 21 } } }),
+    );
+    expect(problemas.filter((m) => /umbral de tasa/.test(m))).toHaveLength(3);
+  });
+
+  it('el escenario con el disparador apagado no exige la tabla', () => {
+    const problemas = problemasDelEscenario(
+      construirEscenario({ regla: { disparadorPorTasa: false, abrirSiTasaMayorQue: { 1: 21 } } }),
+    );
+    expect(problemas.filter((m) => /umbral de tasa/.test(m))).toHaveLength(0);
   });
 });

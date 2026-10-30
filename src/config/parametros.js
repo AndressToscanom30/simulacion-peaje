@@ -91,6 +91,19 @@ export const parametros = {
     cerrarSiColaMenorQue: { 1: null, 2: 2, 3: 4, 4: 7, 5: 9 },
 
     /**
+     * Disparador **anticipativo** por tasa de llegadas (DEC-046). Con `c`
+     * abiertas, abrir otra si las llegadas de la ventana móvil superan el valor.
+     * Son los cuatro valores que deriva la sección 4 del contexto por M/M/c con
+     * `Wq ≤ 1 min`.
+     *
+     * **Por defecto está apagado** (`disparadorPorTasa: false`): la DEC-006
+     * sigue siendo la regla base y los resultados de las fases 1 a 4 no se
+     * mueven. Se enciende por escenario para compararlo con el caso base.
+     */
+    abrirSiTasaMayorQue: { 1: 21, 2: 46, 3: 70, 4: 95, 5: null },
+    disparadorPorTasa: false,
+
+    /**
      * Coeficientes con los que se generan las tablas de arriba para topes por
      * sentido distintos de 5 (DEC-031). Reproducen exactamente los ocho valores
      * del contexto para c de 1 a 5:
@@ -101,6 +114,17 @@ export const parametros = {
       abrirPendiente: 5,
       abrirDesplazamiento: -1,
       divisorCierre: 2,
+
+      /**
+       * Coeficiente de la tabla por tasa (DEC-046):
+       *   abrirPorTasa(c) = redondear(c × capacidad nominal por caseta − 4)
+       * Con la capacidad nominal de 24,7901 veh/caseta y 5 min reproduce
+       * **exactamente** los cuatro valores del contexto (21 / 46 / 70 / 95), y
+       * ningún otro desplazamiento entero lo hace. Como depende de la capacidad
+       * nominal, la tabla sigue al tope por sentido igual que las de cola
+       * (DEC-031).
+       */
+      tasaDesplazamiento: 4,
     },
 
     /** Demora entre decidir abrir y tener la caseta operando (caso base 5 min). */
@@ -195,12 +219,20 @@ export const parametros = {
  * @param {object} [opciones]
  * @param {number} [opciones.demoraAperturaSegundos] para la sensibilidad de la
  *   demora; por defecto el caso base de `parametros.regla`.
+ * @param {boolean} [opciones.disparadorPorTasa] enciende el disparador
+ *   anticipativo por tasa de llegadas (DEC-046); por defecto, apagado.
  * @param {object} [opciones.p] parámetros base, por si se quieren sustituir.
  */
-export function configuracionRegla({ demoraAperturaSegundos, p = parametros } = {}) {
+export function configuracionRegla({
+  demoraAperturaSegundos,
+  disparadorPorTasa,
+  p = parametros,
+} = {}) {
   return {
     abrirSiColaMayorQue: p.regla.abrirSiColaMayorQue,
     cerrarSiColaMenorQue: p.regla.cerrarSiColaMenorQue,
+    abrirSiTasaMayorQue: p.regla.abrirSiTasaMayorQue,
+    disparadorPorTasa: disparadorPorTasa ?? p.regla.disparadorPorTasa,
     demoraAperturaSegundos: demoraAperturaSegundos ?? p.regla.demoraAperturaSegundos,
     ventanaCierreSegundos: p.regla.ventanaCierreSegundos,
     maximoCasetas: p.casetas.maximoPorSentido,

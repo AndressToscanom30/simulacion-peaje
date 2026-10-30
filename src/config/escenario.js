@@ -39,6 +39,41 @@ export function umbralCerrar(c, p = parametros.regla.formulaUmbrales) {
 }
 
 /**
+ * Umbral **de tasa** con `c` casetas abiertas (DEC-046):
+ * `redondear(c × capacidad nominal por caseta − tasaDesplazamiento)`.
+ * Reproduce los 21, 46, 70 y 95 del contexto para `c` = 1…4 con la capacidad
+ * nominal de 24,7901 veh/caseta e intervalo.
+ */
+export function umbralAbrirPorTasa(
+  c,
+  capacidadNominalPorCaseta,
+  p = parametros.regla.formulaUmbrales,
+) {
+  return Math.round(c * capacidadNominalPorCaseta - p.tasaDesplazamiento);
+}
+
+/**
+ * Construye la tabla de umbrales por tasa, que sigue al tope por sentido igual
+ * que las de cola (DEC-031). `null` donde no aplica: en el tope no se abre.
+ */
+export function tablaUmbralesPorTasa({
+  minimoPorSentido,
+  maximoPorSentido,
+  capacidadNominalPorCaseta,
+  factor = 1,
+  formula = parametros.regla.formulaUmbrales,
+}) {
+  const abrirSiTasaMayorQue = {};
+  for (let c = minimoPorSentido; c <= maximoPorSentido; c += 1) {
+    abrirSiTasaMayorQue[c] =
+      c >= maximoPorSentido
+        ? null
+        : Math.round(umbralAbrirPorTasa(c, capacidadNominalPorCaseta, formula) * factor);
+  }
+  return { abrirSiTasaMayorQue };
+}
+
+/**
  * Construye las dos tablas de umbrales para un tope y un mínimo dados.
  *
  * `null` marca donde el umbral no aplica: no se puede abrir estando en el tope
@@ -136,6 +171,13 @@ export const ESCENARIO_BASE = Object.freeze({
     cerrarSiColaMenorQue: null,
     /** Multiplica los umbrales generados (sensibilidad). */
     factorUmbrales: 1,
+    /**
+     * Disparador anticipativo por tasa de llegadas (DEC-046). Apagado por
+     * defecto: la regla base sigue siendo la de la DEC-006, por cola.
+     */
+    disparadorPorTasa: false,
+    /** `null` = se genera con la fórmula de DEC-046 según el tope. */
+    abrirSiTasaMayorQue: null,
     demoraAperturaSegundos: 5 * SEGUNDOS_POR_MINUTO,
     ventanaCierreSegundos: 15 * SEGUNDOS_POR_MINUTO,
     rhoReasignacion: 0.6,
@@ -239,6 +281,20 @@ export function construirEscenario(sobreescrituras = {}, base = ESCENARIO_BASE) 
     });
     escenario.regla.abrirSiColaMayorQue ??= tablas.abrirSiColaMayorQue;
     escenario.regla.cerrarSiColaMenorQue ??= tablas.cerrarSiColaMenorQue;
+  }
+
+  // La tabla por tasa también sigue al tope (DEC-046, con el criterio de
+  // DEC-031). Se genera siempre, aunque el disparador esté apagado, para que
+  // encenderlo sea un solo campo.
+  if (escenario.regla.abrirSiTasaMayorQue === null) {
+    const { abrirSiTasaMayorQue } = tablaUmbralesPorTasa({
+      minimoPorSentido: escenario.pozo.minimoPorSentido,
+      maximoPorSentido: escenario.pozo.maximoPorSentido,
+      capacidadNominalPorCaseta:
+        escenario.tiempo.duracionIntervaloSegundos / escenario.servicio.mediaNominalSegundos,
+      factor: escenario.regla.factorUmbrales,
+    });
+    escenario.regla.abrirSiTasaMayorQue = abrirSiTasaMayorQue;
   }
 
   return escenario;
@@ -411,6 +467,11 @@ export function problemasDelEscenario(escenario) {
           `Falta el umbral de cierre para c = ${c}: con un mínimo de ${z.minimoPorSentido} hace falta uno para cada c de ${z.minimoPorSentido + 1} a ${z.maximoPorSentido}.`,
         );
       }
+      if (r.disparadorPorTasa && c < z.maximoPorSentido && !umbralPuesto(r.abrirSiTasaMayorQue, c)) {
+        errores.push(
+          `Falta el umbral de tasa para c = ${c}: con el disparador por tasa encendido hace falta uno para cada c de ${z.minimoPorSentido} a ${z.maximoPorSentido - 1}.`,
+        );
+      }
     }
   }
 
@@ -537,6 +598,8 @@ export function aConfiguracionPeaje(escenario) {
             regla: {
               abrirSiColaMayorQue: e.regla.abrirSiColaMayorQue,
               cerrarSiColaMenorQue: e.regla.cerrarSiColaMenorQue,
+              abrirSiTasaMayorQue: e.regla.abrirSiTasaMayorQue,
+              disparadorPorTasa: e.regla.disparadorPorTasa,
               demoraAperturaSegundos: e.regla.demoraAperturaSegundos,
               ventanaCierreSegundos: e.regla.ventanaCierreSegundos,
               maximoCasetas: e.pozo.maximoPorSentido,

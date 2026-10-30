@@ -17,25 +17,44 @@ mantiene la pregunta abierta hasta que alguien la responda.
 
 ## Abiertas del desarrollo
 
-### PEN-002 — La espera observada del festivo (1,28 min) no se reproduce, y ya no se puede recalcular
+### PEN-002 — De dónde sale el 1,28 min declarado del festivo ✅ CERRADO
 
 - **Origen:** fase 1. El contexto declara en la sección 6 una espera observada de
   1,28 min en el festivo contra 0,06 min del M/M/c (unas 20 veces).
-- **Estado: parcialmente cerrado por DEC-024.** Cuando se abrió este pendiente se
-  intentó reconstruir el 1,28 aplicando la fórmula de la sección 3
-  (`Wq_est = Lq × 12,1 / c`) a las lecturas de cola, y salía 1,01 min. **Ese
-  recálculo queda anulado:** las lecturas son la fila más larga de una sola
-  caseta, no la cola total del sentido, y la fórmula espera un total. Aplicada a
-  una fila da una cifra sin interpretación. El recálculo se quitó del informe de
-  validación.
-- **Qué sigue abierto:** no se sabe cómo se obtuvo el 1,28 min ni, por tanto,
-  contra qué se está comparando la simulación. Puede ser una espera medida en
-  campo (que sí sería comparable) o una estimada a partir de la cola total (que
-  nunca se registró).
-- **Mientras tanto:** en el informe se imprime el valor declarado (1,28 min) como
-  referencia del contexto, sin recálculo al lado, y la comparación se presenta
-  como lo que es: una razón contra un valor cuyo origen no está documentado.
-- **Qué haría falta:** que quede escrito cómo se calculó el 1,28.
+- **Cerrado el 30/10/2026 por DEC-042.** El 1,28 min sale de aplicar la **ley de
+  Little** a la columna `cola` del festivo, leída como el total de vehículos
+  esperando en el sentido:
+
+  ```
+  Lq medio de la columna cola del festivo = 272 / 12 = 22,6667 vehículos
+  λ = 1.064 veh/h
+  Wq = Lq / λ = 22,6667 / 1.064 = 0,021303 h = 1,2782 min  →  1,28 min
+  ```
+
+- **Y no solo el festivo: los cuatro conteos salen del mismo cálculo**, lo que
+  descarta que sea coincidencia:
+
+  | Conteo | `Lq` medio | λ (veh/h) | `Wq = Lq/λ` | Declarado |
+  |---|---|---|---|---|
+  | viernes | 0,2500 | 238 | 0,0630 min | 0,06 |
+  | domingoCP | 1,8333 | 451 | 0,2439 min | 0,24 |
+  | domingoPC | 1,3333 | 195 | 0,4103 min | 0,41 |
+  | festivoPC | 22,6667 | 1.064 | 1,2782 min | 1,28 |
+
+- **Por qué el repo no lo había encontrado:** se intentó reconstruirlo con la
+  fórmula de la sección 3 (`Wq_est = Lq × 12,1 / c`), que dio 1,01 min, y se
+  concluyó que no cuadraba. No era esa la fórmula: la de la sección 3 reparte la
+  cola entre las `c` casetas, y Little no necesita `c` ninguna. Con Little da
+  exacto.
+- **Qué significa para la comparación:** el 1,28 min **no es una espera medida
+  con cronómetro**, es una espera **estimada por Little a partir de la cola
+  observada**. Así que comparar el `Wq` simulado contra él es comparar el `Wq`
+  del modelo contra el que implica la cola de campo — lo cual es legítimo, y es
+  consistente con que el modelo quede corto justo donde su cola queda corta
+  (PEN-008). Deja de ser "una razón contra un valor cuyo origen no está
+  documentado".
+- **Segunda vía de confirmación de DEC-042:** que el cálculo solo cuadre con la
+  columna leída como total es, por sí mismo, prueba de que lo es.
 
 ### PEN-003 — ¿Desde cuándo cuenta la espera de los vehículos de la cola inicial?
 
@@ -56,9 +75,13 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** la validación reporta las dos: la cola máxima continua y
   el máximo de las 12 lecturas muestreadas en instantes aleatorios, que es la
   comparable con lo observado.
-- **Añadido el 27/10/2026:** DEC-024 fija además que la lectura observada es la
-  fila más larga de **una** caseta, no el total del sentido, así que ni siquiera
-  el máximo muestreado es comparable de frente. Ver PEN-008.
+- **Corregido el 30/10/2026 (DEC-042):** se retira la nota del 27/10 que decía
+  que "ni siquiera el máximo muestreado es comparable de frente", porque se
+  apoyaba en la DEC-024. La lectura observada **es** el total del sentido, así
+  que el máximo de las 12 lecturas muestreadas **sí** es la cifra comparable.
+  Lo que sigue abierto es lo de este pendiente y nada más: la distinción entre
+  una lectura puntual y un máximo continuo, que es real y es la razón de
+  reportar las dos cifras.
 
 ### PEN-005 — ¿Qué es exactamente el "caudal de la hora"?
 
@@ -90,41 +113,71 @@ mantiene la pregunta abierta hasta que alguien la responda.
 
 ### PEN-008 — El modelo de cola única subestima la congestión del pico
 
-- **Origen:** validación de la fase 1. **Reescrito el 27/10/2026** tras DEC-024,
-  que fija que las lecturas de cola son la fila más larga de una caseta.
-- **Qué pasa, ahora con el criterio correcto:** como la cola total de un sentido
-  es mayor o igual que cualquiera de sus filas, donde la cola **total** simulada
-  queda por debajo de la **fila más larga** observada el modelo subestima con
-  certeza. Y eso pasa en el festivo en los **12 de 12 intervalos** en media, y en
-  **8 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de
-  campo. En los cuatro conteos juntos son 21 de 48 intervalos en media y 10 de 48
-  en las 30 réplicas. El desglose está en `docs/resultados/diagnostico-festivo.md`
+- **Origen:** validación de la fase 1. **Reescrito el 30/10/2026** tras DEC-042,
+  que fija que la columna `cola` es el total de vehículos esperando por sentido.
+  La versión anterior (27/10) estaba escrita sobre la DEC-024 y razonaba por
+  desigualdad; el hallazgo sobrevive, el razonamiento no.
+- **La conclusión sigue en pie:** el modelo subestima la congestión del pico.
+- **Qué cambia en el razonamiento.** Antes la afirmación se apoyaba en que la
+  cola total es mayor o igual que cualquiera de sus filas, así que solo los
+  intervalos en que la simulación quedaba **por debajo** de la lectura decían
+  algo, y el resto salía «no concluyente». Ahora la serie de campo y la del
+  modelo son **la misma variable** —cola total del sentido— y se comparan de
+  frente, en los dos sentidos. Los números del diagnóstico no cambian (el motor
+  siempre simuló la cola total); cambia que ya no hay que pedir disculpas por la
+  comparación.
+- **Qué se ve con la comparación directa:** en el festivo la cola simulada queda
+  por debajo de la observada en los **12 de 12 intervalos** en media, y en **8 de
+  12** ni la más congestionada de las 30 réplicas alcanza la lectura de campo. En
+  los cuatro conteos juntos son 21 de 48 intervalos en media y 10 de 48 en las 30
+  réplicas. El desglose está en `docs/resultados/diagnostico-festivo.md`
   (`npm run diagnostico`).
-- **En espera:** `Wq` sale 0,28 min en el festivo contra los 1,28 min declarados,
-  4,6 veces corto. El M/M/c estaba 22 veces corto, así que la simulación cierra
-  parte de la brecha pero no toda. Ojo con esta comparación: el origen del 1,28
-  no está documentado (PEN-002).
-- **Tres explicaciones posibles, ninguna descartable con los datos que hay:**
-  1. El servicio en el pico fue más lento que los 12,10 s medidos. Los 50 tiempos
-     son de otro sentido y otro día (limitación declarada en la sección 8). Esta
-     hipótesis entra como escenario de sensibilidad en DEC-025 y PEN-010.
-  2. **La más probable:** las filas estaban desbalanceadas entre casetas, y la
-     cola única no lo reproduce (también declarado en la sección 8). Con filas
-     por caseta puede haber una caseta libre y otra con 30 vehículos a la vez,
-     que es exactamente lo que el modelo de cola única no puede representar.
-  3. Las lecturas cuentan vehículos que el modelo no cuenta (motocicletas, o
+- **Hallazgo nuevo del 30/10/2026, que la lectura anterior no permitía ver: el
+  sesgo tiene un solo signo.** En **0 de los 48 intervalos** la lectura de campo
+  queda por debajo del rango de las 30 réplicas. O sea que donde el modelo se
+  separa del campo se separa **siempre quedándose corto**, nunca sobrando. Con la
+  DEC-024 esto era incomprobable: todo intervalo en que la simulación quedaba por
+  encima salía rotulado «no concluyente», así que no se podía saber si el sesgo
+  era asimétrico o solo ruido en los dos sentidos. Ahora se sabe, y **refuerza**
+  la conclusión de este pendiente: no es dispersión, es sesgo.
+- **En espera:** `Wq` sale 0,28 min en el festivo contra los 1,28 min del
+  contexto, 4,6 veces corto. El M/M/c estaba 22 veces corto, así que la
+  simulación cierra parte de la brecha pero no toda. **Y ahora se sabe de dónde
+  sale el 1,28:** es el `Wq` que implica la cola observada por la ley de Little
+  (PEN-002, cerrado). Así que la brecha en `Wq` y la brecha en cola son **la
+  misma brecha vista dos veces**, no dos discrepancias independientes: Little
+  liga una con la otra. Eso refuerza el hallazgo en lugar de debilitarlo.
+- **Tres explicaciones posibles, ninguna descartable con los datos que hay y
+  ninguna privilegiada:**
+  1. **El servicio en el pico fue más lento que los 12,10 s medidos.** Los 50
+     tiempos son de otro sentido y otro día (limitación declarada en la sección
+     8). Esta hipótesis **recupera sustento con DEC-042**: la derivación del
+     "servicio implícito" de ≈ 15,5 s suponía cola única, y la cola medida es
+     justamente la de la cola única, así que la derivación vuelve a ser válida.
+     Sigue sin ser una medición. Ver DEC-025 y PEN-010.
+  2. **Las filas estaban desbalanceadas entre casetas, y la cola única no lo
+     reproduce** (también declarado en la sección 8). Sigue siendo un mecanismo
+     real: con el mismo total en espera, si unas casetas están desocupadas
+     mientras otras acumulan fila, la capacidad que se aprovecha es menor que la
+     nominal y la cola se sostiene más alta. **Lo que pierde es el lugar
+     privilegiado que le daba la DEC-024.** Mientras la lectura se leía como la
+     fila de una sola caseta, el desbalance explicaba el dato por construcción y
+     este pendiente lo marcaba como "la más probable". Con la lectura correcta
+     esa ventaja desaparece: el desbalance es una hipótesis más, al lado de las
+     otras dos.
+  3. **Las lecturas cuentan vehículos que el modelo no cuenta** (motocicletas, o
      vehículos de TAG en la misma fila).
-- **Lo que este pendiente ya NO afirma:** la fase 1 había derivado de aquí un
+- **Lo que este pendiente volvió a afirmar:** la fase 1 había derivado de aquí un
   "tiempo de servicio implícito" de ≈ 15,5 s, razonando que haber cola implica
-  casetas ocupadas. Eso **solo vale en cola única** y queda anulado por DEC-024
-  (consecuencia 5): con filas por caseta la holgura de capacidad se explica por
-  el desbalance sin necesidad de suponer un servicio más lento. El cálculo se
-  quitó del informe.
+  casetas ocupadas. La DEC-024 lo había anulado por valer "solo en cola única";
+  **la DEC-042 lo restituye**, porque el dato es de cola única. El cálculo vuelve
+  a los informes como lo que es: un valor de referencia, no una medición
+  (PEN-010).
 - **Mientras tanto:** **no se tocó ningún parámetro** (DEC-021). Se reporta la
   diferencia y se sigue.
-- **Qué haría falta:** registrar la **cola total por sentido** (y, mejor, por
-  caseta) en un conteo de pico. Sin eso la validación de la cola no puede pasar
-  de la desigualdad.
+- **Qué haría falta:** medir la cola **por caseta** en un conteo de pico, que es
+  lo único que separaría la hipótesis 2 de la 1. El total por sentido ya está
+  medido: era lo que se pedía aquí antes de la DEC-042, y ya no hace falta.
 - **Consecuencia para las fases siguientes:** la regla de la fase 2 se dimensiona
   sobre un modelo que subestima la congestión del pico. Las casetas que
   recomiende hay que leerlas como **cota inferior**.
@@ -154,12 +207,19 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Por qué 15,5 s y no otro valor:** es el tiempo medio que haría falta para que
   las casetas que el operador tuvo abiertas en el festivo estuvieran ocupadas
   todo el tiempo atendiendo los 1.064 vehículos contados. Era el "servicio
-  implícito" que la fase 1 derivó suponiendo cola única. **Esa derivación ya no
-  se sostiene** (DEC-024, consecuencia 5): con filas por caseta la holgura se
-  explica por el desbalance. Así que el 15,5 s **no es una estimación del
-  servicio real**, solo un valor de referencia que marca cuánto más lento tendría
-  que ser el servicio para explicar el pico por esa vía en lugar de por el
-  desbalance.
+  implícito" que la fase 1 derivó suponiendo cola única.
+- **Actualizado el 30/10/2026 (DEC-042): la derivación vuelve a ser válida.** La
+  DEC-024 la había anulado porque "solo vale en cola única"; la columna `cola`
+  **es** el total en espera de la cola única, así que el supuesto que la
+  derivación necesitaba es el que los datos tienen. El 15,5 s deja de ser un
+  número anulado y pasa a tener sustento: es el servicio que hace cuadrar la
+  capacidad abierta con la cola que de verdad se midió.
+- **Lo que sigue igual, y es lo que importa:** el 15,5 s **no es una medición**.
+  Se deriva de un balance de capacidad, no de cronometrar atenciones, y descansa
+  en suponer que toda la holgura del pico se explica por el servicio y nada por
+  el desbalance o por el conteo (las otras dos hipótesis de PEN-008). Por eso el
+  escenario **sigue siendo de sensibilidad** y no pasa a calibración: lo que
+  cambia es que ahora tiene un sustento que antes estaba anulado, no su estatus.
 - **Qué pendiente responde:** cuál de las tres hipótesis de PEN-008 explica la
   congestión del festivo. El escenario aísla la primera (servicio más lento). Si
   con 15,5 s la simulación reprodujera la congestión observada, la hipótesis 1
@@ -177,30 +237,53 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Qué haría falta para cerrarlo:** medir tiempos de atención en un festivo y en
   el sentido Pamplona→Cúcuta.
 
-### PEN-011 — Con el servicio medido, la regla no mejora al operador, y en el festivo queda algo peor
+### PEN-011 — El defecto de la regla era la latencia ✅ CERRADO
 
 - **Origen:** experimentos de la fase 2 (`docs/resultados/fase2-regla.md`).
-- **Qué pasa:** con servicio base (12,10 s) el operador y la regla cumplen el
-  criterio en los cuatro conteos, y en el festivo la regla queda ligeramente
-  **peor**: `Wq` 0,32 contra 0,28 min, y cola máxima continua 36,1 contra 29,3.
-- **Por qué, con lo que se ve en las tablas:** la regla es **reactiva**. Espera a
-  que la cola pase el umbral y después tarda la demora de 5 min en tener la
-  caseta abierta. El operador fue **anticipativo**: abrió la quinta caseta al
-  empezar el intervalo 6 sin esperar a que la cola lo exigiera. Con demora 0 la
-  regla sí mejora al operador (`Wq` 0,19 contra 0,28), lo que confirma que la
-  diferencia es el retardo de reacción y no los umbrales.
-- **Mientras tanto:** se reporta tal cual. **No se tocaron los umbrales** para
-  que la regla ganara.
-- **Qué está abierto:** si conviene añadirle a la regla un disparador
-  anticipativo. El contexto trae en la sección 4 una derivación por tasa de
-  llegadas (abrir la 2.ª en 21 llegadas/5 min, la 3.ª en 46, la 4.ª en 70, la
-  5.ª en 95) que serviría justo para eso, pero DEC-006 decidió disparar por cola
-  y descartó disparar por tasa. **No se reabre aquí**: queda anotado para la
-  interpretación de la fase 7, y si se decidiera añadirlo haría falta una
-  decisión nueva que diga qué supera.
-- **Ojo con la lectura:** este resultado vale en el régimen donde, según el
-  modelo, no hay problema que resolver (PEN-009). Con servicio lento la regla
-  mejora mucho al operador.
+- **Qué decía:** con servicio base (12,10 s) el operador y la regla cumplen el
+  criterio en los cuatro conteos, y en el festivo la regla quedaba ligeramente
+  **peor**: `Wq` 0,32 contra 0,28 min. El diagnóstico era que la regla es
+  **reactiva** —espera a que la cola cruce el umbral y después tarda la demora de
+  5 min en abrir— mientras el operador fue **anticipativo**: abrió la quinta
+  caseta al empezar el intervalo 6 sin esperar a que la cola lo exigiera. Con
+  demora 0 la regla sí mejoraba al operador (0,19 contra 0,28), lo que ya
+  apuntaba a que la diferencia era el retardo y no los umbrales.
+- **Qué quedaba abierto:** si convenía añadirle a la regla un disparador
+  anticipativo por tasa de llegadas. El contexto trae la derivación en la
+  sección 4 (abrir la 2.ª con 21 llegadas/5 min, la 3.ª con 46, la 4.ª con 70 y
+  la 5.ª con 95), pero la DEC-006 había decidido disparar por cola y descartado
+  la tasa. La DEC-028 dejó la pregunta para la fase 7 y la DEC-044 la recomendó
+  sin medirla.
+- **Cerrado el 30/10/2026 por DEC-046: sí convenía, y el diagnóstico era
+  correcto.** El disparador está implementado y medido:
+
+  | | Festivo, servicio base | Festivo, servicio lento |
+  |---|---|---|
+  | operador | 0,28 min | 2,90 min |
+  | regla por cola | 0,32 min | 1,23 min |
+  | **regla + tasa** | **0,23 min** | **1,19 min** |
+
+  Con el servicio base la regla **pasa por delante del operador**, que es
+  exactamente lo que este pendiente decía que no conseguía. Cuesta 1,7
+  carriles-intervalo y hace 1,63 aperturas anticipadas por réplica.
+- **Y confirma el mecanismo por una tercera vía.** Con el servicio lento el
+  disparador apenas mueve nada (1,23 → 1,19 min, 0,03 aperturas anticipadas),
+  porque con la cola ya desbordada el umbral de cola se cruza solo y **no queda
+  nada que anticipar**. Es decir: el disparador sirve justo donde el operador le
+  ganaba a la regla, y es inerte donde la regla ya ganaba. Si la causa hubiera
+  sido otra —los umbrales, por ejemplo— no habría por qué esperar ese patrón.
+- **Lo que este pendiente NO resuelve, y hay que llevarse:** el disparador mejora
+  el punto de operación y **no compra holgura de capacidad**. El punto de quiebre
+  sigue en **×1,10** con el pozo de 6, exactamente igual que sin él
+  (`fase4-escenarios.md`). No añade casetas: reparte en el tiempo las que ya hay.
+- **Y una contrapartida en el pozo compartido:** P→C baja de 0,35 a 0,23 min,
+  pero C→P pierde 0,7 carriles-intervalo y el pozo queda agotado 8,4 min más.
+  Parte de la mejora sale de pedir antes las casetas que el otro sentido podría
+  usar (`fase3-reparto.md`). Con la demanda de C→P sin medir (PEN-013), cuánto
+  importa eso no se sabe.
+- **No se tocaron los umbrales de cola** para que la regla ganara (DEC-021): lo
+  que se añadió es un disparador nuevo con los umbrales que el contexto ya traía
+  derivados.
 
 ### PEN-012 — La ventana de 15 min hace que la regla gaste más carriles-intervalo que el operador
 
@@ -331,9 +414,18 @@ mantiene la pregunta abierta hasta que alguien la responda.
   para esta política, no el bueno.
 - **Mientras tanto:** se reporta tal cual. **No se tocó nada.** La sensibilidad
   queda en la matriz con su explicación generada.
-- **Qué está abierto:** lo mismo que PEN-011, el disparador anticipativo por
-  tasa de llegadas, que la DEC-028 dejó para la fase 7. Este resultado le da
-  más peso: no es una mejora cosmética, es la diferencia entre cumplir y no.
+- **Resuelto en parte el 30/10/2026 (DEC-046).** Lo que estaba abierto aquí era
+  lo mismo que en PEN-011: el disparador anticipativo por tasa de llegadas. Ya
+  está implementado y medido, y **cerrado PEN-011**. Este pendiente fue una de
+  las tres vías que lo justificaron: si lo que salva a P→C es tener cola
+  **antes** de empezar, un aviso temprano es exactamente lo que falta.
+- **Qué sigue abierto aquí:** el disparador **no elimina** la dependencia que
+  este pendiente señala. Durante los primeros 5 min la ventana móvil está a medio
+  llenar, así que tampoco puede disparar a plena potencia justo en el arranque
+  (limitación declarada en DEC-046). El caso malo de esta política sigue siendo
+  un festivo que arranque con el peaje vacío y la demanda subiendo; lo que cambia
+  es que ahora hay un mecanismo que reacciona a la demanda y no solo a la cola.
+  Medir ese caso con el disparador encendido queda pendiente.
 
 ### PEN-017 — La interfaz reproduce una traza completa, así que el horizonte está acotado por la memoria
 
@@ -417,6 +509,9 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** se deja el bloque con su rótulo. Si en la fase 7 alguien
   usa una captura en el documento del estudio, conviene que lleve el pie de
   "cola única; las hileras son solo para que quepa".
+- **Nota del 30/10/2026 (DEC-042):** este pendiente **no cambia**. Su razón es
+  visual —que el dibujo no sugiera una estructura que el modelo no tiene— y es
+  independiente de cómo se midió la cola en campo.
 
 ### PEN-021 — El archivo del carro pesa 10,9 MB y se descarga entero
 

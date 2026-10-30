@@ -159,8 +159,10 @@ for (const [clave, conteo] of Object.entries(conteos)) {
   );
 }
 w();
-w('La cola observada es la **fila más larga de una caseta**, no el total del');
-w('sentido (DEC-024). Ver `diagnostico-festivo.md`.');
+w('La cola observada es el **total de vehículos esperando por sentido**, sumando');
+w('todas las casetas abiertas (DEC-042), que es la misma variable que simula el');
+w('modelo. La cifra de la tabla es el máximo de las 12 lecturas puntuales del');
+w('conteo. Ver `diagnostico-festivo.md`.');
 w();
 
 w('## Escenario base completo');

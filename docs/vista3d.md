@@ -57,9 +57,10 @@ dos cosas difieren, manda el modelo y la escena lo rotula:
   a la caseta en el instante del evento. La entrada desde el borde, el avance a
   la caseta y la salida son **interpolación** y no afectan a ninguna medida.
 - **La cola se dibuja como un solo embudo por sentido**, en un bloque de hileras
-  más estrecho que la línea de casetas. El modelo es de **cola única** (DEC-001)
-  y la cola de campo que se midió era la fila más larga de una caseta (DEC-024):
-  dibujar una fila por caseta sugeriría que el modelo las tiene.
+  más estrecho que la línea de casetas, porque el modelo es de **cola única**
+  (DEC-001): dibujar una fila por caseta sugeriría que el modelo las tiene. Y la
+  cola de campo también se midió como el total por sentido (DEC-042), así que el
+  embudo coincide con el modelo **y** con el dato.
 - **Las casetas son reversibles.** El letrero lleva la flecha del sentido al que
   sirve en cada momento, porque en el modelo son un recurso compartido que
   cambia de dueño (DEC-002, DEC-008).

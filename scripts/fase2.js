@@ -57,13 +57,19 @@ const SERVICIO = {
 /** El festivo es el único escenario de pico, y el único que admite el servicio lento. */
 const CONTEO_PICO = 'festivoPC';
 
+/** Controles de `c(t)`. `regla+tasa` añade el disparador anticipativo (DEC-046). */
+const CONTROLES = ['operador', 'regla', 'regla+tasa'];
+
 function configuracionDe({ conteo, control, servicio, demoraAperturaSegundos }) {
-  const porRegla = control === 'regla';
+  const porRegla = control !== 'operador';
+  const disparadorPorTasa = control === 'regla+tasa';
   return {
     llegadas: conteos[conteo].llegadas,
     casetasProgramadas: conteos[conteo].casetas,
     modoCasetas: porRegla ? MODO_CASETAS.REGLA : MODO_CASETAS.PROGRAMADO,
-    ...(porRegla ? { regla: configuracionRegla({ demoraAperturaSegundos }) } : {}),
+    ...(porRegla
+      ? { regla: configuracionRegla({ demoraAperturaSegundos, disparadorPorTasa }) }
+      : {}),
     colaInicial: COLA_INICIAL[conteo],
     factorEscalaDemanda: p.llegadas.factorEscalaDemanda,
     duracionIntervaloSegundos: p.tiempo.duracionIntervaloSegundos,
@@ -81,7 +87,7 @@ const casos = [];
 for (const conteo of ordenConteos) {
   const servicios = conteo === CONTEO_PICO ? ['base', 'lento'] : ['base'];
   for (const claveServicio of servicios) {
-    for (const control of ['operador', 'regla']) {
+    for (const control of CONTROLES) {
       casos.push({
         grupo: 'comparacion',
         conteo,
@@ -170,6 +176,11 @@ w('- **operador** = modo programado: `c(t)` copia las casetas que el operador');
 w('  tuvo abiertas en cada intervalo del conteo. Es la operación real.');
 w('- **regla** = modo por regla: `c(t)` lo decide la regla por cola de la');
 w(`  sección 4, arrancando con las casetas del primer intervalo observado.`);
+w('- **regla+tasa** = la misma regla **más el disparador anticipativo por tasa');
+w('  de llegadas** (DEC-046): abre también cuando las llegadas de los últimos');
+w('  5 min cruzan el umbral de la sección 4 (21 / 46 / 70 / 95), sin esperar a');
+w('  que la cola cruce el suyo. Se dispara lo que ocurra primero. La columna');
+w('  **Anticipadas** cuenta las aperturas que solo explica la tasa.');
 w(`- **servicio base** = 12,1016 s, el medido. **servicio lento** = 15,5 s, que`);
 w('  es una **hipótesis de sensibilidad** (DEC-025, PEN-010), no una medición ni');
 w('  una calibración. Solo se aplica al festivo, que es el escenario de pico.');
@@ -182,8 +193,8 @@ w();
 // ------------------------------------------------------- tabla comparación ---
 
 function tablaEncabezado() {
-  w('| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Cierres | Cambios de c | Min. con c = 5 |');
-  w('|---|---|---|---|---|---|---|---|---|---|');
+  w('| Caso | Wq (min) | % int. > 2,5 min | Cola máx. muestreada | Cola máx. continua | Carriles-int. | Aperturas | Anticipadas | Cierres | Cambios de c | Min. con c = 5 |');
+  w('|---|---|---|---|---|---|---|---|---|---|---|');
 }
 
 function tablaFila(etiqueta, resumen) {
@@ -194,7 +205,7 @@ function tablaFila(etiqueta, resumen) {
       `| ${n(e.colaMaximaMuestreada.media, 1)} ± ${n(e.colaMaximaMuestreada.semiamplitudIc95, 1)} ` +
       `| ${n(e.colaMaximaContinua.media, 1)} ± ${n(e.colaMaximaContinua.semiamplitudIc95, 1)} ` +
       `| ${n(e.carrilesIntervalo.media, 1)} ± ${n(e.carrilesIntervalo.semiamplitudIc95, 1)} ` +
-      `| ${n(e.aperturas.media, 1)} | ${n(e.cierres.media, 1)} | ${n(e.cambiosDeC.media, 1)} ` +
+      `| ${n(e.aperturas.media, 1)} | ${n(e.aperturasAnticipadas.media, 1)} | ${n(e.cierres.media, 1)} | ${n(e.cambiosDeC.media, 1)} ` +
       `| ${n(minutosEnCinco(resumen), 1)} |`,
   );
 }
@@ -240,6 +251,81 @@ for (const conteo of ordenConteos) {
     w(`| ${etiqueta} | ${marca(c.cumpleMeta)} | ${marca(c.cumpleTolerable)} | ${marca(c.cumpleTodo)} |`);
   }
   w();
+}
+
+// ------------------------------------------------ disparador anticipativo ---
+
+w('## El disparador anticipativo por tasa (DEC-046)');
+w();
+w('La regla por cola es **reactiva**: espera a que la cola cruce el umbral y');
+w('después tarda la demora en tener la caseta abierta. El operador real fue');
+w('**anticipativo** (PEN-011). El disparador por tasa es lo que cierra esa');
+w('diferencia: abre cuando la **demanda** cruza el umbral, sin esperar a que la');
+w('cola se forme.');
+w();
+w('Los umbrales no son nuevos: son los cuatro que deriva la sección 4 del');
+w('contexto por M/M/c con `Wq ≤ 1 min` (21 / 46 / 70 / 95 llegadas por 5 min');
+w('para abrir la 2.ª, 3.ª, 4.ª y 5.ª caseta).');
+w();
+
+for (const claveServicio of ['base', 'lento']) {
+  const casosDelRegimen = ordenConteos
+    .map((conteo) => ({
+      conteo,
+      operador: busca((c) => c.grupo === 'comparacion' && c.conteo === conteo && c.control === 'operador' && c.servicio.clave === claveServicio),
+      regla: busca((c) => c.grupo === 'comparacion' && c.conteo === conteo && c.control === 'regla' && c.servicio.clave === claveServicio),
+      tasa: busca((c) => c.grupo === 'comparacion' && c.conteo === conteo && c.control === 'regla+tasa' && c.servicio.clave === claveServicio),
+    }))
+    .filter((f) => f.operador && f.regla && f.tasa);
+
+  if (casosDelRegimen.length === 0) continue;
+
+  w(`### ${SERVICIO[claveServicio].etiqueta}`);
+  w();
+  w('| Conteo | Wq operador | Wq regla | Wq regla+tasa | Δ tasa vs. regla | ¿Gana al operador? | Carriles regla | Carriles regla+tasa | Anticipadas |');
+  w('|---|---|---|---|---|---|---|---|---|');
+  for (const f of casosDelRegimen) {
+    const wqOp = f.operador.resumen.escalares.wqHoraSegundos.media;
+    const wqRe = f.regla.resumen.escalares.wqHoraSegundos.media;
+    const wqTa = f.tasa.resumen.escalares.wqHoraSegundos.media;
+    w(
+      `| ${f.conteo} | ${min(wqOp)} | ${min(wqRe)} | **${min(wqTa)}** ` +
+        `| ${min(wqTa - wqRe)} | ${marca(wqTa <= wqOp)} ` +
+        `| ${n(f.regla.resumen.escalares.carrilesIntervalo.media, 1)} ` +
+        `| ${n(f.tasa.resumen.escalares.carrilesIntervalo.media, 1)} ` +
+        `| ${n(f.tasa.resumen.escalares.aperturasAnticipadas.media, 2)} |`,
+    );
+  }
+  w();
+
+  const festivo = casosDelRegimen.find((f) => f.conteo === CONTEO_PICO);
+  if (festivo) {
+    const wqOp = festivo.operador.resumen.escalares.wqHoraSegundos.media;
+    const wqRe = festivo.regla.resumen.escalares.wqHoraSegundos.media;
+    const wqTa = festivo.tasa.resumen.escalares.wqHoraSegundos.media;
+    const carRe = festivo.regla.resumen.escalares.carrilesIntervalo.media;
+    const carTa = festivo.tasa.resumen.escalares.carrilesIntervalo.media;
+    const anticipadas = festivo.tasa.resumen.escalares.aperturasAnticipadas.media;
+    w(
+      `**En el festivo**, el disparador baja \`Wq\` de ${min(wqRe)} a ${min(wqTa)} min ` +
+        `(${wqTa < wqRe ? '÷' : '×'}${n(wqTa < wqRe ? wqRe / wqTa : wqTa / wqRe)}), ` +
+        `con ${n(anticipadas, 2)} aperturas anticipadas por réplica y ` +
+        `${n(carTa - carRe, 1)} carriles-intervalo de diferencia.`,
+    );
+    // La coletilla solo vale si la regla por cola sola iba por detrás: en el
+    // régimen lento ya ganaba al operador y decirlo sería falso.
+    const reglaIbaDetras = wqRe > wqOp;
+    w(
+      `Contra el operador (${min(wqOp)} min), la regla con el disparador ` +
+        (wqTa <= wqOp ? '**queda por delante**' : '**sigue por detrás**') +
+        (reglaIbaDetras && wqTa <= wqOp
+          ? `, que es justo lo que la regla por cola sola no conseguía con la demora de ${p.regla.demoraAperturaSegundos / SEGUNDOS_POR_MINUTO} min.`
+          : reglaIbaDetras
+            ? '.'
+            : ', como ya lo estaba sin el disparador.'),
+    );
+    w();
+  }
 }
 
 // --------------------------------------------------------- sensibilidad demora ---

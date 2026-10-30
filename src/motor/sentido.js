@@ -125,6 +125,17 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   let reasignacionesRecibidas = 0;
   let reasignacionesCedidas = 0;
   let contandoCambios = false;
+  /**
+   * Acciones de apertura que **solo** explica el disparador por tasa: la
+   * condición de cola no se cumplía (DEC-046). Es la medida de anticipación.
+   */
+  let aperturasAnticipadas = 0;
+  /**
+   * Instante en que se dio la **primera orden** de abrir, o `null` si no se dio
+   * ninguna. Mide la reacción de la regla, que es lo que decide un arranque en
+   * frío: la caseta abre `demoraAperturaSegundos` después.
+   */
+  let instantePrimeraOrden = null;
 
   /** Instantes de llegada dentro de la ventana móvil de ρ. */
   const llegadasRecientes = [];
@@ -175,6 +186,25 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     const c = casetasEfectivas();
     if (c <= 0) return Infinity;
     return (enEspera() * arbitro.servicioNominalSegundos) / c;
+  }
+
+  /**
+   * Llegadas dentro de la ventana móvil, **sin tocar el arreglo**.
+   *
+   * Cuenta desde el final, que es donde están las recientes, y se para en la
+   * primera que ya salió de la ventana. No poda a propósito: `podarVentanaRho`
+   * solo se llama al llegar un vehículo, y si esta lectura mutara el arreglo
+   * cambiaría el ρ que ve el árbitro, es decir los resultados ya publicados de
+   * la fase 3. El disparador por tasa no puede permitirse ese efecto lateral.
+   */
+  function llegadasEnVentana() {
+    const limite = reloj.ahora - arbitro.ventanaRhoSegundos;
+    let n = 0;
+    for (let i = llegadasRecientes.length - 1; i >= 0; i -= 1) {
+      if (llegadasRecientes[i] <= limite) break;
+      n += 1;
+    }
+    return n;
   }
 
   /** Poda la ventana móvil de ρ al instante actual. */
@@ -368,8 +398,8 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     }
   }
 
-  /** ¿Se cumple ahora mismo la condición de abrir otra caseta? */
-  function condicionDeApertura() {
+  /** ¿Se cumple la condición de abrir **por cola**? Es la regla de la DEC-006. */
+  function condicionDeAperturaPorCola() {
     const c = casetasEfectivas();
     const umbral = regla.abrirSiColaMayorQue[c];
     if (umbral === null || umbral === undefined) return false; // ya está en el tope
@@ -378,10 +408,42 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   }
 
   /**
+   * ¿Se cumple la condición de abrir **por tasa de llegadas**? Es el disparador
+   * anticipativo de la DEC-046, apagado salvo que el escenario lo encienda.
+   *
+   * Mira las llegadas de la ventana móvil, que es la misma de ρ: los 5 min que
+   * usa el contexto en las dos derivaciones. Los vehículos de la cola inicial no
+   * entran en ella (DEC-027), así que mide demanda, no rezago.
+   *
+   * **Durante los primeros 5 min la ventana está a medio llenar**, así que el
+   * disparador no puede alcanzar su umbral. Es a propósito: es lo que vería un
+   * operador contando llegadas en una ventana de 5 min, y extrapolar la cuenta
+   * parcial exigiría un parámetro que el contexto no da.
+   */
+  function condicionDeAperturaPorTasa() {
+    if (!regla.disparadorPorTasa) return false;
+    const c = casetasEfectivas();
+    const umbral = regla.abrirSiTasaMayorQue?.[c];
+    if (umbral === null || umbral === undefined) return false;
+    if (c >= maximoCasetas) return false;
+    return llegadasEnVentana() > umbral;
+  }
+
+  /**
+   * ¿Se cumple ahora mismo la condición de abrir otra caseta? Se dispara **lo
+   * que ocurra primero**, la cola o la tasa (DEC-046). Con el disparador por
+   * tasa apagado es exactamente la condición de la DEC-006.
+   */
+  function condicionDeApertura() {
+    return condicionDeAperturaPorCola() || condicionDeAperturaPorTasa();
+  }
+
+  /**
    * Programa la apertura de una caseta ya reservada, para `t + demora`.
    * La orden no se revoca: al llegar la hora abre aunque la cola haya bajado.
    */
-  function ordenarApertura(caseta, { porReasignacion = false } = {}) {
+  function ordenarApertura(caseta, { porReasignacion = false, anticipada = false } = {}) {
+    if (instantePrimeraOrden === null && !porReasignacion) instantePrimeraOrden = reloj.ahora;
     casetaReservada = caseta;
     aperturaPendiente = reloj.ahora + regla.demoraAperturaSegundos;
     eventos.programar(aperturaPendiente, TIPO_EVENTO.APERTURA_CASETA, { sentidoId: id });
@@ -390,6 +452,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       casetaId: caseta.id,
       abreEn: aperturaPendiente,
       porReasignacion,
+      anticipada,
     });
   }
 
@@ -401,13 +464,19 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   function intentarAbrir() {
     if (!condicionDeApertura()) return false;
 
+    // ¿Esta apertura la explica solo la tasa? Se mira antes de actuar, porque
+    // cancelar un cierre o reservar cambia la `c` efectiva y con ella la
+    // condición de cola.
+    const anticipada = !condicionDeAperturaPorCola();
+
     // Si hay una caseta propia marcada para cerrar, cancelar ese cierre da
     // capacidad en el acto y gratis: mejor que pedir otra con demora (DEC-026).
     const marcada = pozo.casetasDe(id).find((c) => c.marcada);
     if (marcada) {
       marcada.marcada = false;
       cierresCancelados += 1;
-      anotar?.('cierreCancelado', { sentidoId: id, casetaId: marcada.id });
+      if (anticipada) aperturasAnticipadas += 1;
+      anotar?.('cierreCancelado', { sentidoId: id, casetaId: marcada.id, anticipada });
       desdeCuandoBajoUmbral = null; // cambió c efectiva: el conteo arranca de nuevo
       despachar();
       return true;
@@ -422,7 +491,8 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       anotar?.('peticionBloqueada', { sentidoId: id, cola: enEspera() });
       return false;
     }
-    ordenarApertura(caseta);
+    if (anticipada) aperturasAnticipadas += 1;
+    ordenarApertura(caseta, { anticipada });
     return true;
   }
 
@@ -472,6 +542,8 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     rho,
     esperaEstimadaSegundos,
     condicionDeApertura,
+    condicionDeAperturaPorCola,
+    condicionDeAperturaPorTasa,
     tienePeticionEnCurso,
     estaBloqueada: () => bloqueadaDesde !== null,
     integrarHasta,
@@ -628,7 +700,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
 
         colaMaximaContinua,
         colaMuestreada,
-        /** Máximo de las lecturas puntuales (PEN-004, DEC-024). */
+        /** Máximo de las lecturas puntuales, comparable con el campo (PEN-004). */
         colaMaximaMuestreada: Math.max(...colaMuestreada.map((c) => c ?? 0)),
         colaFinal: enEspera(),
 
@@ -647,6 +719,19 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
         cierres,
         cierresCancelados,
         cambiosDeC: aperturas + cierres,
+        /**
+         * Aperturas que solo explica el disparador por tasa, es decir sin que la
+         * cola hubiera cruzado su umbral (DEC-046). Con el disparador apagado
+         * es siempre 0.
+         */
+        aperturasAnticipadas,
+        /**
+         * Instante de la primera orden de apertura propia, en segundos, o
+         * `null` si no hubo ninguna. **No se agrega entre réplicas** con las
+         * demás medidas escalares, porque el `null` no tiene media: quien lo
+         * use promedia solo las réplicas que abrieron.
+         */
+        instantePrimeraOrdenSegundos: instantePrimeraOrden,
         tiempoPorCasetasAbiertas: [...tiempoPorCasetasAbiertas],
         tiempoEnMaximoCasetas: tiempoPorCasetasAbiertas[maximoCasetas] ?? 0,
 
@@ -722,6 +807,11 @@ export function validarConfiguracionSentido(config) {
     }
     if (!(regla.ventanaCierreSegundos >= 0)) {
       throw new RangeError('`regla.ventanaCierreSegundos` no puede ser negativa.');
+    }
+    if (regla.disparadorPorTasa && !regla.abrirSiTasaMayorQue) {
+      throw new TypeError(
+        'El disparador por tasa (DEC-046) necesita `regla.abrirSiTasaMayorQue`.',
+      );
     }
   }
 }

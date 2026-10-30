@@ -3,10 +3,10 @@
  * Diagnóstico de la cola: compara, intervalo por intervalo, la lectura de campo
  * con la cola total que simula el motor.
  *
- * Las lecturas de campo son la **fila más larga de una sola caseta** (DEC-024),
- * así que la cola total real era mayor o igual que la lectura. El motor simula
- * cola única: su cola total debería quedar **por encima** de la lectura. Donde
- * queda por debajo, el modelo subestima, y no hay interpretación que lo salve.
+ * Las lecturas de campo son el **total de vehículos esperando en el sentido**
+ * (DEC-042, que supera a la DEC-024). El motor simula una cola única y reporta
+ * esa misma variable, así que las dos series son **la misma magnitud** y se
+ * comparan de frente: por debajo el modelo subestima, por encima sobreestima.
  *
  * Uso: npm run diagnostico
  */
@@ -64,22 +64,32 @@ w('**No editar a mano:** este archivo se regenera.');
 w();
 w('## Qué se compara y qué se puede concluir');
 w();
-w('Las lecturas de campo son la **fila más larga de una sola caseta** en el');
-w('intervalo (DEC-024). El motor simula una **cola única** por sentido, así que');
-w('la variable que reporta es la **cola total** del sentido. Las dos no son la');
-w('misma cosa, pero sí guardan una desigualdad que se puede usar:');
+w('Las lecturas de campo son el **total de vehículos que esperaban en el sentido**');
+w('en ese instante, sumando todas las casetas abiertas (DEC-042, que supera a la');
+w('DEC-024). El motor simula una cola única por sentido y reporta exactamente esa');
+w('variable, así que **las dos series son la misma magnitud** y se comparan de');
+w('frente, en los dos sentidos de la desigualdad:');
 w();
-w('> cola total real ≥ fila más larga de una caseta = lectura observada');
+w('- `SUBESTIMA (en las 30)`: ni la réplica más congestionada alcanza la lectura');
+w('  de campo. Es el caso fuerte: el modelo se queda corto con cualquier semilla.');
+w('- `SUBESTIMA (en media)`: la media de las 30 queda por debajo de la lectura,');
+w('  pero alguna réplica la alcanza.');
+w('- `sobreestima (en las 30)`: ni la réplica menos congestionada baja hasta la');
+w('  lectura. Es el espejo del caso fuerte.');
+w('- `dentro del rango`: la lectura de campo cae entre la réplica menos y la más');
+w('  congestionada, así que el modelo es **compatible** con ella.');
 w();
-w('De ahí sale el único criterio limpio que hay:');
+w('Los rótulos se deciden solo comparando la lectura con el rango de las 30');
+w('réplicas, **sin ninguna tolerancia inventada**. Por eso un intervalo con cola');
+w('observada 0 y media simulada de medio vehículo sale `dentro del rango` y no');
+w('«sobreestima»: con 0 en el rango, la lectura es compatible con el modelo.');
 w();
-w('- Si la **cola total simulada queda por debajo de la lectura observada**, el');
-w('  modelo **subestima con certeza**: está poniendo menos vehículos en todo el');
-w('  sentido que los que en campo había en una sola fila.');
-w('- Si queda por encima, **no se puede concluir nada**: la cola total real');
-w('  también estaba por encima de la lectura y no se sabe cuánto.');
-w();
-w('Por eso la columna que importa es la marca `SUBESTIMA`. Lo demás es contexto.');
+w('Esto corrige la versión anterior de este informe, que leía la columna de campo');
+w('como la fila más larga de una sola caseta y por eso solo podía afirmar una');
+w('desigualdad: todo intervalo en que la simulación quedaba por encima salía');
+w('rotulado como «no concluyente». Con la lectura correcta no hay desajuste de');
+w('definición y los dos lados informan. **Los números no cambian** —el motor');
+w('siempre simuló la cola total—, cambia lo que se puede concluir de ellos.');
 w();
 
 const CORTE = '⚠️ SUBESTIMA';
@@ -87,6 +97,7 @@ const CORTE = '⚠️ SUBESTIMA';
 let totalIntervalos = 0;
 let totalSubestima = 0;
 let totalSubestimaSiempre = 0;
+let totalSobreestimaSiempre = 0;
 
 for (const { clave, resumen } of resultados) {
   const c = conteos[clave];
@@ -98,11 +109,12 @@ for (const { clave, resumen } of resultados) {
   w(`- Cola inicial: ${COLA_INICIAL[clave]} vehículos`);
   w(`- ${semillas.length} réplicas, semillas ${semillas[0]}…${semillas.at(-1)}`);
   w();
-  w('| Intervalo | Llegadas | Casetas | Fila más larga obs. | Cola total sim. (media) | Rango sim. | ¿Subestima? |');
+  w('| Intervalo | Llegadas | Casetas | Cola total obs. | Cola total sim. (media) | Rango sim. | Comparación |');
   w('|---|---|---|---|---|---|---|');
 
   let subestimaConteo = 0;
   let subestimaSiempreConteo = 0;
+  let sobreestimaSiempreConteo = 0;
 
   resumen.porIntervalo.forEach((it, i) => {
     const obs = c.cola[i];
@@ -119,11 +131,19 @@ for (const { clave, resumen } of resultados) {
       subestimaSiempreConteo += 1;
       totalSubestimaSiempre += 1;
     }
+    // Espejo del caso fuerte: ni la réplica menos congestionada baja a la lectura.
+    const sobreestimaSiempre = sim.minimo > obs;
+    if (sobreestimaSiempre) {
+      sobreestimaSiempreConteo += 1;
+      totalSobreestimaSiempre += 1;
+    }
     const marca = subestimaSiempre
       ? `${CORTE} (en las ${semillas.length})`
-      : subestimaEnMedia
-        ? `${CORTE} (en media)`
-        : 'no concluyente';
+      : sobreestimaSiempre
+        ? `sobreestima (en las ${semillas.length})`
+        : subestimaEnMedia
+          ? `${CORTE} (en media)`
+          : 'dentro del rango';
     w(
       `| ${i + 1} | ${c.llegadas[i]} | ${c.casetas[i]} | ${obs} | ${n(sim.media)} ` +
         `| ${n(sim.minimo, 0)}–${n(sim.maximo, 0)} | ${marca} |`,
@@ -131,10 +151,11 @@ for (const { clave, resumen } of resultados) {
   });
   w();
   w(
-    `**${clave}:** la cola total simulada queda por debajo de la fila más larga` +
-      ` observada en **${subestimaConteo} de ${c.cola.length} intervalos** en media,` +
-      ` y en **${subestimaSiempreConteo} de ${c.cola.length}** ni la peor de las ${semillas.length} réplicas` +
-      ' llega a la lectura.',
+    `**${clave}:** la cola simulada queda por debajo de la observada en` +
+      ` **${subestimaConteo} de ${c.cola.length} intervalos** en media, y en` +
+      ` **${subestimaSiempreConteo} de ${c.cola.length}** ni la más congestionada de las ${semillas.length} réplicas` +
+      ` alcanza la lectura de campo. En el otro extremo, en ${sobreestimaSiempreConteo} intervalos la` +
+      ' lectura queda por debajo de las 30 réplicas.',
   );
   w();
 }
@@ -158,14 +179,24 @@ w();
 w('## Lectura');
 w();
 w(
-  `De los ${totalIntervalos} intervalos de los cuatro conteos, en **${totalSubestima}** la cola total` +
-    ' simulada queda por debajo de la fila más larga que se observó en una sola',
+  `De los ${totalIntervalos} intervalos de los cuatro conteos, en **${totalSubestima}** la cola` +
+    ' simulada queda por debajo de la observada, y en',
 );
 w(
-  `caseta, y en **${totalSubestimaSiempre}** eso pasa en las ${semillas.length} réplicas sin excepción. En esos` +
-    ' intervalos el modelo subestima la cola con certeza, porque la cola total',
+  `**${totalSubestimaSiempre}** eso pasa en las ${semillas.length} réplicas sin excepción. Como las dos series son` +
+    ' la misma magnitud (DEC-042), en esos intervalos el modelo subestima la cola',
 );
-w('real era por construcción mayor o igual que la lectura.');
+w('de campo directamente, sin ningún argumento de desigualdad por medio.');
+w();
+w(
+  `En el extremo opuesto, en solo **${totalSobreestimaSiempre} de ${totalIntervalos}** intervalos la lectura de campo queda` +
+    ' por debajo de las 30 réplicas. Es decir: **el sesgo del modelo tiene un solo',
+);
+w('signo.** Donde se separa del campo, se separa quedándose corto, nunca');
+w('sobrando. Esto es lo que la lectura anterior de los datos no podía ver:');
+w('con la columna leída como la fila de una caseta, todo intervalo en que la');
+w('simulación quedaba por encima era «no concluyente», así que no había forma de');
+w('comprobar que el sesgo fuera asimétrico.');
 w();
 
 const festivo = resultados.find((r) => r.clave === 'festivoPC');
@@ -178,21 +209,21 @@ w(
   `El festivo es el caso extremo: en **${festivoSiempre} de ${conteos.festivoPC.cola.length} intervalos** ni la réplica` +
     ' más congestionada de las 30 alcanza la lectura de campo. La cola total',
 );
-w('simulada se vacía hacia el final de la hora mientras en campo la fila más');
+w('simulada se vacía hacia el final de la hora mientras en campo todavía había');
 w(
-  `larga todavía marcaba ${conteos.festivoPC.cola.at(-1)} vehículos en el último intervalo.`,
+  `${conteos.festivoPC.cola.at(-1)} vehículos esperando en el último intervalo.`,
 );
 w();
-w('**Qué no dice este diagnóstico.** No dice cuánto vale la cola total real, que');
-w('nunca se midió, ni permite estimar `Wq` observado: para eso haría falta el');
-w('total por sentido. Tampoco permite derivar un tiempo de servicio implícito');
-w('(ver DEC-024, consecuencia 5): con filas por caseta puede haber una caseta');
-w('libre y otra con cola al mismo tiempo, así que la holgura de capacidad se');
-w('explica por el desbalance sin necesidad de suponer un servicio más lento.');
+w('**Qué no dice este diagnóstico.** No dice **por qué** el modelo se queda corto');
+w('en el pico. La cola observada sí permite estimar el `Wq` de campo por la ley de');
+w('Little, y de ahí sale el 1,28 min del festivo que declara el contexto (PEN-002,');
+w('cerrado). Lo que queda abierto es la explicación: servicio más lento en el pico,');
+w('desbalance entre casetas, o vehículos que la lectura cuenta y el modelo no. Las');
+w('tres siguen en PEN-008, ya sin que la definición del dato privilegie a ninguna.');
 w();
 w('**Qué sí deja fijado.** Que el modelo de cola única subestima la congestión');
-w('del pico, y por cuánto como mínimo. Las casetas que recomiende la regla de la');
-w('fase 2 hay que leerlas como **cota inferior** (PEN-008).');
+w('del pico, y por cuánto: la comparación es directa. Las casetas que recomiende');
+w('la regla de la fase 2 hay que leerlas como **cota inferior** (PEN-008).');
 w();
 
 mkdirSync(dirname(SALIDA), { recursive: true });

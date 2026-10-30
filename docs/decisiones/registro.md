@@ -353,6 +353,15 @@ tomaron durante el desarrollo.
   **Esa derivación ya no se sostiene** (DEC-024, consecuencia 5), así que el
   15,5 s se usa como valor de referencia de "cuánto más lento tendría que ser",
   no como estimación del servicio real. Ver PEN-010.
+
+  > **Nota del 30/10/2026 (DEC-042).** La frase anterior ya no vale: la DEC-042
+  > supera a la DEC-024 y **restituye** la derivación del 15,5 s, porque la
+  > columna `cola` es el total en espera de la cola única y ese era el supuesto
+  > que la derivación necesitaba. Esto **no cambia nada de esta decisión**: el
+  > 15,5 s sigue siendo un valor derivado de un balance de capacidad y no una
+  > medición, así que sigue siendo sensibilidad, nunca valor por defecto, y
+  > sigue reportándose junto al caso base. Lo único que cambia es que su
+  > derivación tiene sustento en vez de estar anulada. Ver PEN-010.
 - **Descarta:** usar 15,5 s como valor por defecto; aplicarlo a los conteos
   normales; presentarlo sin el caso base al lado; y dimensionar la política
   recomendada sobre él.
@@ -734,6 +743,15 @@ tomaron durante el desarrollo.
      caseta**, porque el modelo es de cola única (DEC-001) y la cola de campo que
      se midió era la fila más larga de una caseta (DEC-024). Dibujar filas por
      caseta sugeriría que el modelo las tiene.
+
+     > **Nota del 30/10/2026 (DEC-042).** La decisión **sigue en pie**, pero con
+     > un argumento menos. La DEC-042 supera a la DEC-024: la cola de campo era
+     > el **total por sentido**, no la fila más larga de una caseta, así que ese
+     > segundo apoyo se retira. El primero basta y es el que manda: el modelo es
+     > de cola única (DEC-001) y la escena dibuja el modelo, así que un embudo
+     > por sentido es lo que corresponde. De hecho el argumento queda **más
+     > limpio**: antes la escena coincidía con el modelo pero no con el dato, y
+     > ahora coincide con los dos.
   2. **Casetas reversibles.** Cada caseta lleva un indicador de a qué sentido
      sirve, porque en el modelo las casetas son un recurso compartido que cambia
      de dueño (DEC-002, DEC-008). No hay casetas "de un sentido".
@@ -846,3 +864,255 @@ tomaron durante el desarrollo.
   preajuste es instantáneo en vez de suave. La navegación a mano no se recorta.
 - **Descarta:** una cámara que vuelva sola al preajuste; limitar la órbita al
   hemisferio de arriba; y topes de distancia fijos.
+
+## DEC-042 — La columna `cola` de los conteos es el total de vehículos esperando por sentido
+
+- **Fecha:** 30/10/2026
+- **Supera a la DEC-024**, por completo. La columna `cola` de los cuatro conteos
+  (sección 10 del contexto) es **el total de vehículos que esperaban en ese
+  sentido para pasar a las casetas, sumando todas las casetas abiertas**. No es
+  la fila más larga de una sola caseta. Vale para los cuatro conteos.
+- **Sustento, por tres vías independientes:**
+  1. **Confirmación del autor de las mediciones.** Quien tomó los conteos
+     confirma que se registró el total en espera por sentido. El conteo del
+     festivo estaba incompleto al principio y se corrigió después; de ahí venía
+     la confusión que la DEC-024 intentó resolver.
+  2. **La fuente de verdad del repo ya lo decía**, y la DEC-024 la contradecía:
+     `contexto-inicial.md` línea 79 ("Se registró el total de cola por sentido,
+     no por caseta") y línea 92 ("`cola` es la lectura puntual del total en
+     espera").
+  3. **La prueba de la ley de Little, que cierra el PEN-002.** Los `Wq`
+     observados que el contexto declara en la sección 6 salen de aplicar
+     `Wq = Lq / λ` a la media de la columna `cola`, y salen **en los cuatro
+     conteos a la vez**:
+
+     | Conteo | `Lq` medio de la columna | λ (veh/h) | `Wq = Lq/λ` | Declarado |
+     |---|---|---|---|---|
+     | viernes | 0,2500 | 238 | 0,0630 min | 0,06 |
+     | domingoCP | 1,8333 | 451 | 0,2439 min | 0,24 |
+     | domingoPC | 1,3333 | 195 | 0,4103 min | 0,41 |
+     | festivoPC | 22,6667 | 1.064 | **1,2782 min** | **1,28** |
+
+     Los cuatro coinciden al redondeo. Y **solo coinciden si la columna es el
+     total del sentido**: con la fila más larga de una caseta el `Lq` sería otro
+     y ninguno de los cuatro cuadraría. El repo había intentado reconstruir el
+     1,28 con la fórmula de la sección 3 (`Lq × 12,1 / c`), había obtenido 1,01
+     y había concluido que no cuadraba: no era esa la fórmula.
+- **Consecuencias de la DEC-024 que quedan anuladas:**
+  1. **Anulada** la consecuencia 1: la lectura observada **no** es una cota
+     inferior de la cola total. Es la cola total.
+  2. **Reemplazada** la consecuencia 2: la cola simulada y la observada son
+     **la misma variable** y se comparan de frente, en los dos sentidos de la
+     desigualdad. Donde la simulada queda por debajo, el modelo subestima; eso
+     sigue siendo cierto en el festivo, pero ahora es una comparación directa y
+     no el argumento de un total contra una de sus partes.
+  3. **Anulada** la consecuencia 3: la fórmula de la sección 3 no era la vía,
+     pero el `Wq` observado **sí** se puede reconstruir de la columna `cola`,
+     por Little. El PEN-002 se cierra con ese cálculo.
+  4. **Intacta** la consecuencia 4: los umbrales de la regla (4 / 9 / 14 / 19)
+     siempre fueron sobre cola total y siguen igual. Con la DEC-024 esto era una
+     excepción incómoda; ahora es lo coherente.
+  5. **Anulada** la consecuencia 5: la derivación del "servicio implícito" de
+     ≈ 15,5 s vuelve a ser válida, porque suponía cola única y la cola medida es
+     la de la cola única. Sigue **sin ser una medición**: ver PEN-010 y DEC-025.
+  6. **Anulada la limitación declarada:** no hay desajuste de definición entre
+     el dato de campo y la variable del modelo. Lo que queda de limitación es lo
+     que el contexto ya declaraba en la sección 8: el modelo de cola única no
+     reproduce el desbalance entre casetas visto en campo. Eso es una limitación
+     del modelo, no un impedimento para comparar.
+- **Lo que NO cambia:** la lógica del motor, que siempre simuló la cola total, y
+  por tanto ningún número de `docs/resultados/`. Lo que cambia es la prosa, los
+  rótulos y los comentarios que decían lo contrario de lo cierto.
+- **La DEC-038 (punto 1) sigue en pie con otro argumento:** el 3D dibuja un solo
+  embudo por sentido porque **el modelo es de cola única (DEC-001)**, que es
+  razón suficiente. El apoyo que buscaba en la DEC-024 —"la cola de campo era la
+  fila más larga de una caseta"— se cae y se retira.
+- **Descarta:** leer la columna `cola` como la fila de una caseta; rotular las
+  dos series como no comparables; y seguir tratando la derivación del 15,5 s
+  como anulada.
+
+## DEC-043 — La política recomendada se formula como seguro y en términos relativos, nunca como predicción
+
+- **Fecha:** 30/10/2026
+- **Decisión:** la política de `docs/politica-recomendada.md` se presenta
+  comparando alternativas entre sí, y se justifica por **lo que evita en el
+  escenario adverso**, no por lo que mejora en el habitual. Queda prohibido
+  presentar los `Wq` absolutos del modelo como predicción de la espera real del
+  peaje.
+- **Motivo, que son tres resultados medidos y no una cautela retórica:**
+  1. Según el modelo la operación real **ya cumple** el criterio en el festivo
+     (0,0 % de intervalos sobre 2,5 min contra un 5 % tolerado), lo que diría
+     que no hay nada que optimizar (PEN-009).
+  2. Pero el modelo subestima la congestión del pico **con sesgo de un solo
+     signo**: en 0 de los 48 intervalos la lectura de campo queda por debajo del
+     rango de las 30 réplicas (PEN-008, `diagnostico-festivo.md`). Los dos
+     resultados son el mismo visto dos veces.
+  3. La entrada que más mueve el resultado no se midió: el sustituto de la
+     demanda de C→P mueve el `Wq` del peaje hasta 6,94 min, contra 0,31 min del
+     parámetro de la regla que más mueve (PEN-013, `fase4-escenarios.md`).
+- **Lo que sí se puede afirmar:** las comparaciones **entre** escenarios, porque
+  todos comparten el mismo sesgo, su signo y las mismas semillas (números
+  aleatorios comunes). Las diferencias son reales aunque los niveles no lo sean.
+- **El contenido de la política:** mantener la regla por cola del contexto como
+  seguro; arrancar el pico con las 4 casetas ya abiertas (PEN-016); añadir un
+  disparador por tasa de llegadas (DEC-044); y **no** aplicar la reasignación
+  por ρ tal como está especificada, porque favorece al sentido con menos
+  casetas y casi nunca se activa en el pico (PEN-014, PEN-015).
+- **Descarta:** presentar la regla como una mejora del día normal (con servicio
+  medido no mejora al operador y gasta un 7,4 % más de carriles-intervalo);
+  dar los `Wq` del modelo como espera esperada; y recomendar ampliar el pozo sin
+  la regla, porque de 6 a 8 casetas el quiebre no se mueve con casetas fijas.
+
+## DEC-044 — El disparador anticipativo por tasa se recomienda, pero no se adopta en el modelo en la fase 7
+
+- **Fecha:** 30/10/2026
+- **No supera a la DEC-006**, que decidió disparar por cola y descartó disparar
+  por tasa. La DEC-006 **sigue vigente tal cual** en el modelo.
+- **Decisión:** el disparador anticipativo por tasa de llegadas (la derivación de
+  la sección 4 del contexto: abrir la 2.ª caseta con 21 llegadas/5 min, la 3.ª
+  con 46, la 4.ª con 70 y la 5.ª con 95) se **recomienda en la política** como
+  medida operativa, y **no se implementa ni se mide** en este estudio. En la
+  política va rotulado como recomendación, no como resultado simulado.
+- **Por qué se recomienda:** el defecto de la regla es la latencia, y está
+  cuantificado por dos vías independientes. Con demora 0 la regla pasa por
+  delante del operador (`Wq` 0,19 contra 0,28 min en el festivo) y con demora 5
+  queda por detrás (0,32); entre demora 0 y 10 hay 0,45 min de espera en el
+  régimen lento (`fase2-regla.md`, PEN-011). Y PEN-016 lo confirma por la otra
+  puerta: quitarle a P→C la cola inicial **empeora** su espera de 0,47 a 1,07
+  min, porque esa cola le hacía de aviso temprano. Disparar antes consigue el
+  mismo efecto que reaccionar más rápido, y la demora física no se puede bajar a
+  cero porque hay que mover personal.
+- **Por qué no se adopta aquí:** la DEC-028 dejó esta pregunta expresamente para
+  la fase 7, y PEN-011 fijó que adoptarla exigiría una decisión nueva. La fase 7
+  es de interpretación y documentación: no corre experimentos nuevos.
+  Implementarlo sin medirlo sería meter en el modelo un mecanismo sin respaldo, y
+  medirlo es una fase de experimentación que este plan no tiene.
+- **Qué haría falta para adoptarlo:** una decisión nueva que diga qué supera de
+  la DEC-006, la implementación del disparador, y la matriz de escenarios vuelta
+  a correr. Queda como primer trabajo futuro del modelo.
+- **Descarta:** implementarlo a última hora sin medirlo; presentarlo en la
+  política como un resultado del estudio; y cerrar PEN-011 sin haberlo medido.
+
+## DEC-045 — El documento del estudio es prosa escrita a mano; los resultados siguen generados
+
+- **Fecha:** 30/10/2026
+- **Decisión:** `docs/estudio.md` y `docs/politica-recomendada.md` se **escriben
+  a mano**. Las cifras que contienen están **transcritas** de los informes de
+  `docs/resultados/`, cada una diciendo de qué informe sale, y si al regenerar un
+  informe alguna cifra discrepa **manda el informe**.
+- **Relación con la DEC-023, que es lo que hay que dejar claro:** la DEC-023 fijó
+  que las conclusiones de los informes se **generan**, para que no envejezcan en
+  silencio. Eso **sigue igual**: los cinco informes de `docs/resultados/` y
+  `docs/parametros.md` se regeneran con sus scripts y no se editan a mano. Lo que
+  esta decisión añade es que **la interpretación no es una conclusión de informe**:
+  es argumentación sobre el conjunto de los informes, los pendientes y las
+  decisiones, y no se puede derivar de una corrida.
+- **Cómo se evita el envejecimiento silencioso, que es el motivo de la DEC-023:**
+  1. Cada cifra nombra su informe, así que es verificable de un vistazo.
+  2. Los dos documentos dicen en su encabezado que manda el informe y de qué
+     fecha es la corrida que transcriben.
+  3. Lo que se puede generar se genera y **no** se duplica en prosa: los
+     documentos enlazan a los informes en vez de copiar sus tablas enteras.
+- **La política va en archivo aparte** del documento del estudio porque es la
+  salida operativa y se consulta sola, sin leer las ocho etapas.
+- **Descarta:** generar el documento del estudio con un script; escribir a mano
+  cualquier cifra de `docs/resultados/`; y copiar las tablas de los informes
+  dentro de la prosa en vez de enlazarlas.
+
+## DEC-046 — Se implementa el disparador anticipativo por tasa de llegadas, apagado por defecto
+
+- **Fecha:** 30/10/2026
+- **Supera:**
+  - **de la DEC-006, solo la parte que descartaba disparar por tasa de
+    llegadas.** El disparador por cola de la DEC-006 **sigue siendo el
+    principal y no se toca**: los umbrales 4 / 9 / 14 / 19 y su mecánica quedan
+    exactamente igual. Lo que cambia es que la tasa deja de estar descartada y
+    pasa a ser un **segundo disparador** que actúa en paralelo.
+  - **de la DEC-044, la parte que decía "no se adopta".** Esa decisión lo
+    recomendaba sin medirlo porque la fase 7 no corría experimentos; el usuario
+    pidió implementarlo, así que ya está medido y la recomendación deja de ser a
+    ciegas. El resto de la DEC-044 —el motivo por el que se recomienda— se
+    confirma.
+- **Decisión:** la regla puede abrir caseta también cuando las **llegadas de los
+  últimos 5 min** cruzan un umbral, sin esperar a que la cola cruce el suyo. Se
+  dispara **lo que ocurra primero**. Los umbrales son los cuatro que deriva la
+  sección 4 del contexto por M/M/c con `Wq ≤ 1 min`:
+
+  | Abrir la caseta n.º | Si las llegadas de 5 min pasan de |
+  |---|---|
+  | 2.ª | 21 |
+  | 3.ª | 46 |
+  | 4.ª | 70 |
+  | 5.ª | 95 |
+
+- **La tabla es derivada, no transcrita**, y sigue al tope por sentido igual que
+  las de cola (DEC-031):
+
+  ```
+  abrirPorTasa(c) = redondear(c × capacidad nominal por caseta − 4)
+  ```
+
+  Con la capacidad nominal de 24,7901 veh/caseta y 5 min reproduce
+  **exactamente** los cuatro valores del contexto, y **ningún otro
+  desplazamiento entero lo hace** (hay una prueba de las dos cosas). Así que con
+  un pozo de 8 o de 10 la tabla se extiende sola, y el único número nuevo del
+  modelo es el desplazamiento 4, que vive en `formulaUmbrales`.
+- **Apagado por defecto** (`disparadorPorTasa: false`), y esto es parte de la
+  decisión, no un descuido:
+  1. El escenario base sigue siendo **la regla tal como la especifica el
+     contexto**, que es lo que permite seguir validando contra él.
+  2. Todos los resultados de las fases 1 a 4 siguen comparables: con el
+     disparador apagado el motor da **exactamente** los mismos números, y hay
+     una prueba que lo fija.
+  3. Encenderlo es un campo del escenario, y así el disparador se **reporta al
+     lado del caso base**, como el servicio lento (DEC-025). Cambiar el valor
+     por defecto sería otra decisión.
+- **Mide demanda, no rezago.** Lee la **misma ventana móvil de 5 min que ρ**,
+  que es la que usa el contexto en las dos derivaciones, así que no hace falta un
+  parámetro nuevo. Los vehículos de la cola inicial no entran en esa ventana
+  (DEC-027), de modo que una cola heredada **no** dispara aperturas: hay prueba.
+- **La lectura de la ventana no tiene efectos laterales.** Cuenta sin podar el
+  arreglo, a propósito: si lo podara cambiaría el ρ que ve el árbitro y con él
+  los resultados ya publicados de la fase 3. Hay una prueba de que, apagado, el
+  resultado es idéntico a no tener la tabla siquiera.
+- **Limitación declarada:** durante los **primeros 5 min** la ventana está a
+  medio llenar, así que el disparador no puede alcanzar su umbral. Es lo que
+  vería un operador contando llegadas en una ventana de 5 min; extrapolar la
+  cuenta parcial exigiría un parámetro que el contexto no da. Se deja así y se
+  declara.
+- **Solo se añade el disparador de apertura.** El contexto no deriva nada
+  equivalente para el cierre, así que no se toca la ventana de 15 min. Se vigiló
+  la interacción —abrir anticipando deja la cola baja, que es lo que arranca el
+  conteo de cierre— y en el festivo no se dispara sola: los cierres **bajan** de
+  1,57 a 1,33 por réplica. Inventar un bloqueo de cierre por tasa habría sido
+  meter un mecanismo que el contexto no respalda.
+- **Resultados, que son los que justifican la decisión** (informes del 30/10):
+  1. **Festivo, un sentido, servicio base:** `Wq` baja de **0,32 a 0,23 min** y
+     la regla **pasa por delante del operador** (0,28), que es justo lo que la
+     regla por cola sola no conseguía con la demora de 5 min. Cuesta 1,7
+     carriles-intervalo. 1,63 aperturas anticipadas por réplica.
+  2. **Los cuatro conteos mejoran** con el servicio base.
+  3. **Servicio lento: apenas mueve nada** (1,23 → 1,19 min), con 0,03 aperturas
+     anticipadas. Es coherente: con la cola ya desbordada el umbral de cola se
+     cruza solo y **no queda nada que anticipar**. El disparador sirve donde el
+     operador le ganaba a la regla, no donde la regla ya ganaba.
+  4. **Pozo compartido:** P→C baja de 0,35 a 0,23 min y el peaje de 0,35 a 0,26,
+     pero C→P pierde 0,7 carriles-intervalo y el pozo queda agotado 8,4 min más.
+     **Parte de la mejora sale de pedir antes las casetas que el otro sentido
+     podría usar**, y eso hay que decirlo.
+  5. **El punto de quiebre NO se mueve: ×1,10 sigue siendo ×1,10** con el pozo
+     de 6, y con el pozo de 8 desplaza lo mismo que la regla por cola (+0,45 y
+     +0,20). **El disparador mejora el punto de operación y no compra ni un
+     punto de holgura de capacidad.** No añade casetas: reparte en el tiempo las
+     que ya hay, y cuando el pozo está agotado toda la hora no hay nada que
+     adelantar.
+- **Consecuencia para la política recomendada:** se mantiene, y ahora con
+  respaldo medido en vez de a ciegas, pero **sin cambiar de categoría**: sigue
+  siendo una mejora del punto de operación, no una solución de capacidad. La
+  conclusión de que la palanca está en los datos que faltan y no en la regla
+  **no se mueve** (DEC-043): el disparador mueve el `Wq` del peaje 0,09 min, y
+  el sustituto no medido de C→P lo mueve 6,94.
+- **Descarta:** disparar por tasa en vez de por cola (son los dos, lo que ocurra
+  primero); encenderlo por defecto; inventar una ventana propia en vez de la de
+  ρ; extrapolar la ventana parcial de los primeros 5 min; y presentar el
+  disparador como algo que amplía la capacidad del peaje.

@@ -57,6 +57,7 @@ export function configurarSentido({
   servicio,
   demoraAperturaSegundos,
   casetasFijas,
+  disparadorPorTasa,
 }) {
   const porRegla = modo === MODO_CASETAS.REGLA;
   const p = parametros;
@@ -67,7 +68,9 @@ export function configurarSentido({
     llegadas: conteos[conteo].llegadas,
     casetasProgramadas: casetasFijas ?? conteos[conteo].casetas,
     modoCasetas: modo,
-    ...(porRegla ? { regla: configuracionRegla({ demoraAperturaSegundos }) } : {}),
+    ...(porRegla
+      ? { regla: configuracionRegla({ demoraAperturaSegundos, disparadorPorTasa }) }
+      : {}),
     colaInicial,
     casetasIniciales,
     factorEscalaDemanda: p.llegadas.factorEscalaDemanda,
@@ -104,6 +107,7 @@ export function escenarioFestivo({
   servicio = REGIMENES_SERVICIO.base,
   sustituto = parametros.sustitutoFestivoCP.conteo,
   demoraAperturaSegundos,
+  disparadorPorTasa,
 } = {}) {
   const porOperador = control === 'operador';
   const modo = porOperador ? MODO_CASETAS.PROGRAMADO : MODO_CASETAS.REGLA;
@@ -117,6 +121,7 @@ export function escenarioFestivo({
     casetasIniciales: conteos.festivoPC.casetas[0],
     servicio,
     demoraAperturaSegundos,
+    disparadorPorTasa,
   });
 
   const cucutaPamplona = configurarSentido({
@@ -127,6 +132,7 @@ export function escenarioFestivo({
     casetasIniciales: parametros.sustitutoFestivoCP.casetasIniciales,
     servicio,
     demoraAperturaSegundos,
+    disparadorPorTasa,
     // En modo operador el contraflujo se fija en 1 caseta: no se observó.
     ...(porOperador
       ? { casetasFijas: new Array(intervalos).fill(parametros.sustitutoFestivoCP.casetasIniciales) }
@@ -277,6 +283,16 @@ const E2 = [
     sobreescrituras: {
       nombre: 'E2b regla con reasignación',
       regla: { reasignacionActiva: true },
+    },
+  },
+  {
+    grupo: 'E2',
+    codigo: 'E2c',
+    nombre: 'Regla + disparador por tasa',
+    cambia: 'se añade el disparador anticipativo por tasa de llegadas (DEC-046)',
+    sobreescrituras: {
+      nombre: 'E2c regla + disparador por tasa',
+      regla: { disparadorPorTasa: true },
     },
   },
 ];
@@ -436,22 +452,28 @@ export function factoresDelBarrido({ desde, hasta, paso } = BARRIDO_ESTRES) {
 function e5Estres() {
   const casos = [];
   for (const pozo of BARRIDO_ESTRES.pozos) {
-    for (const control of ['regla', 'fijas']) {
+    for (const control of ['regla', 'regla+tasa', 'fijas']) {
       for (const f of factoresDelBarrido()) {
         const texto = f.toFixed(2).replace('.', ',');
-        const porRegla = control === 'regla';
+        const porRegla = control !== 'fijas';
+        const porTasa = control === 'regla+tasa';
         casos.push({
           grupo: 'E5',
           codigo: `E5-${pozo.total}-${control}-${texto}`,
-          nombre: `Pozo ${pozo.total}, ${porRegla ? 'regla' : 'casetas fijas'}, ×${texto}`,
+          nombre: `Pozo ${pozo.total}, ${porRegla ? (porTasa ? 'regla + tasa' : 'regla') : 'casetas fijas'}, ×${texto}`,
           cambia: `${pozo.etiqueta}, factor ${texto}`,
           /** Datos que el informe usa para agrupar el barrido. */
           barrido: { pozoTotal: pozo.total, pozoEtiqueta: pozo.etiqueta, control, factorDemanda: f },
           sobreescrituras: {
             nombre: `E5 pozo ${pozo.total} ${control} ×${texto}`,
             pozo: { total: pozo.total, maximoPorSentido: pozo.maximoPorSentido },
-            // Las tablas se regeneran para el tope nuevo (DEC-031).
-            regla: { abrirSiColaMayorQue: null, cerrarSiColaMenorQue: null },
+            // Las tablas se regeneran para el tope nuevo (DEC-031 y DEC-046).
+            regla: {
+              abrirSiColaMayorQue: null,
+              cerrarSiColaMenorQue: null,
+              abrirSiTasaMayorQue: null,
+              disparadorPorTasa: porTasa,
+            },
             sentidos: porRegla
               ? [{ factorDemanda: f }, { factorDemanda: f }]
               : [

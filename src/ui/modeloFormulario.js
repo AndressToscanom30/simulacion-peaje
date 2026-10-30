@@ -273,8 +273,8 @@ export const SUPUESTOS = [
   },
   {
     clave: 'PEN-008',
-    titulo: 'La cola de campo es la fila más larga de una caseta',
+    titulo: 'El modelo subestima la congestión del pico',
     texto:
-      'No es el total del sentido (DEC-024), así que no es comparable de frente con la cola que simula el modelo de cola única. El modelo subestima la congestión del pico, y por eso las casetas que salgan de aquí son una cota inferior.',
+      'La cola de campo es el total de vehículos esperando por sentido (DEC-042), la misma variable que simula el modelo, así que las dos se comparan de frente. En el festivo la simulada queda por debajo en los 12 intervalos, así que las casetas que salgan de aquí son una cota inferior.',
   },
 ];

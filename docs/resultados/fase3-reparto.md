@@ -1,9 +1,9 @@
 # Fase 3: el reparto de las casetas entre los dos sentidos
 
-Generado por `npm run fase3` el 2026-10-28.
+Generado por `npm run fase3` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
-16 casos, **30 réplicas** cada uno, semillas 1 a 30,
+18 casos, **30 réplicas** cada uno, semillas 1 a 30,
 **las mismas en todos los casos** (DEC-010).
 
 > Se reporta lo que salga. **No se ajustó ningún umbral ni parámetro**
@@ -49,6 +49,9 @@ supuesto** (PEN-013), y por eso hay una sensibilidad que lo cambia.
 | **regla con reasignación** | P→C (festivo) | 0,44 ± 0,09 | 0,6 % | 28,1 ± 3,9 | 37,8 ± 3,9 | 54,1 ± 0,7 | 2,8 | 30,4 | sí |
 |  | C→P (sustituto: domingoPC) | 0,34 ± 0,09 | 0,8 % | 5,6 ± 1,5 | 8,6 ± 1,5 | 14,8 ± 0,8 | 1,2 | 0,0 | sí |
 | | **peaje** | **0,43** ± 0,07 | 0,7 % | 33,7 (suma) | 46,4 (suma) | 68,8 | 4,0 | — | sí |
+| **regla + tasa, sin reasignación** | P→C (festivo) | 0,23 ± 0,03 | 0,0 % | 20,5 ± 2,8 | 29,4 ± 2,7 | 57,0 ± 0,4 | 3,5 | 45,0 | sí |
+|  | C→P (sustituto: domingoPC) | 0,40 ± 0,09 | 1,1 % | 6,2 ± 1,6 | 9,2 ± 1,6 | 12,3 ± 0,3 | 0,1 | 0,0 | sí |
+| | **peaje** | **0,26** ± 0,03 | 0,6 % | 26,7 (suma) | 38,6 (suma) | 69,3 | 3,6 | — | sí |
 
 Reparto del pozo:
 
@@ -57,6 +60,7 @@ Reparto del pozo:
 | operador | 35,0 ± 0,0 | 0,0 ± 0,0 | 0,0 ± 0,0 | 0,0 | 0,0 | 0,0 |
 | regla sin reasignación | 49,5 ± 1,8 | 1,5 ± 0,2 | 28,9 ± 4,7 | 0,0 | 0,1 | 1,2 |
 | regla con reasignación | 56,5 ± 1,3 | 1,7 ± 0,2 | 31,7 ± 4,5 | 0,8 | 0,1 | 1,2 |
+| regla + tasa, sin reasignación | 57,9 ± 0,7 | 1,8 ± 0,2 | 38,5 ± 2,4 | 0,0 | 0,1 | 1,2 |
 
 ### Sensibilidades sobre la regla con reasignación
 
@@ -106,6 +110,9 @@ porque el operador no conoce el servicio real (DEC-027, punto 7).
 | **regla con reasignación** | P→C (festivo) | 1,26 ± 0,22 | 10,6 % | 47,9 ± 7,3 | 56,3 ± 7,2 | 58,7 ± 0,5 | 1,1 | 53,4 | **no** |
 |  | C→P (sustituto: domingoPC) | 1,03 ± 0,20 | 8,1 % | 10,5 ± 1,6 | 13,3 ± 1,7 | 12,2 ± 0,4 | 0,0 | 0,0 | **no** |
 | | **peaje** | **1,23** ± 0,20 | 9,3 % | 58,4 (suma) | 69,6 (suma) | 70,9 | 1,1 | — | **no** |
+| **regla + tasa, sin reasignación** | P→C (festivo) | 1,22 ± 0,23 | 10,0 % | 46,7 ± 7,3 | 55,0 ± 7,2 | 58,7 ± 0,5 | 1,0 | 53,6 | **no** |
+|  | C→P (sustituto: domingoPC) | 1,03 ± 0,20 | 8,1 % | 10,5 ± 1,6 | 13,3 ± 1,7 | 12,2 ± 0,4 | 0,0 | 0,0 | **no** |
+| | **peaje** | **1,20** ± 0,20 | 9,0 % | 57,2 (suma) | 68,4 (suma) | 70,9 | 1,1 | — | **no** |
 
 Reparto del pozo:
 
@@ -114,6 +121,7 @@ Reparto del pozo:
 | operador | 35,0 ± 0,0 | 0,0 ± 0,0 | 0,0 ± 0,0 | 0,0 | 0,0 | 0,0 |
 | regla sin reasignación | 59,8 ± 0,2 | 1,1 ± 0,1 | 51,6 ± 0,9 | 0,0 | 0,0 | 0,1 |
 | regla con reasignación | 59,8 ± 0,2 | 1,1 ± 0,1 | 51,6 ± 0,9 | 0,0 | 0,0 | 0,1 |
+| regla + tasa, sin reasignación | 59,9 ± 0,0 | 1,0 ± 0,1 | 51,7 ± 0,9 | 0,0 | 0,0 | 0,0 |
 
 ### Sensibilidades sobre la regla con reasignación
 
@@ -275,6 +283,31 @@ reasignación son los mismos.
 - **demora 10 min:** P→C 1,40 min (+0,14), C→P 1,05 min (+0,02), peaje 1,35 min. **C→P deja de cumplir.** Pozo agotado 59,9 min.
 - **ofrecerPozoPorRho:** P→C 1,19 min (-0,07), C→P 1,05 min (+0,02), peaje 1,17 min. **C→P deja de cumplir.** Pozo agotado 59,9 min.
 - **sustituto domingoCP:** P→C 1,35 min (+0,09), C→P 26,35 min (+25,32), peaje 8,64 min. **C→P deja de cumplir.** Pozo agotado 59,9 min.
+
+### El disparador anticipativo por tasa, con el pozo compartido (DEC-046)
+
+En la fase 2, con un solo sentido, el disparador por tasa mejoraba la regla.
+Con el pozo compartido la pregunta es otra: **anticipar significa pedir
+casetas antes, y las casetas son un recurso disputado.** Lo que en un sentido
+solo era ganancia aquí puede ser que un sentido se adelante al otro.
+
+**servicio base (12,10 s).** Las dos sin reasignación, que es la comparación limpia:
+
+| | P→C: Wq | C→P: Wq | Peaje: Wq | P→C: carriles | C→P: carriles | Anticipadas P→C | Pozo agotado |
+|---|---|---|---|---|---|---|---|
+| regla por cola | 0,35 | 0,39 | 0,35 | 54,8 | 13,0 | 0,00 | 49,5 min |
+| regla + tasa | 0,23 | 0,40 | 0,26 | 57,0 | 12,3 | 1,50 | 57,9 min |
+
+P→C baja su `Wq` de 0,35 a 0,23 min y C→P pasa de 0,39 a 0,40 min. Pero el contraflujo pierde 0,7 carriles-intervalo y el pozo queda agotado 8,4 min más: **parte de la mejora de P→C sale de pedir antes las casetas que el otro sentido podría usar.**
+
+**servicio lento (15,5 s, sensibilidad).** Las dos sin reasignación, que es la comparación limpia:
+
+| | P→C: Wq | C→P: Wq | Peaje: Wq | P→C: carriles | C→P: carriles | Anticipadas P→C | Pozo agotado |
+|---|---|---|---|---|---|---|---|
+| regla por cola | 1,26 | 1,03 | 1,23 | 58,7 | 12,2 | 0,00 | 59,8 min |
+| regla + tasa | 1,22 | 1,03 | 1,20 | 58,7 | 12,2 | 0,03 | 59,9 min |
+
+P→C baja su `Wq` de 1,26 a 1,22 min y C→P pasa de 1,03 a 1,03 min. El contraflujo no pierde carriles-intervalo (0,0), así que aquí la mejora **no sale del otro sentido**. El disparador apenas actúa en este régimen (0,03 aperturas anticipadas): con la cola ya desbordada, el umbral de cola se cruza solo y no queda nada que anticipar.
 
 ### El sustituto de C→P decide el resultado
 

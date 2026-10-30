@@ -25,8 +25,9 @@ export default function PanelSupuestos() {
         ))}
       </ul>
       <p className="nota">
-        La cola que se compara con el campo es la <strong>fila más larga de una caseta</strong>,
-        no el total del sentido (DEC-024): las dos series no son comparables de frente.
+        La cola que se compara con el campo es el <strong>total de vehículos esperando
+        por sentido</strong> (DEC-042), que es la misma variable que simula el modelo:
+        las dos series se comparan de frente.
       </p>
     </aside>
   );

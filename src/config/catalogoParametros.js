@@ -241,6 +241,28 @@ export const CATALOGO_PARAMETROS = [
   },
   {
     grupo: 'regla',
+    control: CONTROLES.BOOLEANO,
+    ruta: 'regla.disparadorPorTasa',
+    nombre: 'Disparador anticipativo por tasa',
+    significado:
+      'Si la regla abre también cuando las llegadas de los últimos 5 min cruzan su umbral, sin esperar a que la cola cruce el suyo. Se dispara lo que ocurra primero. Apagado por defecto: el escenario base es la regla por cola del contexto.',
+    unidad: 'sí/no',
+    origen: 'Contexto, sección 4 (derivación por tasa); DEC-046',
+    rango: 'true o false',
+  },
+  {
+    grupo: 'regla',
+    control: CONTROLES.TABLA_UMBRALES,
+    ruta: 'regla.abrirSiTasaMayorQue',
+    nombre: 'Umbrales de apertura por tasa',
+    significado:
+      'Con c casetas abiertas, se abre otra si las llegadas de los últimos 5 min superan este valor. Solo se usa con el disparador por tasa encendido. Si se deja en null, se generan con la fórmula redondear(c × capacidad nominal − 4), que reproduce los 21 / 46 / 70 / 95 del contexto.',
+    unidad: 'vehículos por 5 min, por número de casetas',
+    origen: 'Contexto, sección 4; DEC-046',
+    rango: 'enteros ≥ 0, uno por cada c del mínimo al tope − 1',
+  },
+  {
+    grupo: 'regla',
     control: CONTROLES.NUMERO,
     paso: 0.1,
     minimo: 0.1,

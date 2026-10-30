@@ -212,7 +212,7 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
             el avance a la caseta son interpolación visual y <strong>no afectan a ninguna
             medida</strong> (DEC-038). La cola se dibuja como <strong>un solo embudo por
             sentido</strong> porque el modelo es de cola única, no de una fila por caseta
-            (DEC-001, DEC-024).
+            (DEC-001).
             {reducirMovimiento && (
               <>
                 {' '}El sistema pide menos movimiento: se ha reducido lo decorativo, no la

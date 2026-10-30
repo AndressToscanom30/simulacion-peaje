@@ -64,9 +64,11 @@ PEN-008). Además:
 
 - El **servicio lento** (15,5 s) y los **sustitutos alternativos de C→P**
   (domingoPC, domingoCP) se marcan como **sensibilidad, no medición**.
-- La **cola observada** que se superpone en el gráfico, en puntos huecos, es la
-  **fila más larga de una caseta**, no el total del sentido, y va rotulada como
-  **no comparable directamente** (DEC-024).
+- La **cola observada** que se superpone en el gráfico, en puntos huecos, es el
+  **total de vehículos esperando por sentido** (DEC-042), que es la misma
+  variable que dibuja la curva simulada: las dos series se **comparan de
+  frente**. El rótulo recuerda que son lecturas puntuales, una por intervalo de
+  5 min.
 
 ## Arquitectura
 

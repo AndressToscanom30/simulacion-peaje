@@ -1,9 +1,9 @@
 # Fase 4: la matriz de escenarios
 
-Generado por `npm run fase4` el 2026-10-28.
+Generado por `npm run fase4` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
-160 escenarios (80 casos × 2 regímenes de servicio),
+214 escenarios (107 casos × 2 regímenes de servicio),
 **30 réplicas** cada uno, semillas 1 a 30, **las mismas en
 todos** (DEC-010).
 
@@ -23,10 +23,11 @@ empujan en la misma dirección: **el modelo es optimista**.
    usa el conteo del viernes (238 veh/h), que sí se tomó en ese sentido
    (DEC-029), por un factor configurable. El escenario E4 prueba otros tres
    factores y dos conteos alternativos, y la respuesta cambia mucho.
-3. **La cola de campo es la fila más larga de una caseta, no el total del
-   sentido** (DEC-024, PEN-008). El modelo de cola única subestima la
-   congestión del pico en los 12 intervalos del festivo, así que las casetas
-   que salgan de aquí son una **cota inferior**.
+3. **El modelo subestima la congestión del pico** (PEN-008). La cola de campo
+   es el total de vehículos esperando por sentido (DEC-042), la misma variable
+   que simula el modelo, y la simulada queda por debajo en los 12 intervalos
+   del festivo. Así que las casetas que salgan de aquí son una **cota
+   inferior**.
 
 ## El escenario base
 
@@ -80,6 +81,9 @@ ponderado lo taparía.
 | **Regla con reasignación** | se activa el traspaso por ρ > 0,60 al liberarse una caseta (DEC-008) | P→C | 0,53 ± 0,10 | 0,3 % | 28,2 ± 3,6 | 37,4 ± 3,6 | 52,5 | 2,3 | sí |
 |  |  | C→P | 0,39 ± 0,10 | 1,1 % | 7,4 ± 1,7 | 10,5 ± 1,7 | 17,2 | 1,4 | sí |
 | | | **peaje** | **0,51** ± 0,08 | 0,7 % | 35,6 (suma) | 47,9 (suma) | 69,6 | 3,6 | sí |
+| **Regla + disparador por tasa** | se añade el disparador anticipativo por tasa de llegadas (DEC-046) | P→C | 0,33 ± 0,08 | 0,3 % | 23,0 ± 3,4 | 31,7 ± 3,5 | 55,0 | 2,7 | sí |
+|  |  | C→P | 0,58 ± 0,12 | 2,2 % | 9,5 ± 2,0 | 12,4 ± 1,9 | 14,4 | 0,9 | sí |
+| | | **peaje** | **0,38** ± 0,07 | 1,3 % | 32,5 (suma) | 44,1 (suma) | 69,4 | 3,7 | sí |
 
 ### servicio lento (15,5 s, sensibilidad)
 
@@ -91,6 +95,9 @@ ponderado lo taparía.
 | **Regla con reasignación** | se activa el traspaso por ρ > 0,60 al liberarse una caseta (DEC-008) | P→C | 1,35 ± 0,30 | 11,7 % | 51,1 ± 10,3 | 59,6 ± 10,4 | 58,5 | 1,1 | **no** |
 |  |  | C→P | 3,20 ± 0,71 | 48,3 % | 23,4 ± 4,5 | 26,1 ± 4,5 | 12,4 | 0,1 | **no** |
 | | | **peaje** | **1,70** ± 0,24 | 30,0 % | 74,5 (suma) | 85,7 (suma) | 70,9 | 1,1 | **no** |
+| **Regla + disparador por tasa** | se añade el disparador anticipativo por tasa de llegadas (DEC-046) | P→C | 1,22 ± 0,23 | 10,0 % | 46,7 ± 7,3 | 55,0 ± 7,2 | 58,7 | 1,0 | **no** |
+|  |  | C→P | 3,21 ± 0,70 | 48,3 % | 23,5 ± 4,4 | 26,2 ± 4,5 | 12,2 | 0,0 | **no** |
+| | | **peaje** | **1,60** ± 0,22 | 29,2 % | 70,2 (suma) | 81,2 (suma) | 71,0 | 1,1 | **no** |
 
 ## E3 — Demanda alta
 
@@ -292,10 +299,14 @@ las 30 réplicas deja de cumplir el criterio en los dos sentidos.
 | 6 | casetas fijas | lento | **ninguno** | **×1,00** | 93,3 % |
 | 6 | regla | base | ×1,05 | **×1,10** | 40,0 % |
 | 6 | regla | lento | **ninguno** | **×1,00** | 96,7 % |
+| 6 | regla + tasa | base | ×1,05 | **×1,10** | 43,3 % |
+| 6 | regla + tasa | lento | **ninguno** | **×1,00** | 93,3 % |
 | 8 | casetas fijas | base | ×1,05 | **×1,10** | 36,7 % |
 | 8 | casetas fijas | lento | **ninguno** | **×1,00** | 93,3 % |
 | 8 | regla | base | ×1,50 | **×1,55** | 73,3 % |
 | 8 | regla | lento | ×1,15 | **×1,20** | 60,0 % |
+| 8 | regla + tasa | base | ×1,50 | **×1,55** | 73,3 % |
+| 8 | regla + tasa | lento | ×1,15 | **×1,20** | 60,0 % |
 
 ### El barrido completo
 
@@ -303,39 +314,39 @@ las 30 réplicas deja de cumplir el criterio en los dos sentidos.
 
 #### pozo 6, tope 5 (el real)
 
-| Factor | fijas · base | fijas · lento | regla · base | regla · lento |
-|---|---|---|---|---|
-| ×1,00 | 0,22 | **1,44** | 0,47 | **1,70** |
-| ×1,05 | 0,23 | **2,09** | 0,39 | **2,27** |
-| ×1,10 | **0,35** | **2,93** | **0,56** | **3,37** |
-| ×1,15 | **0,46** | **3,98** | **0,83** | **4,64** |
-| ×1,20 | **0,59** | **4,90** | **0,79** | **5,59** |
-| ×1,25 | **0,89** | **5,90** | **0,90** | **7,12** |
-| ×1,30 | **1,51** | **7,46** | **1,62** | **8,29** |
-| ×1,35 | **2,00** | **8,97** | **2,18** | **9,79** |
-| ×1,40 | **2,78** | **10,15** | **2,98** | **11,21** |
-| ×1,45 | **3,43** | **11,84** | **3,72** | **12,58** |
-| ×1,50 | **4,33** | **12,68** | **4,83** | **13,85** |
-| ×1,55 | **4,84** | **14,58** | **5,75** | **15,06** |
-| ×1,60 | **6,21** | **15,88** | **6,69** | **16,65** |
+| Factor | fijas · base | fijas · lento | regla · base | regla · lento | fijas · base | fijas · lento |
+|---|---|---|---|---|---|---|
+| ×1,00 | 0,22 | **1,44** | 0,47 | **1,70** | 0,38 | **1,60** |
+| ×1,05 | 0,23 | **2,09** | 0,39 | **2,27** | 0,38 | **2,27** |
+| ×1,10 | **0,35** | **2,93** | **0,56** | **3,37** | **0,57** | **3,37** |
+| ×1,15 | **0,46** | **3,98** | **0,83** | **4,64** | **0,70** | **4,64** |
+| ×1,20 | **0,59** | **4,90** | **0,79** | **5,59** | **0,73** | **5,59** |
+| ×1,25 | **0,89** | **5,90** | **0,90** | **7,12** | **0,90** | **7,12** |
+| ×1,30 | **1,51** | **7,46** | **1,62** | **8,29** | **1,62** | **8,29** |
+| ×1,35 | **2,00** | **8,97** | **2,18** | **9,79** | **2,18** | **9,79** |
+| ×1,40 | **2,78** | **10,15** | **2,98** | **11,21** | **2,98** | **11,21** |
+| ×1,45 | **3,43** | **11,84** | **3,72** | **12,58** | **3,72** | **12,58** |
+| ×1,50 | **4,33** | **12,68** | **4,83** | **13,85** | **4,83** | **13,85** |
+| ×1,55 | **4,84** | **14,58** | **5,75** | **15,06** | **5,75** | **15,06** |
+| ×1,60 | **6,21** | **15,88** | **6,69** | **16,65** | **6,69** | **16,65** |
 
 #### pozo 8, tope 7 (umbrales extrapolados)
 
-| Factor | fijas · base | fijas · lento | regla · base | regla · lento |
-|---|---|---|---|---|
-| ×1,00 | 0,15 | **0,67** | 0,26 | 0,48 |
-| ×1,05 | 0,14 | **0,81** | 0,25 | 0,51 |
-| ×1,10 | **0,21** | **1,05** | 0,30 | 0,65 |
-| ×1,15 | **0,27** | **1,41** | 0,31 | 0,83 |
-| ×1,20 | **0,37** | **1,53** | 0,30 | **1,13** |
-| ×1,25 | **0,42** | **1,79** | 0,34 | **1,91** |
-| ×1,30 | **0,61** | **2,28** | 0,40 | **2,80** |
-| ×1,35 | **0,82** | **2,63** | 0,44 | **3,77** |
-| ×1,40 | **1,06** | **3,09** | 0,48 | **4,77** |
-| ×1,45 | **1,15** | **3,78** | 0,59 | **5,54** |
-| ×1,50 | **1,45** | **4,28** | 0,88 | **6,38** |
-| ×1,55 | **1,51** | **5,23** | **1,25** | **7,68** |
-| ×1,60 | **1,76** | **6,04** | **1,52** | **8,22** |
+| Factor | fijas · base | fijas · lento | regla · base | regla · lento | fijas · base | fijas · lento |
+|---|---|---|---|---|---|---|
+| ×1,00 | 0,15 | **0,67** | 0,26 | 0,48 | 0,17 | 0,46 |
+| ×1,05 | 0,14 | **0,81** | 0,25 | 0,51 | 0,17 | 0,50 |
+| ×1,10 | **0,21** | **1,05** | 0,30 | 0,65 | 0,21 | 0,63 |
+| ×1,15 | **0,27** | **1,41** | 0,31 | 0,83 | 0,25 | 0,81 |
+| ×1,20 | **0,37** | **1,53** | 0,30 | **1,13** | 0,26 | **1,12** |
+| ×1,25 | **0,42** | **1,79** | 0,34 | **1,91** | 0,29 | **1,93** |
+| ×1,30 | **0,61** | **2,28** | 0,40 | **2,80** | 0,34 | **2,80** |
+| ×1,35 | **0,82** | **2,63** | 0,44 | **3,77** | 0,40 | **3,77** |
+| ×1,40 | **1,06** | **3,09** | 0,48 | **4,77** | 0,45 | **4,77** |
+| ×1,45 | **1,15** | **3,78** | 0,59 | **5,54** | 0,58 | **5,54** |
+| ×1,50 | **1,45** | **4,28** | 0,88 | **6,38** | 0,85 | **6,37** |
+| ×1,55 | **1,51** | **5,23** | **1,25** | **7,68** | **1,25** | **7,68** |
+| ×1,60 | **1,76** | **6,04** | **1,52** | **8,22** | **1,51** | **8,22** |
 
 ## Lectura
 
@@ -346,12 +357,12 @@ Todo lo que sigue sale de las tablas de arriba.
 | Grupo | Con servicio base | Con servicio lento |
 |---|---|---|
 | E1 | 1 de 1 escenarios cumplen | 0 de 1 cumplen |
-| E2 | 2 de 2 escenarios cumplen | 0 de 2 cumplen |
+| E2 | 3 de 3 escenarios cumplen | 0 de 3 cumplen |
 | E3 | 0 de 7 escenarios cumplen | 0 de 7 cumplen |
 | E4 | 13 de 18 escenarios cumplen | 0 de 18 cumplen |
-| E5 | 17 de 52 escenarios cumplen | 4 de 52 cumplen |
+| E5 | 30 de 78 escenarios cumplen | 8 de 78 cumplen |
 
-En total, con el servicio medido cumplen **33 de 80** escenarios (41,3 %); con el servicio lento, **4 de 80** (5,0 %).
+En total, con el servicio medido cumplen **47 de 107** escenarios (43,9 %); con el servicio lento, **8 de 107** (7,5 %).
 
 El operador y la regla, al factor 1,0: con servicio base el operador sí cumple y la regla sí, con `Wq` del peaje de 0,36 contra 0,47 min. Con servicio lento el operador **no** y la regla **no**, con 3,00 contra 1,70 min.
 
@@ -361,16 +372,37 @@ El operador y la regla, al factor 1,0: con servicio base el operador sí cumple 
 |---|---|---|---|---|
 | regla | base | ×1,10 | ×1,55 | +0,45 |
 | regla | lento | ×1,00 | ×1,20 | +0,20 |
+| regla + tasa | base | ×1,10 | ×1,55 | +0,45 |
+| regla + tasa | lento | ×1,00 | ×1,20 | +0,20 |
 | casetas fijas | base | ×1,10 | ×1,10 | 0,00 |
 | casetas fijas | lento | ×1,00 | ×1,00 | 0,00 |
 
-Donde las dos configuraciones quiebran dentro del barrido, las dos casetas extra desplazan el quiebre **+0,16** de factor de demanda de media (+0,45, +0,20, +0,00, +0,00).
+Donde las dos configuraciones quiebran dentro del barrido, las dos casetas extra desplazan el quiebre **+0,22** de factor de demanda de media (+0,45, +0,20, +0,45, +0,20, +0,00, +0,00).
 
 **Ojo:** con pozo de 8 los umbrales de `c` = 5 y 6 son extrapolados
 (DEC-031). El resultado del pozo ampliado depende de esa extrapolación, no
 solo de las casetas de más.
 
 ### Qué sensibilidades mueven más el resultado
+
+### El disparador anticipativo por tasa (DEC-046)
+
+| Servicio | Wq peaje, regla | Wq peaje, regla + tasa | Δ | Cumple sin | Cumple con | Anticipadas |
+|---|---|---|---|---|---|---|
+| base | 0,47 | **0,38** | -0,09 | sí | sí | 0,93 |
+| lento | 1,70 | **1,60** | -0,10 | **no** | **no** | 0,03 |
+
+Y lo que de verdad importa, el **punto de quiebre con el pozo real de 6**:
+
+| Servicio | Quiebre, regla por cola | Quiebre, regla + tasa | Desplazamiento |
+|---|---|---|---|
+| base | ×1,10 | ×1,10 | +0,00 |
+| lento | ×1,00 | ×1,00 | +0,00 |
+
+**Ojo con lo que esta tabla puede y no puede decir.** El disparador por tasa
+no añade ni una caseta: reparte en el tiempo las seis que ya hay. Así que
+mueve el quiebre solo en la medida en que llegar antes al tope sirva de algo;
+cuando el pozo ya está agotado toda la hora, no hay nada que adelantar.
 
 Para cada sensibilidad de E4, cuánto mueve el `Wq` del peaje respecto de E2a
 en el mismo régimen. Ordenadas por el mayor efecto de los dos regímenes.
@@ -442,5 +474,7 @@ misma dirección:
 
 Por eso la fase 4 no entrega una política, sino el mapa de lo que haría falta
 medir para poder recomendarla: tiempos de atención en un festivo, la demanda
-de C→P en un festivo y la cola total por sentido.
+de C→P en un festivo y la cola **por caseta** en un pico. La cola total por
+sentido ya está medida —es la columna `cola` de los conteos (DEC-042)—, y es
+justo la que deja ver que el modelo se queda corto.
 

@@ -1,6 +1,6 @@
 # Validación de la fase 1
 
-Generado por `npm run simular` el 2026-10-28.
+Generado por `npm run simular` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
 Motor de **un sentido** con `c(t)` programado, copiando las casetas que el
@@ -264,26 +264,56 @@ observado (1,28 min). La cierra en parte pero no del todo:
 - Simulación: 0,276 min, 4,6 veces por debajo de lo observado.
 - La simulación multiplica por 4,8 la espera del M/M/c, pero sigue a 4,6× de lo observado.
 
-### Por qué: la cola de campo y la del modelo no son la misma variable
+### De dónde sale el 1,28 min observado (PEN-002, cerrado)
 
-Las lecturas de cola de los conteos son la **fila más larga de una sola
-caseta**, no el total del sentido (DEC-024). El motor simula cola única, así
-que reporta la cola **total**. Como el total es mayor o igual que cualquiera
-de sus filas, el criterio limpio es la desigualdad: donde la cola total
-simulada queda por debajo de la lectura de campo, el modelo subestima con
-certeza.
+La cola de campo es el **total de vehículos esperando por sentido** (DEC-042,
+que supera a la DEC-024), que es exactamente la variable que simula el motor.
+Con eso el `Wq` observado se reconstruye por la **ley de Little**, y sale el
+valor que declara el contexto:
 
-Eso es justo lo que pasa en el festivo, y en todos los intervalos:
-`npm run diagnostico` lo desglosa en `diagnostico-festivo.md`. La cola
-simulada al final de la hora sale 0,0 en las 30 réplicas, mientras en
-campo la fila más larga todavía marcaba 14 vehículos.
+| Conteo | `Lq` medio de la columna `cola` | λ (veh/h) | `Wq = Lq / λ` | Declarado |
+|---|---|---|---|---|
+| viernes | 0,2500 | 238 | 0,0630 min | 0,06 |
+| domingoCP | 1,8333 | 451 | 0,2439 min | 0,24 |
+| domingoPC | 1,3333 | 195 | 0,4103 min | 0,41 |
+| festivoPC | 22,6667 | 1064 | 1,2782 min | 1,28 |
 
-Las causas posibles están en PEN-008 y PEN-010: servicio más lento que los
-12,10 s medidos en el pico, desbalance entre filas que la cola única no
-reproduce (sección 8 del contexto), o lecturas que cuentan vehículos ajenos
-al modelo. **No se tocó ningún parámetro** (DEC-021); la hipótesis de
-servicio lento entra como escenario de sensibilidad rotulado, no como
-calibración (DEC-025).
+Los cuatro coinciden al redondeo, así que no es casualidad: **el `Wq`
+observado del contexto es el que implica la cola medida, por Little.** El
+1,28 min del festivo no es una espera cronometrada, es la espera que implica
+una cola sostenida de 22,7 vehículos con 1.064 veh/h de demanda.
+
+Esto cierra el PEN-002. El recálculo anterior, que usaba la fórmula
+`Wq_est = Lq × 12,1 / c` de la sección 3 y daba 1,01 min, no era la vía: esa
+fórmula reparte la cola entre las `c` casetas y Little no necesita `c`.
+
+### Por qué el modelo se queda corto
+
+Como las dos series son la misma variable, la comparación es directa y la
+brecha en `Wq` y la brecha en cola son **la misma brecha**: el modelo vacía la
+cola que en campo se mantuvo alta toda la hora. `npm run diagnostico` lo
+desglosa intervalo por intervalo en `diagnostico-festivo.md`. La cola simulada
+al final de la hora sale 0,0 en las 30 réplicas, mientras en campo
+todavía había 14 vehículos esperando.
+
+**El "servicio implícito" del festivo.** Con la cola total medida vuelve a
+valer una derivación que la DEC-024 había anulado (ver DEC-042 y PEN-010). Si
+la cola nunca se vació, las casetas abiertas estuvieron ocupadas toda la hora,
+así que el tiempo medio de atención que eso implica es:
+
+```
+55 caseta-intervalos × 300 s ÷ 1064 veh = 15,51 s/veh
+```
+
+Contra los 12,1016 s medidos, son 1,28× más lento. **No es una medición:**
+supone que toda la holgura del pico se explica por el servicio y nada por el
+desbalance entre casetas o por el conteo. Entra como escenario de sensibilidad
+rotulado, nunca como valor por defecto (DEC-025, PEN-010).
+
+Las tres causas posibles están en PEN-008, ninguna descartable y ninguna
+privilegiada: servicio más lento en el pico, desbalance entre filas que la
+cola única no reproduce (sección 8 del contexto), o lecturas que cuentan
+vehículos ajenos al modelo. **No se tocó ningún parámetro** (DEC-021).
 
 ### Lo demás que conviene saber
 
@@ -301,7 +331,8 @@ calibración (DEC-025).
   festivoPC_cola0: 0,0 % de media (peor réplica 0,0 %).
   El criterio de desempeño acepta hasta 5,0 %, así que según la
   simulación la operación observada lo cumple **incluso en el festivo**, que es
-  justo lo contrario de lo que sugiere la cola observada de 14 a 32 vehículos.
+  justo lo contrario de lo que sugiere la cola observada de 14 a 32 vehículos
+  esperando por sentido.
   Es la misma brecha de arriba, vista desde el criterio.
 - **Cola máxima:** se reportan dos. La continua (29,3 en el festivo) es el
   máximo real de la hora; la muestreada (21,4) es el máximo de 12 lecturas
@@ -312,19 +343,20 @@ calibración (DEC-025).
 Lo que sigue describe las diferencias tal como salieron. **No se ajustó
 ningún parámetro** para reducirlas.
 
-| Conteo | Fila más larga obs. | Cola total máx. muestreada sim. | Wq obs. decl. (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |
+| Conteo | Cola máx. obs. | Cola máx. muestreada sim. | Wq obs. decl. (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |
 |---|---|---|---|---|---|
 | viernes | 1 | 0,8 | 0,06 | 0,025 | 0,42× |
 | domingoCP | 7 | 5,8 | 0,24 | 0,130 | 0,54× |
 | domingoPC | 8 | 4,6 | 0,41 | 0,282 | 0,69× |
 | festivoPC | 32 | 21,4 | 1,28 | 0,276 | 0,22× |
 
-Las dos columnas de cola **no son comparables de frente**: la observada es la
-fila más larga de una caseta y la simulada es el total del sentido (DEC-024).
-Lo único que se puede afirmar es que donde la simulada queda por debajo, el
-modelo subestima. `npm run diagnostico` lo desglosa intervalo por intervalo.
+Las dos columnas de cola **son la misma variable** —el total en espera por
+sentido (DEC-042)— y se comparan de frente. Las dos son además máximos de 12
+lecturas puntuales, así que la comparación es homogénea en los dos ejes
+(PEN-004). Donde la simulada queda por debajo, el modelo subestima;
+`npm run diagnostico` lo desglosa intervalo por intervalo.
 
-La fórmula `Wq_est = Lq × 12,1 / c` de la sección 3 **no se usa** sobre estas
-lecturas: espera la cola total y aplicarla a la fila más larga de una caseta
-da una cifra sin interpretación (DEC-024, consecuencia 3; PEN-002).
+El `Wq` observado de la tabla es el declarado por el contexto, que es el que
+implica la cola medida por la ley de Little: el cálculo está más arriba
+(PEN-002, cerrado).
 

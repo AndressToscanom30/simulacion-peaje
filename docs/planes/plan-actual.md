@@ -3,16 +3,53 @@
 Estado: 30/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Fases 1 a 6 cerradas.** Siguiente y última: fase 7 (resultados y documentación
-del estudio). Todo el material está: los informes de `docs/resultados/`, el
-catálogo de parámetros, la interfaz y las capturas de `docs/capturas/`.
+**Las siete fases están cerradas**, más un añadido posterior: el **disparador
+anticipativo por tasa** (DEC-046), que el estudio recomendaba sin medir y ya
+está implementado y medido. El estudio está completo: el documento con las ocho
+etapas está en `docs/estudio.md` y la política recomendada en
+`docs/politica-recomendada.md`.
 
-Antes de empezarla, leer en `docs/pendientes.md`: **PEN-013** (la demanda de C→P
-no se midió y es la sensibilidad que más mueve el resultado), PEN-008 (el modelo
-de cola única subestima la congestión del pico, así que todo factor de quiebre
-es una cota superior), y **PEN-016** (la cola inicial le hace de aviso temprano a
-la regla: sin ella, P→C deja de cumplir). Y el disparador anticipativo por tasa
-de llegadas, que **DEC-028 dejó expresamente para esta fase** (PEN-011).
+## Corrección de base del 30/10/2026 (DEC-042) ✅
+
+Hecha antes de la fase 7, para que el documento del estudio no se la llevara
+dentro.
+
+- [x] **DEC-042**: la columna `cola` de los cuatro conteos es el **total de
+      vehículos esperando por sentido**, no la fila más larga de una caseta.
+      **Supera a la DEC-024**, que era incorrecta. Sustento por tres vías:
+      confirmación del autor de las mediciones, las dos líneas del contexto que
+      la DEC-024 contradecía, y la ley de Little, que reconstruye los `Wq`
+      declarados **en los cuatro conteos** y solo cuadra con la columna leída
+      como total
+- [x] **PEN-002 cerrado**: el 1,28 min del festivo sale de
+      `Wq = Lq / λ = 22,667 / 1.064 = 1,2782 min`. El recálculo anterior usaba la
+      fórmula de la sección 3 y no era la vía
+- [x] **PEN-008 reescrito**: la conclusión (el modelo subestima el pico) sigue en
+      pie; el razonamiento cambia de desigualdad a comparación directa, y la
+      hipótesis del desbalance pierde el lugar privilegiado que le daba la
+      DEC-024
+- [x] **PEN-010 y DEC-025**: la derivación del servicio implícito de 15,5 s
+      vuelve a ser válida (nota en la DEC-025). Sigue sin ser una medición, así
+      que el escenario sigue siendo sensibilidad, pero deja de estar anulado
+- [x] **PEN-004**: quitada la nota del 27/10 que decía que ni el máximo
+      muestreado era comparable
+- [x] **DEC-038 punto 1**: la decisión sigue en pie con un argumento menos (nota)
+- [x] Prosa, rótulos y comentarios corregidos en la interfaz (5 archivos), los
+      generadores de informes (4) y los documentos (4). **La lógica del motor no
+      se tocó:** siempre simuló la cola total
+- [x] Los seis informes regenerados con sus scripts
+- [x] **373 pruebas en verde.** Una prueba afirmaba el texto incorrecto de la
+      interfaz y se corrigió para afirmar el correcto
+
+**Ninguna conclusión de las fases 1 a 4 cambió**, y está comprobado: los informes
+de las fases 2, 3 y 4 se regeneraron con **cero diferencias numéricas** (solo la
+fecha y la prosa). Lo que cambió es lo que se puede concluir de esos números.
+
+**Hallazgo nuevo que la lectura anterior no permitía ver:** el sesgo del modelo
+tiene **un solo signo**. En 0 de los 48 intervalos la lectura de campo queda por
+debajo del rango de las 30 réplicas. Con la DEC-024 esto era incomprobable,
+porque todo intervalo en que la simulación quedaba por encima salía rotulado «no
+concluyente». Refuerza PEN-008: no es dispersión, es sesgo.
 
 ## Fase 1 — Motor de un sentido con casetas fijas + validación ✅
 
@@ -48,7 +85,8 @@ queda corta en los cuatro casos, y en el festivo 4,6 veces corta: ver PEN-008.
 - [x] Escenario de sensibilidad "servicio lento" (DEC-025)
 - [x] Comparación de la regla contra la operación real observada
       → `docs/resultados/fase2-regla.md`
-- [x] Diagnóstico de la definición de cola de campo (DEC-024)
+- [x] Diagnóstico de la definición de cola de campo (DEC-024, **superada por la
+      DEC-042 el 30/10**: la columna `cola` es el total por sentido)
       → `docs/resultados/diagnostico-festivo.md`
 - [x] 86 pruebas en verde, incluida la regresión del modo programado contra
       `validacion-fase1.md`
@@ -201,8 +239,90 @@ Lo que se vio al revisar las capturas y se corrigió: desde abajo la calzada
 opaca tapaba la escena entera, que es justo lo contrario de «verlo todo desde
 cualquier ángulo».
 
-## Fase 7 — Resultados y documentación del estudio
+## Fase 7 — Resultados y documentación del estudio ✅
 
-- [ ] Interpretación de los resultados y política recomendada
-- [ ] Documento del estudio con las ocho etapas de simulación
-- [ ] Limitaciones y trabajo futuro
+- [x] **Interpretación de los resultados y política recomendada**
+      → `docs/politica-recomendada.md`, con las cinco conclusiones del estudio en
+      la etapa 7 de `docs/estudio.md`
+- [x] **Documento del estudio con las ocho etapas** de simulación —definición,
+      formulación, datos, implementación, validación, experimentación,
+      interpretación y documentación, las que fija la sección 1 del contexto—
+      → `docs/estudio.md`
+- [x] **Limitaciones y trabajo futuro** → `docs/estudio.md`, secciones finales:
+      seis limitaciones ordenadas por cuánto pesan y doce líneas de trabajo
+      futuro, cinco de ellas mediciones
+- [x] Las advertencias de los pendientes, incorporadas a la interpretación en vez
+      de arrastradas: **PEN-013** (la demanda de C→P no se midió y es la
+      incertidumbre dominante), **PEN-009** (el modelo dice que la operación real
+      ya cumple, así que los resultados van en términos relativos y los `Wq`
+      absolutos no se presentan como predicción) y **PEN-011** (la regla es
+      reactiva y el operador fue anticipativo)
+- [x] **DEC-043**, **DEC-044** y **DEC-045** registradas
+
+Resultado: el estudio se formula **en términos relativos y como seguro, no como
+predicción** (DEC-043), porque tres resultados medidos lo obligan: el modelo dice
+que la operación real ya cumple, subestima el pico con sesgo de un solo signo, y
+la entrada que más mueve el resultado no se midió.
+
+La conclusión de mayor valor es incómoda: **la palanca no está en la regla, está
+en los datos que faltan.** El sustituto no medido de la demanda de C→P mueve el
+`Wq` del peaje hasta 6,94 min; el parámetro de la regla que más mueve llega a
+0,31 min. Más de veinte veces.
+
+El **disparador anticipativo por tasa** que la DEC-028 dejó para esta fase se
+recomendó primero sin medir (DEC-044) y después **se implementó y se midió**
+a petición del usuario: ver el apartado siguiente.
+
+## Añadido — Disparador anticipativo por tasa de llegadas ✅
+
+Pedido después de cerrar la fase 7, cuando el estudio lo recomendaba sin haberlo
+medido (DEC-044).
+
+- [x] **DEC-046**: se implementa el disparador por tasa. **Supera de la DEC-006
+      solo la parte que descartaba disparar por tasa** —el disparador por cola
+      sigue siendo el principal— y de la DEC-044, la parte que decía "no se
+      adopta". Se dispara lo que ocurra primero, cola o tasa
+- [x] Tabla de umbrales **derivada, no transcrita**:
+      `redondear(c × capacidad nominal − 4)` reproduce exactamente los
+      21 / 46 / 70 / 95 del contexto, y **ningún otro desplazamiento entero lo
+      hace**. Así sigue al tope por sentido igual que las de cola (DEC-031)
+- [x] **Apagado por defecto:** el escenario base sigue siendo la regla tal como
+      la especifica el contexto, y todos los resultados de las fases 1 a 4
+      siguen comparables
+- [x] Lee la **misma ventana móvil de 5 min que ρ**, sin parámetro nuevo y sin
+      efectos laterales sobre el ρ del árbitro (hay prueba de las dos cosas).
+      La cola inicial no entra en la ventana: mide demanda, no rezago (DEC-027)
+- [x] Escenarios nuevos: `regla+tasa` en la fase 2 (4 conteos × 2 regímenes),
+      en la fase 3 con el pozo compartido y **E2c más el barrido de estrés
+      completo** en la fase 4. La matriz pasa de 160 a **214 escenarios**
+- [x] **16 pruebas nuevas (389 en total)**, con las regresiones de las fases 1 a
+      4 intactas
+- [x] Los tres informes regenerados, y `docs/parametros.md` con los 33 parámetros
+- [x] **PEN-011 cerrado**; PEN-016 resuelto en parte
+- [x] `docs/estudio.md` y `docs/politica-recomendada.md` al día
+
+**Resultado: el diagnóstico de PEN-011 era correcto y la corrección funciona.**
+En el festivo con servicio base, `Wq` baja de 0,32 a **0,23 min** y la regla
+**pasa por delante del operador** (0,28), que es justo lo que no conseguía con la
+demora de 5 min. Cuesta 1,7 carriles-intervalo y hace 1,63 aperturas anticipadas
+por réplica. Los cuatro conteos mejoran.
+
+**Y queda confirmado por contraste:** con servicio lento el disparador es casi
+inerte (1,23 → 1,19 min, 0,03 aperturas anticipadas), porque con la cola ya
+desbordada el umbral de cola se cruza solo y **no queda nada que anticipar**.
+Sirve donde el operador le ganaba a la regla y no donde la regla ya ganaba, que
+es el patrón que predice el diagnóstico de la latencia.
+
+**Dos límites que el estudio reporta y no suaviza:**
+
+1. **No compra holgura de capacidad.** El punto de quiebre sigue en **×1,10** con
+   el pozo de 6, exactamente igual que sin el disparador, y con el pozo de 8
+   desplaza lo mismo que la regla por cola (+0,45 y +0,20). No añade casetas:
+   reparte en el tiempo las que ya hay.
+2. **Parte de la mejora sale del otro sentido.** Con el pozo compartido P→C baja
+   de 0,35 a 0,23 min, pero C→P pierde 0,7 carriles-intervalo y el pozo queda
+   agotado 8,4 min más.
+
+Así que **la conclusión central del estudio no se mueve** (DEC-043): el
+disparador mueve el `Wq` del peaje 0,09 min y el sustituto no medido de C→P lo
+mueve 6,94. La palanca sigue estando en los datos que faltan.

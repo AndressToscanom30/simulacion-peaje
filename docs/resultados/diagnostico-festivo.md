@@ -1,26 +1,36 @@
 # Diagnóstico de la cola: campo contra simulación
 
-Generado por `npm run diagnostico` el 2026-10-28.
+Generado por `npm run diagnostico` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
 ## Qué se compara y qué se puede concluir
 
-Las lecturas de campo son la **fila más larga de una sola caseta** en el
-intervalo (DEC-024). El motor simula una **cola única** por sentido, así que
-la variable que reporta es la **cola total** del sentido. Las dos no son la
-misma cosa, pero sí guardan una desigualdad que se puede usar:
+Las lecturas de campo son el **total de vehículos que esperaban en el sentido**
+en ese instante, sumando todas las casetas abiertas (DEC-042, que supera a la
+DEC-024). El motor simula una cola única por sentido y reporta exactamente esa
+variable, así que **las dos series son la misma magnitud** y se comparan de
+frente, en los dos sentidos de la desigualdad:
 
-> cola total real ≥ fila más larga de una caseta = lectura observada
+- `SUBESTIMA (en las 30)`: ni la réplica más congestionada alcanza la lectura
+  de campo. Es el caso fuerte: el modelo se queda corto con cualquier semilla.
+- `SUBESTIMA (en media)`: la media de las 30 queda por debajo de la lectura,
+  pero alguna réplica la alcanza.
+- `sobreestima (en las 30)`: ni la réplica menos congestionada baja hasta la
+  lectura. Es el espejo del caso fuerte.
+- `dentro del rango`: la lectura de campo cae entre la réplica menos y la más
+  congestionada, así que el modelo es **compatible** con ella.
 
-De ahí sale el único criterio limpio que hay:
+Los rótulos se deciden solo comparando la lectura con el rango de las 30
+réplicas, **sin ninguna tolerancia inventada**. Por eso un intervalo con cola
+observada 0 y media simulada de medio vehículo sale `dentro del rango` y no
+«sobreestima»: con 0 en el rango, la lectura es compatible con el modelo.
 
-- Si la **cola total simulada queda por debajo de la lectura observada**, el
-  modelo **subestima con certeza**: está poniendo menos vehículos en todo el
-  sentido que los que en campo había en una sola fila.
-- Si queda por encima, **no se puede concluir nada**: la cola total real
-  también estaba por encima de la lectura y no se sabe cuánto.
-
-Por eso la columna que importa es la marca `SUBESTIMA`. Lo demás es contexto.
+Esto corrige la versión anterior de este informe, que leía la columna de campo
+como la fila más larga de una sola caseta y por eso solo podía afirmar una
+desigualdad: todo intervalo en que la simulación quedaba por encima salía
+rotulado como «no concluyente». Con la lectura correcta no hay desajuste de
+definición y los dos lados informan. **Los números no cambian** —el motor
+siempre simuló la cola total—, cambia lo que se puede concluir de ellos.
 
 ## viernes
 
@@ -30,22 +40,22 @@ Viernes 02/10/2026, Cúcuta→Pamplona, 12:00–13:00
 - Cola inicial: 0 vehículos
 - 30 réplicas, semillas 1…30
 
-| Intervalo | Llegadas | Casetas | Fila más larga obs. | Cola total sim. (media) | Rango sim. | ¿Subestima? |
+| Intervalo | Llegadas | Casetas | Cola total obs. | Cola total sim. (media) | Rango sim. | Comparación |
 |---|---|---|---|---|---|---|
-| 1 | 18 | 2 | 0 | 0,0 | 0–0 | no concluyente |
-| 2 | 21 | 2 | 0 | 0,0 | 0–1 | no concluyente |
+| 1 | 18 | 2 | 0 | 0,0 | 0–0 | dentro del rango |
+| 2 | 21 | 2 | 0 | 0,0 | 0–1 | dentro del rango |
 | 3 | 24 | 2 | 1 | 0,3 | 0–6 | ⚠️ SUBESTIMA (en media) |
-| 4 | 19 | 2 | 0 | 0,1 | 0–1 | no concluyente |
-| 5 | 17 | 2 | 0 | 0,0 | 0–1 | no concluyente |
+| 4 | 19 | 2 | 0 | 0,1 | 0–1 | dentro del rango |
+| 5 | 17 | 2 | 0 | 0,0 | 0–1 | dentro del rango |
 | 6 | 23 | 2 | 1 | 0,1 | 0–1 | ⚠️ SUBESTIMA (en media) |
-| 7 | 22 | 2 | 0 | 0,1 | 0–2 | no concluyente |
-| 8 | 20 | 2 | 0 | 0,0 | 0–1 | no concluyente |
-| 9 | 18 | 2 | 0 | 0,1 | 0–1 | no concluyente |
+| 7 | 22 | 2 | 0 | 0,1 | 0–2 | dentro del rango |
+| 8 | 20 | 2 | 0 | 0,0 | 0–1 | dentro del rango |
+| 9 | 18 | 2 | 0 | 0,1 | 0–1 | dentro del rango |
 | 10 | 21 | 2 | 1 | 0,0 | 0–1 | ⚠️ SUBESTIMA (en media) |
-| 11 | 16 | 2 | 0 | 0,0 | 0–0 | no concluyente |
-| 12 | 19 | 2 | 0 | 0,0 | 0–1 | no concluyente |
+| 11 | 16 | 2 | 0 | 0,0 | 0–0 | dentro del rango |
+| 12 | 19 | 2 | 0 | 0,0 | 0–1 | dentro del rango |
 
-**viernes:** la cola total simulada queda por debajo de la fila más larga observada en **3 de 12 intervalos** en media, y en **0 de 12** ni la peor de las 30 réplicas llega a la lectura.
+**viernes:** la cola simulada queda por debajo de la observada en **3 de 12 intervalos** en media, y en **0 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de campo. En el otro extremo, en 0 intervalos la lectura queda por debajo de las 30 réplicas.
 
 ## domingoCP
 
@@ -55,22 +65,22 @@ Domingo 13/09/2026, Cúcuta→Pamplona, 11:50–12:50
 - Cola inicial: 0 vehículos
 - 30 réplicas, semillas 1…30
 
-| Intervalo | Llegadas | Casetas | Fila más larga obs. | Cola total sim. (media) | Rango sim. | ¿Subestima? |
+| Intervalo | Llegadas | Casetas | Cola total obs. | Cola total sim. (media) | Rango sim. | Comparación |
 |---|---|---|---|---|---|---|
-| 1 | 30 | 3 | 0 | 0,0 | 0–0 | no concluyente |
-| 2 | 49 | 3 | 0 | 1,0 | 0–9 | no concluyente |
+| 1 | 30 | 3 | 0 | 0,0 | 0–0 | dentro del rango |
+| 2 | 49 | 3 | 0 | 1,0 | 0–9 | dentro del rango |
 | 3 | 38 | 2 | 7 | 1,5 | 0–6 | ⚠️ SUBESTIMA (en las 30) |
-| 4 | 37 | 2 | 0 | 1,1 | 0–5 | no concluyente |
-| 5 | 35 | 2 | 0 | 0,8 | 0–6 | no concluyente |
+| 4 | 37 | 2 | 0 | 1,1 | 0–5 | dentro del rango |
+| 5 | 35 | 2 | 0 | 0,8 | 0–6 | dentro del rango |
 | 6 | 38 | 2 | 4 | 0,9 | 0–5 | ⚠️ SUBESTIMA (en media) |
-| 7 | 46 | 2 | 0 | 3,5 | 0–20 | no concluyente |
+| 7 | 46 | 2 | 0 | 3,5 | 0–20 | dentro del rango |
 | 8 | 32 | 2 | 5 | 1,9 | 0–9 | ⚠️ SUBESTIMA (en media) |
-| 9 | 33 | 2 | 0 | 0,7 | 0–5 | no concluyente |
-| 10 | 37 | 2 | 0 | 1,2 | 0–8 | no concluyente |
-| 11 | 38 | 3 | 0 | 0,1 | 0–1 | no concluyente |
+| 9 | 33 | 2 | 0 | 0,7 | 0–5 | dentro del rango |
+| 10 | 37 | 2 | 0 | 1,2 | 0–8 | dentro del rango |
+| 11 | 38 | 3 | 0 | 0,1 | 0–1 | dentro del rango |
 | 12 | 38 | 3 | 6 | 0,4 | 0–4 | ⚠️ SUBESTIMA (en las 30) |
 
-**domingoCP:** la cola total simulada queda por debajo de la fila más larga observada en **4 de 12 intervalos** en media, y en **2 de 12** ni la peor de las 30 réplicas llega a la lectura.
+**domingoCP:** la cola simulada queda por debajo de la observada en **4 de 12 intervalos** en media, y en **2 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de campo. En el otro extremo, en 0 intervalos la lectura queda por debajo de las 30 réplicas.
 
 ## domingoPC
 
@@ -80,22 +90,22 @@ Domingo 13/09/2026, Pamplona→Cúcuta, 13:00–14:00
 - Cola inicial: 0 vehículos
 - 30 réplicas, semillas 1…30
 
-| Intervalo | Llegadas | Casetas | Fila más larga obs. | Cola total sim. (media) | Rango sim. | ¿Subestima? |
+| Intervalo | Llegadas | Casetas | Cola total obs. | Cola total sim. (media) | Rango sim. | Comparación |
 |---|---|---|---|---|---|---|
-| 1 | 10 | 2 | 0 | 0,1 | 0–1 | no concluyente |
-| 2 | 22 | 2 | 0 | 0,1 | 0–1 | no concluyente |
+| 1 | 10 | 2 | 0 | 0,1 | 0–1 | dentro del rango |
+| 2 | 22 | 2 | 0 | 0,1 | 0–1 | dentro del rango |
 | 3 | 22 | 1 | 6 | 1,9 | 0–8 | ⚠️ SUBESTIMA (en media) |
-| 4 | 13 | 1 | 0 | 1,5 | 0–11 | no concluyente |
-| 5 | 11 | 1 | 0 | 0,3 | 0–5 | no concluyente |
+| 4 | 13 | 1 | 0 | 1,5 | 0–11 | dentro del rango |
+| 5 | 11 | 1 | 0 | 0,3 | 0–5 | dentro del rango |
 | 6 | 25 | 1 | 8 | 2,6 | 0–11 | ⚠️ SUBESTIMA (en media) |
-| 7 | 18 | 1 | 2 | 2,1 | 0–12 | no concluyente |
-| 8 | 16 | 1 | 0 | 1,1 | 0–6 | no concluyente |
-| 9 | 14 | 1 | 0 | 0,3 | 0–2 | no concluyente |
-| 10 | 17 | 1 | 0 | 0,5 | 0–3 | no concluyente |
-| 11 | 12 | 1 | 0 | 0,7 | 0–5 | no concluyente |
-| 12 | 15 | 1 | 0 | 0,7 | 0–4 | no concluyente |
+| 7 | 18 | 1 | 2 | 2,1 | 0–12 | dentro del rango |
+| 8 | 16 | 1 | 0 | 1,1 | 0–6 | dentro del rango |
+| 9 | 14 | 1 | 0 | 0,3 | 0–2 | dentro del rango |
+| 10 | 17 | 1 | 0 | 0,5 | 0–3 | dentro del rango |
+| 11 | 12 | 1 | 0 | 0,7 | 0–5 | dentro del rango |
+| 12 | 15 | 1 | 0 | 0,7 | 0–4 | dentro del rango |
 
-**domingoPC:** la cola total simulada queda por debajo de la fila más larga observada en **2 de 12 intervalos** en media, y en **0 de 12** ni la peor de las 30 réplicas llega a la lectura.
+**domingoPC:** la cola simulada queda por debajo de la observada en **2 de 12 intervalos** en media, y en **0 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de campo. En el otro extremo, en 0 intervalos la lectura queda por debajo de las 30 réplicas.
 
 ## festivoPC
 
@@ -105,7 +115,7 @@ Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25
 - Cola inicial: 23 vehículos
 - 30 réplicas, semillas 1…30
 
-| Intervalo | Llegadas | Casetas | Fila más larga obs. | Cola total sim. (media) | Rango sim. | ¿Subestima? |
+| Intervalo | Llegadas | Casetas | Cola total obs. | Cola total sim. (media) | Rango sim. | Comparación |
 |---|---|---|---|---|---|---|
 | 1 | 92 | 4 | 23 | 17,3 | 0–35 | ⚠️ SUBESTIMA (en media) |
 | 2 | 78 | 4 | 30 | 9,7 | 0–28 | ⚠️ SUBESTIMA (en las 30) |
@@ -120,7 +130,7 @@ Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25
 | 11 | 99 | 5 | 26 | 1,8 | 0–11 | ⚠️ SUBESTIMA (en las 30) |
 | 12 | 44 | 5 | 14 | 0,2 | 0–3 | ⚠️ SUBESTIMA (en las 30) |
 
-**festivoPC:** la cola total simulada queda por debajo de la fila más larga observada en **12 de 12 intervalos** en media, y en **8 de 12** ni la peor de las 30 réplicas llega a la lectura.
+**festivoPC:** la cola simulada queda por debajo de la observada en **12 de 12 intervalos** en media, y en **8 de 12** ni la más congestionada de las 30 réplicas alcanza la lectura de campo. En el otro extremo, en 0 intervalos la lectura queda por debajo de las 30 réplicas.
 
 ## Resumen
 
@@ -134,22 +144,29 @@ Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25
 
 ## Lectura
 
-De los 48 intervalos de los cuatro conteos, en **21** la cola total simulada queda por debajo de la fila más larga que se observó en una sola
-caseta, y en **10** eso pasa en las 30 réplicas sin excepción. En esos intervalos el modelo subestima la cola con certeza, porque la cola total
-real era por construcción mayor o igual que la lectura.
+De los 48 intervalos de los cuatro conteos, en **21** la cola simulada queda por debajo de la observada, y en
+**10** eso pasa en las 30 réplicas sin excepción. Como las dos series son la misma magnitud (DEC-042), en esos intervalos el modelo subestima la cola
+de campo directamente, sin ningún argumento de desigualdad por medio.
+
+En el extremo opuesto, en solo **0 de 48** intervalos la lectura de campo queda por debajo de las 30 réplicas. Es decir: **el sesgo del modelo tiene un solo
+signo.** Donde se separa del campo, se separa quedándose corto, nunca
+sobrando. Esto es lo que la lectura anterior de los datos no podía ver:
+con la columna leída como la fila de una caseta, todo intervalo en que la
+simulación quedaba por encima era «no concluyente», así que no había forma de
+comprobar que el sesgo fuera asimétrico.
 
 El festivo es el caso extremo: en **8 de 12 intervalos** ni la réplica más congestionada de las 30 alcanza la lectura de campo. La cola total
-simulada se vacía hacia el final de la hora mientras en campo la fila más
-larga todavía marcaba 14 vehículos en el último intervalo.
+simulada se vacía hacia el final de la hora mientras en campo todavía había
+14 vehículos esperando en el último intervalo.
 
-**Qué no dice este diagnóstico.** No dice cuánto vale la cola total real, que
-nunca se midió, ni permite estimar `Wq` observado: para eso haría falta el
-total por sentido. Tampoco permite derivar un tiempo de servicio implícito
-(ver DEC-024, consecuencia 5): con filas por caseta puede haber una caseta
-libre y otra con cola al mismo tiempo, así que la holgura de capacidad se
-explica por el desbalance sin necesidad de suponer un servicio más lento.
+**Qué no dice este diagnóstico.** No dice **por qué** el modelo se queda corto
+en el pico. La cola observada sí permite estimar el `Wq` de campo por la ley de
+Little, y de ahí sale el 1,28 min del festivo que declara el contexto (PEN-002,
+cerrado). Lo que queda abierto es la explicación: servicio más lento en el pico,
+desbalance entre casetas, o vehículos que la lectura cuenta y el modelo no. Las
+tres siguen en PEN-008, ya sin que la definición del dato privilegie a ninguna.
 
 **Qué sí deja fijado.** Que el modelo de cola única subestima la congestión
-del pico, y por cuánto como mínimo. Las casetas que recomiende la regla de la
-fase 2 hay que leerlas como **cota inferior** (PEN-008).
+del pico, y por cuánto: la comparación es directa. Las casetas que recomiende
+la regla de la fase 2 hay que leerlas como **cota inferior** (PEN-008).
 

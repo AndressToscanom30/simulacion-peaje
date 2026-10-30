@@ -37,6 +37,8 @@ const MEDIDAS_ESCALARES = [
   'cierres',
   'cierresCancelados',
   'cambiosDeC',
+  // Aperturas que solo explica el disparador por tasa (DEC-046).
+  'aperturasAnticipadas',
 ];
 
 /**
@@ -115,6 +117,7 @@ const MEDIDAS_TOTAL = [
   'cambiosDeC',
   'aperturas',
   'cierres',
+  'aperturasAnticipadas',
 ];
 
 const resumirCampos = (replicas, campos, extraer) =>

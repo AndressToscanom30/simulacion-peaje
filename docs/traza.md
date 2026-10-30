@@ -70,7 +70,7 @@ vehículos esperando en ese sentido **después** del evento, por comodidad.
 | `tipo` | Campos propios | Qué pasó |
 |---|---|---|
 | `peticionBloqueada` | `sentidoId`, `cola` | Pidió caseta y el pozo estaba agotado. Se reintentará cuando se libere una. |
-| `lecturaCola` | `sentidoId`, `intervalo`, `cola` | Lectura puntual de cola en un instante aleatorio del intervalo (contexto, sección 6). Es lo comparable con el dato de campo, con la salvedad de DEC-024. |
+| `lecturaCola` | `sentidoId`, `intervalo`, `cola` | Lectura puntual del **total en espera** del sentido, en un instante aleatorio del intervalo (contexto, sección 6). Es la misma variable que la columna `cola` de los conteos (DEC-042), así que es directamente comparable con el dato de campo. |
 
 ### `seriesPorIntervalo`
 

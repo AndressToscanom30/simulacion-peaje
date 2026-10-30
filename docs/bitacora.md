@@ -2,6 +2,239 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-30 — Disparador anticipativo por tasa: implementado y medido (DEC-046)
+
+La fase 7 recomendaba el disparador anticipativo por tasa **sin haberlo medido**
+(DEC-044), y dejaba PEN-011 abierto a propósito. El usuario pidió
+implementarlo, así que ya está medido y la recomendación deja de ser a ciegas.
+
+**Qué cambió en el modelo:**
+
+- **DEC-046.** Supera **de la DEC-006 solo la parte que descartaba disparar por
+  tasa**: el disparador por cola sigue siendo el principal y sus umbrales no se
+  tocan. Los dos actúan en paralelo y se dispara lo que ocurra primero. Supera
+  también de la DEC-044 la parte que decía "no se adopta".
+- **La tabla de umbrales es derivada, no transcrita.** Buscando de dónde salían
+  los 21 / 46 / 70 / 95 de la sección 4 del contexto apareció que
+  `redondear(c × capacidad nominal − 4)` los reproduce **exactamente los cuatro**,
+  y que **ningún otro desplazamiento entero lo hace**. Así que el único número
+  nuevo del modelo es ese 4, vive en `formulaUmbrales` y la tabla sigue al tope
+  por sentido igual que las de cola (DEC-031). Hay prueba de las dos cosas.
+- **Apagado por defecto.** El escenario base sigue siendo la regla tal como la
+  especifica el contexto, y con el disparador apagado el motor da **exactamente**
+  los mismos números: hay una prueba de que el resultado es idéntico a no tener
+  la tabla siquiera.
+- **Lee la misma ventana móvil de 5 min que ρ**, que es la que usa el contexto en
+  las dos derivaciones, así que no hizo falta un parámetro nuevo. La lectura
+  **no poda el arreglo a propósito**: si lo podara cambiaría el ρ que ve el
+  árbitro y con él los resultados ya publicados de la fase 3. Y la cola inicial
+  no entra en esa ventana (DEC-027), así que una cola heredada no dispara
+  aperturas: con prueba.
+- Medida nueva, `aperturasAnticipadas`: las aperturas que **solo** explica la
+  tasa. Es la medida de anticipación y sale en los tres informes.
+- 33 parámetros en el catálogo (eran 31), así que el formulario de la interfaz
+  expone el disparador y su tabla sin tocar la interfaz: se genera del catálogo.
+
+**Qué salió, que es lo que justifica la decisión:**
+
+- **El diagnóstico de PEN-011 era correcto.** Festivo, servicio base: `Wq` baja
+  de 0,32 a **0,23 min** y la regla **pasa por delante del operador** (0,28),
+  que es justo lo que no conseguía con la demora de 5 min. 1,7
+  carriles-intervalo de coste y 1,63 aperturas anticipadas por réplica. Los
+  cuatro conteos mejoran.
+- **Confirmado por contraste:** con servicio lento es casi inerte (1,23 → 1,19
+  min, 0,03 aperturas anticipadas), porque con la cola ya desbordada el umbral de
+  cola se cruza solo y **no queda nada que anticipar**. Sirve donde el operador
+  le ganaba a la regla y no donde la regla ya ganaba. Si la causa hubiera sido
+  otra —los umbrales— no habría por qué esperar ese patrón.
+- **Pero NO mueve el punto de quiebre.** ×1,10 sigue siendo ×1,10 con el pozo de
+  6, y con el pozo de 8 desplaza lo mismo que la regla por cola. **El disparador
+  mejora el punto de operación y no compra ni un punto de holgura de capacidad:**
+  no añade casetas, reparte en el tiempo las que ya hay. Esto se reporta tal cual
+  y cambia cómo hay que leer la recomendación.
+- **Y parte de la mejora sale del otro sentido.** Con el pozo compartido P→C baja
+  de 0,35 a 0,23 min, pero C→P pierde 0,7 carriles-intervalo y el pozo queda
+  agotado 8,4 min más. Anticipar es pedir antes un recurso disputado.
+
+**La conclusión central del estudio no se mueve** (DEC-043): el disparador mueve
+el `Wq` del peaje 0,09 min; el sustituto no medido de C→P lo mueve 6,94. La
+palanca sigue estando en los datos que faltan.
+
+**Qué se decidió no hacer, y por qué:**
+
+- **No se tocó el cierre.** El contexto no deriva nada equivalente por tasa, así
+  que la ventana de 15 min se queda igual. Se vigiló la interacción —abrir
+  anticipando deja la cola baja, que es lo que arranca el conteo de cierre— y en
+  el festivo no se dispara sola: los cierres **bajan** de 1,57 a 1,33 por
+  réplica. Inventar un bloqueo de cierre por tasa habría sido meter un mecanismo
+  sin respaldo en el contexto.
+- **No se extrapola la ventana parcial.** Durante los primeros 5 min está a medio
+  llenar y el disparador no alcanza su umbral. Es lo que vería un operador
+  contando llegadas en 5 min; extrapolar exigiría un parámetro que el contexto no
+  da. Queda declarado como limitación.
+- **No se encendió por defecto.** Sería otra decisión, y habría roto la
+  comparabilidad de todos los informes.
+
+**Tres errores propios que conviene dejar anotados**, porque los tres daban
+resultados plausibles:
+
+1. El contador `aperturasAnticipadas` salía 0 mientras el disparador sí actuaba:
+   faltaba añadirlo a `MEDIDAS_ESCALARES`, así que no se agregaba entre réplicas.
+2. La columna "Cumple" de la fase 4 salía **no** para un escenario que sí cumple:
+   usaba `cumplimiento.cumpleTodo`, que no existe en ese objeto; es `mediaCumple`.
+3. La tabla del pozo de 8 rotulaba "casetas fijas" tres veces, porque la etiqueta
+   del control era un ternario de dos ramas y ahora hay tres controles.
+
+**Qué quedó a medias:** nada. **389 pruebas en verde** (16 nuevas), los tres
+informes y el catálogo regenerados, `npm run build` bien.
+
+**Qué sigue abierto:**
+
+- **El arranque en frío.** Medir un festivo que empiece con el peaje vacío y la
+  demanda subiendo, con el disparador encendido. Es el caso malo de esta política
+  (PEN-016) y justo donde la ventana parcial de los primeros 5 min le resta
+  fuerza. PEN-016 queda resuelto en parte por eso.
+- **Si el disparador pasa a ser el valor por defecto del modelo.** Es otra
+  decisión y no se tomó aquí.
+- **PEN-013, PEN-010 y PEN-008**, que son mediciones de campo y no software:
+  contar C→P en un festivo, cronometrar atenciones en un festivo y en P→C, y
+  registrar la cola **por caseta** en un pico.
+- **Rediseñar la reasignación por ρ** (PEN-014), que sigue favoreciendo al
+  sentido con menos casetas. El disparador no la toca.
+
+## 2026-10-30 — DEC-042 corrige la definición de la cola de campo, y fase 7
+
+Dos cosas, en este orden y por ese motivo: primero corregir un error de base que
+se había propagado por todo el repositorio, y después la fase 7, porque el
+documento del estudio se habría llevado el error dentro.
+
+### Parte 1 — La corrección (DEC-042)
+
+**El error.** La DEC-024 (27/10) había decidido que la columna `cola` de los
+cuatro conteos era «la fila más larga de una sola caseta, no el total del
+sentido». Es **incorrecto**: es el total de vehículos esperando en el sentido,
+sumando todas las casetas abiertas, en los cuatro conteos. Lo confirma el autor
+de las mediciones; el conteo del festivo estaba incompleto al principio y se
+corrigió después, y de ahí venía la confusión.
+
+**Qué lo destapó.** Tres cosas a la vez. La confirmación del autor; las dos
+líneas del contexto que la DEC-024 contradecía (secciones 8 y 10); y la prueba
+que cierra el asunto, que es **PEN-002**, abierto desde la fase 1 preguntando de
+dónde salía el 1,28 min declarado del festivo. Sale de la **ley de Little**
+aplicada a la columna `cola`, y sale en los cuatro conteos a la vez:
+0,0630 / 0,2439 / 0,4103 / **1,2782** min contra 0,06 / 0,24 / 0,41 / **1,28**
+declarados. Cuatro de cuatro al redondeo, y **solo cuadra si la columna es el
+total**. El repositorio había intentado reconstruirlo con la fórmula de la
+sección 3 (`Lq × 12,1 / c`), había obtenido 1,01 y había concluido que no
+cuadraba: no era esa la fórmula, porque esa reparte la cola entre las `c`
+casetas y Little no necesita `c` ninguna.
+
+**Qué cambió:**
+
+- **DEC-042**, que **supera a la DEC-024** y deja dicho qué consecuencias de
+  aquella quedan anuladas, una por una.
+- **PEN-002 cerrado**, con el cálculo de Little escrito.
+- **PEN-008 reescrito.** La conclusión (el modelo subestima el pico) **sigue en
+  pie**; el razonamiento pasa de una desigualdad a una comparación directa, y la
+  hipótesis del desbalance entre casetas **pierde el lugar privilegiado** que la
+  DEC-024 le daba: ya no explica el dato por construcción, es una de tres.
+- **PEN-010 y DEC-025.** La derivación del servicio implícito de 15,5 s vuelve a
+  ser válida, porque suponía cola única y la cola medida es la de la cola única.
+  Nota fechada en la DEC-025, sin reabrirla: sigue sin ser una medición, así que
+  el escenario sigue siendo sensibilidad y nunca valor por defecto. Lo que cambia
+  es que deja de estar anulado y pasa a tener sustento.
+- **PEN-004.** Quitada la nota del 27/10 que decía que «ni siquiera el máximo
+  muestreado es comparable». La distinción entre lectura puntual y máximo
+  continuo sigue siendo válida; lo que se cae es la parte de la DEC-024.
+- **DEC-038, punto 1.** La decisión (un embudo por sentido en el 3D) sigue en pie
+  con **un argumento menos**: el apoyo en la DEC-024 se retira y basta la DEC-001.
+  Nota fechada, sin tocar la decisión. Queda más limpio que antes: la escena
+  coincide ahora con el modelo **y** con el dato.
+- **Prosa, rótulos y comentarios**, que es donde estaba el daño visible: interfaz
+  (`modeloFormulario.js`, `TiempoReal.jsx`, `Graficos.jsx`, `PanelSupuestos.jsx`,
+  `PanelVista3D.jsx`), generadores de informes (`simular.js`,
+  `diagnostico-festivo.js`, `fase4.js`, `parametros.js`), documentos (`ui.md`,
+  `vista3d.md`, `traza.md`, `parametros.md`) y un comentario en
+  `src/motor/sentido.js`.
+- **La lógica del motor no se tocó.** Siempre simuló la cola total: el error era
+  de interpretación del dato, no de código.
+- Los seis informes **regenerados con sus scripts**, no a mano.
+
+**Lo que hay que subrayar: ninguna conclusión de las fases 1 a 4 cambió, y está
+comprobado.** Los informes de las fases 2, 3 y 4 se regeneraron con **cero
+diferencias numéricas** —la única diferencia es la fecha y la prosa— y las 373
+pruebas pasan, incluida la que lee el informe de la fase 4 publicado y lo compara
+con la corrida de la interfaz. Lo que cambió es **lo que se puede concluir** de
+esos números.
+
+**Y un hallazgo nuevo, que la lectura anterior no permitía ver.** Con la columna
+leída como total, el diagnóstico compara la misma variable en los dos sentidos de
+la desigualdad, y aparece esto: en **0 de los 48 intervalos** la lectura de campo
+queda por debajo del rango de las 30 réplicas. **El sesgo del modelo tiene un
+solo signo:** donde se separa del campo, se separa quedándose corto, nunca
+sobrando. Con la DEC-024 era incomprobable, porque todo intervalo en que la
+simulación quedaba por encima salía rotulado «no concluyente». Refuerza PEN-008:
+no es dispersión, es sesgo. Anotado ahí.
+
+**Una prueba se corrigió, y conviene decir por qué.** `interfaz.test.jsx`
+afirmaba que el panel de supuestos dice «la fila más larga de una caseta». La
+prueba estaba fijando el texto incorrecto, así que pasa a afirmar el correcto y,
+además, que el texto viejo **no** aparece.
+
+### Parte 2 — Fase 7
+
+**Qué cambió:**
+
+- **`docs/estudio.md`**: el documento del estudio con las **ocho etapas** que
+  fija la sección 1 del contexto (definición, formulación, datos,
+  implementación, validación, experimentación, interpretación, documentación),
+  más limitaciones y trabajo futuro. Incluye la historia de la DEC-024 con su
+  fecha, porque un lector futuro necesita saber por qué cuatro informes decían lo
+  que decían.
+- **`docs/politica-recomendada.md`**: la política, que se consulta sola.
+- **DEC-043**: la política se formula **en términos relativos y como seguro, no
+  como predicción**, y queda prohibido presentar los `Wq` absolutos como
+  predicción. Lo obligan tres resultados medidos: PEN-009 (según el modelo la
+  operación real ya cumple), PEN-008 (subestima el pico con sesgo de un solo
+  signo) y PEN-013 (la entrada que más mueve el resultado no se midió).
+- **DEC-044**: el disparador anticipativo por tasa que la DEC-028 dejó para esta
+  fase se **recomienda pero no se adopta**. **No supera a la DEC-006**, que sigue
+  vigente.
+- **DEC-045**: el documento del estudio es prosa escrita a mano, con las cifras
+  transcritas y su informe nombrado; los resultados siguen generados (DEC-023
+  intacta).
+- `docs/README.md` indexa los dos documentos nuevos, y de paso corrige el
+  catálogo de parámetros de 30 a 31, que estaba desfasado.
+
+**La conclusión del estudio, que es incómoda:** la palanca no está en la regla,
+está en los datos que faltan. El sustituto no medido de la demanda de C→P mueve
+el `Wq` del peaje hasta **6,94 min**; el parámetro de la regla que más mueve, los
+umbrales, llega a **0,31 min**. Más de veinte veces. Afinar la regla es
+irrelevante al lado de contar C→P en un festivo.
+
+Y el valor de la regla no es mejorar el día bueno: con el servicio medido no
+mejora a un operador que ya anticipaba (0,32 contra 0,28 min) y gasta un 7,4 %
+más de carriles-intervalo. Con el servicio lento baja `Wq` de 2,90 a 1,23 min y
+los intervalos malos de 50,0 % a 9,2 %. **Es un seguro, y así se presenta.**
+
+**Qué quedó a medias:** nada de lo planeado. **373 pruebas en verde** y las siete
+fases cerradas.
+
+**Qué queda abierto, a propósito:**
+
+- **PEN-011 sigue abierto.** El disparador anticipativo está recomendado y
+  cuantificado en su motivo (la latencia vale 0,45 min de espera entre demora 0 y
+  10 en el régimen lento), pero **no implementado ni medido**. Adoptarlo exige una
+  decisión nueva que diga qué supera de la DEC-006, implementarlo y volver a
+  correr la matriz de 160 escenarios. Es el primer trabajo futuro del modelo.
+- **PEN-013, PEN-010 y PEN-008 siguen abiertos**, y son mediciones de campo, no
+  trabajo de software: contar C→P en un festivo, cronometrar atenciones en un
+  festivo y en P→C, y registrar la cola **por caseta** en un pico. La cola total
+  por sentido ya está medida: es la columna `cola` (DEC-042).
+- Los pendientes de herramienta: PEN-021 (el carro pesa 10,9 MB), PEN-022 (su
+  escala), PEN-019 (rendimiento solo con WebGL por software) y PEN-017 (el
+  horizonte acotado por la memoria de la traza).
+
 ## 2026-10-30 — Vista libre y modelo del carro
 
 Dos encargos sobre la vista 3D ya cerrada: **que la vista sea libre** y **que se

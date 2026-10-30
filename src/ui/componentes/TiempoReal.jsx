@@ -109,7 +109,7 @@ export default function TiempoReal({ traza, escenario, semilla, alCambiarSemilla
   const conteoDeLaHora = traza.metadatos.sentidos[0].conteo;
   const hora = horaDelConteo(conteoDeLaHora, instante);
 
-  /** Lecturas de cola de campo, para superponerlas rotuladas (DEC-024). */
+  /** Lecturas de cola de campo: el total en espera por sentido (DEC-042). */
   const colaObservada = traza.metadatos.sentidos.map((sentido) => {
     const conteo = conteos[sentido.conteo];
     const propia = escenario.sentidos[sentido.id]?.llegadas !== null;
@@ -260,9 +260,11 @@ export default function TiempoReal({ traza, escenario, semilla, alCambiarSemilla
 
       {hayObservada && (
         <p className="etiqueta-sensibilidad">
-          Los puntos huecos del gráfico de cola son las lecturas de campo, que son la{' '}
-          <strong>fila más larga de una caseta</strong>, no el total del sentido:{' '}
-          <strong>no comparables directamente</strong> con la cola simulada (DEC-024).
+          Los puntos huecos del gráfico de cola son las lecturas de campo: el{' '}
+          <strong>total de vehículos esperando en el sentido</strong>, que es la misma
+          variable que dibuja la curva simulada, así que las dos se{' '}
+          <strong>comparan de frente</strong> (DEC-042). Son lecturas puntuales, una por
+          intervalo de 5 min.
         </p>
       )}
 

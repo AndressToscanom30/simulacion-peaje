@@ -38,9 +38,14 @@ describe('panel de supuestos', () => {
     }
   });
 
-  it('avisa de que la cola de campo es la fila más larga', () => {
+  it('dice que la cola de campo es el total por sentido y es comparable (DEC-042)', () => {
     render(<PanelSupuestos />);
-    expect(screen.getAllByText(/fila más larga de una caseta/).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/total de vehículos esperando\s+por sentido/).length,
+    ).toBeGreaterThan(0);
+    // Lo que decía antes era lo contrario de lo cierto (DEC-024, superada).
+    expect(screen.queryByText(/fila más larga de una caseta/)).toBeNull();
+    expect(screen.queryByText(/no son comparables de frente/)).toBeNull();
   });
 });
 

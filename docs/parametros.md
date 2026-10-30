@@ -1,6 +1,6 @@
 # Catálogo de parámetros
 
-Generado por `npm run parametros` el 2026-10-28.
+Generado por `npm run parametros` el 2026-10-30.
 **No editar a mano:** este archivo se regenera.
 
 Todo valor del modelo es configurable (DEC-030). Esta es la lista completa,
@@ -59,6 +59,8 @@ validarEscenario(miEscenario);
 |---|---|---|---|---|---|---|
 | **Umbrales de apertura** | `regla.abrirSiColaMayorQue` | Con c casetas abiertas, se abre otra si la cola supera este valor. null en el tope. Si se deja en null entero, se generan con la fórmula 5c − 1. | vehículos, por número de casetas | `{1: 4, 2: 9, 3: 14, 4: 19, 5: null}` | Contexto, sección 4; DEC-006. Extensión por DEC-031 | enteros ≥ 0, uno por cada c del mínimo al tope − 1 |
 | **Umbrales de cierre** | `regla.cerrarSiColaMenorQue` | Con c casetas abiertas, se cierra una si la cola baja de este valor. null en el mínimo. Si se deja en null, se generan con ⌊abrir(c − 1)/2⌋. | vehículos, por número de casetas | `{1: null, 2: 2, 3: 4, 4: 7, 5: 9}` | Contexto, sección 4; DEC-006. Extensión por DEC-031 | enteros ≥ 0, uno por cada c del mínimo + 1 al tope |
+| **Disparador anticipativo por tasa** | `regla.disparadorPorTasa` | Si la regla abre también cuando las llegadas de los últimos 5 min cruzan su umbral, sin esperar a que la cola cruce el suyo. Se dispara lo que ocurra primero. Apagado por defecto: el escenario base es la regla por cola del contexto. | sí/no | `false` | Contexto, sección 4 (derivación por tasa); DEC-046 | true o false |
+| **Umbrales de apertura por tasa** | `regla.abrirSiTasaMayorQue` | Con c casetas abiertas, se abre otra si las llegadas de los últimos 5 min superan este valor. Solo se usa con el disparador por tasa encendido. Si se deja en null, se generan con la fórmula redondear(c × capacidad nominal − 4), que reproduce los 21 / 46 / 70 / 95 del contexto. | vehículos por 5 min, por número de casetas | `{1: 21, 2: 46, 3: 70, 4: 95, 5: null}` | Contexto, sección 4; DEC-046 | enteros ≥ 0, uno por cada c del mínimo al tope − 1 |
 | **Factor de los umbrales** | `regla.factorUmbrales` | Multiplica los dos umbrales generados, para sensibilidad. Se redondea al entero, porque la cola son vehículos. | adimensional | `1` | DEC-030 (no está en el contexto; es solo sensibilidad) | > 0 |
 | **Demora de apertura** | `regla.demoraAperturaSegundos` | Tiempo entre ordenar la apertura y tener la caseta operando. La caseta queda reservada desde que se ordena. | segundos | `300` (5 min) | Contexto, sección 4; DEC-007. Sensibilidad 0, 5 y 10 min | ≥ 0 |
 | **Ventana de cierre** | `regla.ventanaCierreSegundos` | La cola tiene que estar bajo el umbral este tiempo seguido para cerrar una caseta. Se reinicia si sube o si cambia c. | segundos | `900` (15 min) | Contexto, sección 4; DEC-007 y DEC-026 punto 3 | ≥ 0 |
@@ -114,8 +116,10 @@ realidad no tendría.
 | `domingoPC` | Domingo 13/09/2026, Pamplona→Cúcuta, 13:00–14:00 | 195 | 1–2 | 8 |
 | `festivoPC` | Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25 | 1064 | 4–5 | 32 |
 
-La cola observada es la **fila más larga de una caseta**, no el total del
-sentido (DEC-024). Ver `diagnostico-festivo.md`.
+La cola observada es el **total de vehículos esperando por sentido**, sumando
+todas las casetas abiertas (DEC-042), que es la misma variable que simula el
+modelo. La cifra de la tabla es el máximo de las 12 lecturas puntuales del
+conteo. Ver `diagnostico-festivo.md`.
 
 ## Escenario base completo
 
@@ -162,6 +166,8 @@ Esto es lo que `construirEscenario()` devuelve sin sobreescrituras:
     "abrirSiColaMayorQue": null,
     "cerrarSiColaMenorQue": null,
     "factorUmbrales": 1,
+    "disparadorPorTasa": false,
+    "abrirSiTasaMayorQue": null,
     "demoraAperturaSegundos": 300,
     "ventanaCierreSegundos": 900,
     "rhoReasignacion": 0.6,

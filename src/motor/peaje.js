@@ -333,6 +333,7 @@ function agregar(medidas) {
     carrilesIntervalo: medidas.reduce((a, m) => a + m.carrilesIntervalo, 0),
     cambiosDeC: medidas.reduce((a, m) => a + m.cambiosDeC, 0),
     aperturas: medidas.reduce((a, m) => a + m.aperturas, 0),
+    aperturasAnticipadas: medidas.reduce((a, m) => a + m.aperturasAnticipadas, 0),
     cierres: medidas.reduce((a, m) => a + m.cierres, 0),
     colaFinal: medidas.reduce((a, m) => a + m.colaFinal, 0),
   };

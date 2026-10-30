@@ -103,10 +103,11 @@ w('2. **La demanda de C→P en el festivo no se midió** (PEN-013). Por defecto 
 w(`   usa el conteo del viernes (${conteos.viernes.llegadas.reduce((a, b) => a + b, 0)} veh/h), que sí se tomó en ese sentido`);
 w('   (DEC-029), por un factor configurable. El escenario E4 prueba otros tres');
 w('   factores y dos conteos alternativos, y la respuesta cambia mucho.');
-w('3. **La cola de campo es la fila más larga de una caseta, no el total del');
-w('   sentido** (DEC-024, PEN-008). El modelo de cola única subestima la');
-w('   congestión del pico en los 12 intervalos del festivo, así que las casetas');
-w('   que salgan de aquí son una **cota inferior**.');
+w('3. **El modelo subestima la congestión del pico** (PEN-008). La cola de campo');
+w('   es el total de vehículos esperando por sentido (DEC-042), la misma variable');
+w('   que simula el modelo, y la simulada queda por debajo en los 12 intervalos');
+w('   del festivo. Así que las casetas que salgan de aquí son una **cota');
+w('   inferior**.');
 w();
 
 // ------------------------------------------------------------ configuración ---
@@ -206,6 +207,14 @@ w();
 
 const quiebres = puntosDeQuiebre(delGrupo('E5'));
 
+/** Etiqueta legible de cada control del barrido. */
+const ETIQUETA_CONTROL = {
+  regla: 'regla',
+  'regla+tasa': 'regla + tasa',
+  fijas: 'casetas fijas',
+};
+const etiquetaControl = (c) => ETIQUETA_CONTROL[c] ?? c;
+
 w('### Punto de quiebre por configuración');
 w();
 w('El **factor de quiebre** es el primer factor de demanda en el que la media de');
@@ -220,7 +229,7 @@ for (const q of [...quiebres].sort(
     a.regimen.localeCompare(b.regimen),
 )) {
   w(
-    `| ${q.pozoTotal} | ${q.control === 'regla' ? 'regla' : 'casetas fijas'} | ${q.regimen} ` +
+    `| ${q.pozoTotal} | ${etiquetaControl(q.control)} | ${q.regimen} ` +
       `| ${q.ultimoFactorQueCumple === null ? '**ninguno**' : `×${n(q.ultimoFactorQueCumple, 2)}`} ` +
       `| ${q.factorDeQuiebre === null ? `cumple hasta ×${n(BARRIDO_ESTRES.hasta, 2)}` : `**×${n(q.factorDeQuiebre, 2)}**`} ` +
       `| ${q.fraccionReplicasQueIncumplen === null ? '—' : pct(q.fraccionReplicasQueIncumplen)} |`,
@@ -321,7 +330,7 @@ w('| Control | Servicio | Quiebre con pozo 6 | Quiebre con pozo 8 | Desplazamien
 w('|---|---|---|---|---|');
 {
   const desplazamientos = [];
-  for (const control of ['regla', 'fijas']) {
+  for (const control of ['regla', 'regla+tasa', 'fijas']) {
     for (const regimen of ['base', 'lento']) {
       const seis = quiebres.find((q) => q.pozoTotal === 6 && q.control === control && q.regimen === regimen);
       const ocho = quiebres.find((q) => q.pozoTotal === 8 && q.control === control && q.regimen === regimen);
@@ -338,7 +347,7 @@ w('|---|---|---|---|---|');
         delta = 'ninguno de los dos quiebra';
       }
       w(
-        `| ${control === 'regla' ? 'regla' : 'casetas fijas'} | ${regimen} | ${texto(seis)} | ${texto(ocho)} | ${delta} |`,
+        `| ${etiquetaControl(control)} | ${regimen} | ${texto(seis)} | ${texto(ocho)} | ${delta} |`,
       );
     }
   }
@@ -364,6 +373,54 @@ w('|---|---|---|---|---|');
 // Qué sensibilidades mueven más el resultado.
 w('### Qué sensibilidades mueven más el resultado');
 w();
+w('### El disparador anticipativo por tasa (DEC-046)');
+w();
+{
+  const filas = [];
+  for (const regimen of ['base', 'lento']) {
+    const sin = busca('E2a', regimen);
+    const con = busca('E2c', regimen);
+    if (sin && con) filas.push({ regimen, sin, con });
+  }
+  w('| Servicio | Wq peaje, regla | Wq peaje, regla + tasa | Δ | Cumple sin | Cumple con | Anticipadas |');
+  w('|---|---|---|---|---|---|---|');
+  for (const { regimen, sin, con } of filas) {
+    const wqSin = sin.resumen.total.wqHoraSegundos.media;
+    const wqCon = con.resumen.total.wqHoraSegundos.media;
+    w(
+      `| ${regimen} | ${min(wqSin)} | **${min(wqCon)}** | ${min(wqCon - wqSin)} ` +
+        `| ${marca(sin.cumplimiento.mediaCumple)} | ${marca(con.cumplimiento.mediaCumple)} ` +
+        `| ${n(con.resumen.total.aperturasAnticipadas.media, 2)} |`,
+    );
+  }
+  w();
+
+  const q = (control, regimen) =>
+    quiebres.find((x) => x.pozoTotal === 6 && x.control === control && x.regimen === regimen);
+  w('Y lo que de verdad importa, el **punto de quiebre con el pozo real de 6**:');
+  w();
+  w('| Servicio | Quiebre, regla por cola | Quiebre, regla + tasa | Desplazamiento |');
+  w('|---|---|---|---|');
+  for (const regimen of ['base', 'lento']) {
+    const sinQ = q('regla', regimen);
+    const conQ = q('regla+tasa', regimen);
+    if (!sinQ || !conQ) continue;
+    const texto = (x) =>
+      x.factorDeQuiebre === null ? `cumple hasta ×${n(BARRIDO_ESTRES.hasta, 2)}` : `×${n(x.factorDeQuiebre, 2)}`;
+    const delta =
+      sinQ.factorDeQuiebre !== null && conQ.factorDeQuiebre !== null
+        ? `${conQ.factorDeQuiebre - sinQ.factorDeQuiebre >= 0 ? '+' : ''}${n(conQ.factorDeQuiebre - sinQ.factorDeQuiebre, 2)}`
+        : '—';
+    w(`| ${regimen} | ${texto(sinQ)} | ${texto(conQ)} | ${delta} |`);
+  }
+  w();
+  w('**Ojo con lo que esta tabla puede y no puede decir.** El disparador por tasa');
+  w('no añade ni una caseta: reparte en el tiempo las seis que ya hay. Así que');
+  w('mueve el quiebre solo en la medida en que llegar antes al tope sirva de algo;');
+  w('cuando el pozo ya está agotado toda la hora, no hay nada que adelantar.');
+  w();
+}
+
 w('Para cada sensibilidad de E4, cuánto mueve el `Wq` del peaje respecto de E2a');
 w('en el mismo régimen. Ordenadas por el mayor efecto de los dos regímenes.');
 w();
@@ -477,7 +534,9 @@ w('  real quiebra con menos demanda que la que aquí aparece.');
 w();
 w('Por eso la fase 4 no entrega una política, sino el mapa de lo que haría falta');
 w('medir para poder recomendarla: tiempos de atención en un festivo, la demanda');
-w('de C→P en un festivo y la cola total por sentido.');
+w('de C→P en un festivo y la cola **por caseta** en un pico. La cola total por');
+w('sentido ya está medida —es la columna `cola` de los conteos (DEC-042)—, y es');
+w('justo la que deja ver que el modelo se queda corto.');
 w();
 
 mkdirSync(dirname(SALIDA), { recursive: true });

@@ -67,7 +67,8 @@ const escalaY = (v, maximoY) => MARGEN.arriba + areaAlto - (v / (maximoY || 1)) 
  * Cola por sentido contra el tiempo, dibujada hasta `instante`.
  *
  * En los escenarios de conteo superpone la cola observada, que son las lecturas
- * de campo. Va rotulada: **no es comparable de frente** (DEC-024).
+ * de campo. Es la **misma variable** que la simulada —el total en espera por
+ * sentido (DEC-042)—, así que las dos series se comparan de frente.
  */
 export function GraficoCola({ hitos, instante, etiquetas, colaObservada }) {
   const visibles = hitos.filter((h) => h.t <= instante);

@@ -87,6 +87,20 @@ for (const claveServicio of ['base', 'lento']) {
     sentidos: escenarioFestivo({ control: 'regla', servicio, sustituto: SUSTITUTO_FASE3 }),
     peaje: { reasignacionActiva: true },
   });
+  casos.push({
+    grupo: 'comparacion',
+    servicio,
+    nombre: 'regla + tasa, sin reasignación',
+    descripcion:
+      'la regla por cola más el disparador anticipativo por tasa (DEC-046); el pozo es solo almacén',
+    sentidos: escenarioFestivo({
+      control: 'regla',
+      servicio,
+      sustituto: SUSTITUTO_FASE3,
+      disparadorPorTasa: true,
+    }),
+    peaje: { reasignacionActiva: false },
+  });
 
   // Sensibilidades, todas sobre el caso (c).
   for (const demoraMinutos of [0, 10]) {
@@ -507,6 +521,62 @@ for (const claveServicio of ['base', 'lento']) {
 }
 
 // El sustituto, que es la incertidumbre dominante.
+w('### El disparador anticipativo por tasa, con el pozo compartido (DEC-046)');
+w();
+w('En la fase 2, con un solo sentido, el disparador por tasa mejoraba la regla.');
+w('Con el pozo compartido la pregunta es otra: **anticipar significa pedir');
+w('casetas antes, y las casetas son un recurso disputado.** Lo que en un sentido');
+w('solo era ganancia aquí puede ser que un sentido se adelante al otro.');
+w();
+
+for (const claveServicio of ['base', 'lento']) {
+  const sinReasig = busca('comparacion', claveServicio, 'regla sin reasignación');
+  const conTasa = busca('comparacion', claveServicio, 'regla + tasa, sin reasignación');
+  if (!sinReasig || !conTasa) continue;
+
+  w(`**${REGIMENES_SERVICIO[claveServicio].etiqueta}.** Las dos sin reasignación, que es la comparación limpia:`);
+  w();
+  w('| | P→C: Wq | C→P: Wq | Peaje: Wq | P→C: carriles | C→P: carriles | Anticipadas P→C | Pozo agotado |');
+  w('|---|---|---|---|---|---|---|---|');
+  for (const [etq, caso] of [['regla por cola', sinReasig], ['regla + tasa', conTasa]]) {
+    const s0 = caso.resumen.sentidos[0].escalares;
+    const s1 = caso.resumen.sentidos[1].escalares;
+    w(
+      `| ${etq} | ${min(s0.wqHoraSegundos.media)} | ${min(s1.wqHoraSegundos.media)} ` +
+        `| ${min(caso.resumen.total.wqHoraSegundos.media)} ` +
+        `| ${n(s0.carrilesIntervalo.media, 1)} | ${n(s1.carrilesIntervalo.media, 1)} ` +
+        `| ${n(s0.aperturasAnticipadas.media, 2)} ` +
+        `| ${n(caso.resumen.pozo.segundosAgotado.media / SEGUNDOS_POR_MINUTO, 1)} min |`,
+    );
+  }
+  w();
+
+  const s0sin = sinReasig.resumen.sentidos[0].escalares;
+  const s0con = conTasa.resumen.sentidos[0].escalares;
+  const s1sin = sinReasig.resumen.sentidos[1].escalares;
+  const s1con = conTasa.resumen.sentidos[1].escalares;
+  const deltaCarrilesCP = s1con.carrilesIntervalo.media - s1sin.carrilesIntervalo.media;
+  const deltaAgotado =
+    (conTasa.resumen.pozo.segundosAgotado.media - sinReasig.resumen.pozo.segundosAgotado.media) /
+    SEGUNDOS_POR_MINUTO;
+
+  w(
+    `P→C baja su \`Wq\` de ${min(s0sin.wqHoraSegundos.media)} a ${min(s0con.wqHoraSegundos.media)} min y ` +
+      `C→P pasa de ${min(s1sin.wqHoraSegundos.media)} a ${min(s1con.wqHoraSegundos.media)} min. ` +
+      // El reproche solo vale si el contraflujo pierde algo apreciable: en el
+      // régimen lento el disparador apenas actúa y no quita nada.
+      (deltaCarrilesCP < -0.05
+        ? `Pero el contraflujo pierde ${n(Math.abs(deltaCarrilesCP), 1)} carriles-intervalo ` +
+          `y el pozo queda agotado ${n(Math.abs(deltaAgotado), 1)} min ${deltaAgotado >= 0 ? 'más' : 'menos'}: ` +
+          `**parte de la mejora de P→C sale de pedir antes las casetas que el otro sentido podría usar.**`
+        : `El contraflujo no pierde carriles-intervalo (${n(deltaCarrilesCP, 1)}), así que aquí ` +
+          `la mejora **no sale del otro sentido**. El disparador apenas actúa en este régimen ` +
+          `(${n(s0con.aperturasAnticipadas.media, 2)} aperturas anticipadas): con la cola ya ` +
+          `desbordada, el umbral de cola se cruza solo y no queda nada que anticipar.`),
+  );
+  w();
+}
+
 w('### El sustituto de C→P decide el resultado');
 w();
 {

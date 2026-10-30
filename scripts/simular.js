@@ -268,26 +268,70 @@ w(`- Simulación: ${n(wqFestivoMin, 3)} min, ${n(wqObsFestivo / wqFestivoMin, 1)
 w(`- La simulación multiplica por ${n(wqFestivoMin / mmcFestivoMin, 1)} la espera del M/M/c, pero sigue a ${n(wqObsFestivo / wqFestivoMin, 1)}× de lo observado.`);
 w();
 
-w('### Por qué: la cola de campo y la del modelo no son la misma variable');
+w('### De dónde sale el 1,28 min observado (PEN-002, cerrado)');
 w();
-w('Las lecturas de cola de los conteos son la **fila más larga de una sola');
-w('caseta**, no el total del sentido (DEC-024). El motor simula cola única, así');
-w('que reporta la cola **total**. Como el total es mayor o igual que cualquiera');
-w('de sus filas, el criterio limpio es la desigualdad: donde la cola total');
-w('simulada queda por debajo de la lectura de campo, el modelo subestima con');
-w('certeza.');
+w('La cola de campo es el **total de vehículos esperando por sentido** (DEC-042,');
+w('que supera a la DEC-024), que es exactamente la variable que simula el motor.');
+w('Con eso el `Wq` observado se reconstruye por la **ley de Little**, y sale el');
+w('valor que declara el contexto:');
 w();
-w('Eso es justo lo que pasa en el festivo, y en todos los intervalos:');
-w('`npm run diagnostico` lo desglosa en `diagnostico-festivo.md`. La cola');
-w(`simulada al final de la hora sale ${n(festivo.resumen.escalares.colaFinal.media, 1)} en las ${semillas.length} réplicas, mientras en`);
-w(`campo la fila más larga todavía marcaba ${conteos.festivoPC.cola.at(-1)} vehículos.`);
+w('| Conteo | `Lq` medio de la columna `cola` | λ (veh/h) | `Wq = Lq / λ` | Declarado |');
+w('|---|---|---|---|---|');
+for (const clave of ordenConteos) {
+  const c = conteos[clave];
+  const lq = c.cola.reduce((a, b) => a + b, 0) / c.cola.length;
+  const lambda = c.llegadas.reduce((a, b) => a + b, 0);
+  w(
+    `| ${clave} | ${n(lq, 4)} | ${coma(String(lambda))} | ${n((lq / lambda) * 60, 4)} min ` +
+      `| ${n(observado[clave].wqMinutosDeclarado, 2)} |`,
+  );
+}
 w();
-w('Las causas posibles están en PEN-008 y PEN-010: servicio más lento que los');
-w('12,10 s medidos en el pico, desbalance entre filas que la cola única no');
-w('reproduce (sección 8 del contexto), o lecturas que cuentan vehículos ajenos');
-w('al modelo. **No se tocó ningún parámetro** (DEC-021); la hipótesis de');
-w('servicio lento entra como escenario de sensibilidad rotulado, no como');
-w('calibración (DEC-025).');
+w('Los cuatro coinciden al redondeo, así que no es casualidad: **el `Wq`');
+w('observado del contexto es el que implica la cola medida, por Little.** El');
+w('1,28 min del festivo no es una espera cronometrada, es la espera que implica');
+w('una cola sostenida de 22,7 vehículos con 1.064 veh/h de demanda.');
+w();
+w('Esto cierra el PEN-002. El recálculo anterior, que usaba la fórmula');
+w('`Wq_est = Lq × 12,1 / c` de la sección 3 y daba 1,01 min, no era la vía: esa');
+w('fórmula reparte la cola entre las `c` casetas y Little no necesita `c`.');
+w();
+w('### Por qué el modelo se queda corto');
+w();
+w('Como las dos series son la misma variable, la comparación es directa y la');
+w('brecha en `Wq` y la brecha en cola son **la misma brecha**: el modelo vacía la');
+w('cola que en campo se mantuvo alta toda la hora. `npm run diagnostico` lo');
+w('desglosa intervalo por intervalo en `diagnostico-festivo.md`. La cola simulada');
+w(`al final de la hora sale ${n(festivo.resumen.escalares.colaFinal.media, 1)} en las ${semillas.length} réplicas, mientras en campo`);
+w(`todavía había ${conteos.festivoPC.cola.at(-1)} vehículos esperando.`);
+w();
+
+// El "servicio implícito": la DEC-042 restituye esta derivación, que la
+// DEC-024 había anulado. Se calcula de los datos, no se escribe a mano.
+const casetaSegundosFestivo =
+  conteos.festivoPC.casetas.reduce((a, b) => a + b, 0) * DURACION_INTERVALO_SEGUNDOS;
+const servicioImplicito = casetaSegundosFestivo / observado.festivoPC.caudalVehHora;
+
+w('**El "servicio implícito" del festivo.** Con la cola total medida vuelve a');
+w('valer una derivación que la DEC-024 había anulado (ver DEC-042 y PEN-010). Si');
+w('la cola nunca se vació, las casetas abiertas estuvieron ocupadas toda la hora,');
+w('así que el tiempo medio de atención que eso implica es:');
+w();
+w(
+  '```\n' +
+    `${conteos.festivoPC.casetas.reduce((a, b) => a + b, 0)} caseta-intervalos × ${DURACION_INTERVALO_SEGUNDOS} s ÷ ${observado.festivoPC.caudalVehHora} veh = ${n(servicioImplicito, 2)} s/veh\n` +
+    '```',
+);
+w();
+w(`Contra los ${coma(String(p.servicio.mediaObservadaSegundos))} s medidos, son ${n(servicioImplicito / p.servicio.mediaObservadaSegundos, 2)}× más lento. **No es una medición:**`);
+w('supone que toda la holgura del pico se explica por el servicio y nada por el');
+w('desbalance entre casetas o por el conteo. Entra como escenario de sensibilidad');
+w('rotulado, nunca como valor por defecto (DEC-025, PEN-010).');
+w();
+w('Las tres causas posibles están en PEN-008, ninguna descartable y ninguna');
+w('privilegiada: servicio más lento en el pico, desbalance entre filas que la');
+w('cola única no reproduce (sección 8 del contexto), o lecturas que cuentan');
+w('vehículos ajenos al modelo. **No se tocó ningún parámetro** (DEC-021).');
 w();
 w('### Lo demás que conviene saber');
 w();
@@ -305,7 +349,8 @@ for (const { caso, resumen } of resultados) {
 }
 w(`  El criterio de desempeño acepta hasta ${pct(p.desempeno.fraccionIntervalosSobreMaximoAceptada)}, así que según la`);
 w('  simulación la operación observada lo cumple **incluso en el festivo**, que es');
-w('  justo lo contrario de lo que sugiere la cola observada de 14 a 32 vehículos.');
+w('  justo lo contrario de lo que sugiere la cola observada de 14 a 32 vehículos');
+w('  esperando por sentido.');
 w('  Es la misma brecha de arriba, vista desde el criterio.');
 w(`- **Cola máxima:** se reportan dos. La continua (${n(festivo.resumen.escalares.colaMaximaContinua.media, 1)} en el festivo) es el`);
 w(`  máximo real de la hora; la muestreada (${n(festivo.resumen.escalares.colaMaximaMuestreada.media, 1)}) es el máximo de 12 lecturas`);
@@ -318,7 +363,7 @@ w();
 w('Lo que sigue describe las diferencias tal como salieron. **No se ajustó');
 w('ningún parámetro** para reducirlas.');
 w();
-w('| Conteo | Fila más larga obs. | Cola total máx. muestreada sim. | Wq obs. decl. (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |');
+w('| Conteo | Cola máx. obs. | Cola máx. muestreada sim. | Wq obs. decl. (min) | Wq sim. (min) | Wq sim. ÷ Wq obs. decl. |');
 w('|---|---|---|---|---|---|');
 for (const { caso, resumen } of resultados) {
   if (caso.variante) continue;
@@ -331,14 +376,15 @@ for (const { caso, resumen } of resultados) {
   );
 }
 w();
-w('Las dos columnas de cola **no son comparables de frente**: la observada es la');
-w('fila más larga de una caseta y la simulada es el total del sentido (DEC-024).');
-w('Lo único que se puede afirmar es que donde la simulada queda por debajo, el');
-w('modelo subestima. `npm run diagnostico` lo desglosa intervalo por intervalo.');
+w('Las dos columnas de cola **son la misma variable** —el total en espera por');
+w('sentido (DEC-042)— y se comparan de frente. Las dos son además máximos de 12');
+w('lecturas puntuales, así que la comparación es homogénea en los dos ejes');
+w('(PEN-004). Donde la simulada queda por debajo, el modelo subestima;');
+w('`npm run diagnostico` lo desglosa intervalo por intervalo.');
 w();
-w('La fórmula `Wq_est = Lq × 12,1 / c` de la sección 3 **no se usa** sobre estas');
-w('lecturas: espera la cola total y aplicarla a la fila más larga de una caseta');
-w('da una cifra sin interpretación (DEC-024, consecuencia 3; PEN-002).');
+w('El `Wq` observado de la tabla es el declarado por el contexto, que es el que');
+w('implica la cola medida por la ley de Little: el cálculo está más arriba');
+w('(PEN-002, cerrado).');
 w();
 
 mkdirSync(dirname(SALIDA), { recursive: true });
