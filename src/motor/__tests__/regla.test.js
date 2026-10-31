@@ -9,6 +9,7 @@ import {
   umbralAbrirPorTasa,
 } from '../../config/escenario.js';
 import { capacidadNominal } from '../simulador.js';
+import { perfilRampa } from '../../config/escenarios.js';
 
 const p = parametros;
 const SEGUNDOS_POR_MINUTO = 60;
@@ -520,5 +521,80 @@ describe('disparador por tasa: comportamiento del motor', () => {
       construirEscenario({ regla: { disparadorPorTasa: false, abrirSiTasaMayorQue: { 1: 21 } } }),
     );
     expect(problemas.filter((m) => /umbral de tasa/.test(m))).toHaveLength(0);
+  });
+});
+
+// ===========================================================================
+// Arranque en frío: perfil de rampa y reacción de la regla (DEC-047)
+// ===========================================================================
+
+describe('perfil de rampa (DEC-047)', () => {
+  const medido = conteos.festivoPC.llegadas;
+
+  it('es una permutación del perfil medido: ni inventa ni pierde demanda', () => {
+    const rampa = perfilRampa(medido);
+    expect(rampa).toHaveLength(medido.length);
+    expect(rampa.reduce((a, b) => a + b, 0)).toBe(medido.reduce((a, b) => a + b, 0));
+    expect([...rampa].sort((a, b) => a - b)).toEqual([...medido].sort((a, b) => a - b));
+  });
+
+  it('va de menor a mayor', () => {
+    const rampa = perfilRampa(medido);
+    for (let i = 1; i < rampa.length; i += 1) {
+      expect(rampa[i]).toBeGreaterThanOrEqual(rampa[i - 1]);
+    }
+  });
+
+  it('no toca el arreglo que recibe', () => {
+    const copia = [...medido];
+    perfilRampa(medido);
+    expect(medido).toEqual(copia);
+  });
+});
+
+describe('instante de la primera orden de apertura (DEC-047)', () => {
+  it('es null si la regla nunca abre', () => {
+    const r = simularSentido(
+      sintetica({
+        llegadasPorIntervalo: 1,
+        casetasIniciales: 1,
+        regla: { abrirSiColaMayorQue: { 1: 1e9, 2: 1e9, 3: 1e9, 4: 1e9, 5: null } },
+      }),
+    );
+    expect(r.aperturas).toBe(0);
+    expect(r.instantePrimeraOrdenSegundos).toBeNull();
+  });
+
+  it('con cola inicial por encima del umbral, la orden sale en t = 0', () => {
+    const r = simularSentido(
+      sintetica({ llegadasPorIntervalo: 60, casetasIniciales: 1, colaInicial: 40 }),
+    );
+    expect(r.instantePrimeraOrdenSegundos).toBe(0);
+  });
+
+  it('en frío, el disparador por tasa pide la caseta antes que la regla por cola', () => {
+    // El escenario del informe de arranque en frío: festivo sin cola heredada.
+    const config = (disparadorPorTasa) =>
+      conRegla('festivoPC', {
+        colaInicial: 0,
+        casetasIniciales: conteos.festivoPC.casetas[0],
+        regla: { disparadorPorTasa },
+      });
+    const sin = correrReplicas(config(false), semillasReplicas());
+    const con = correrReplicas(config(true), semillasReplicas());
+
+    const media = (replicas) => {
+      const ts = replicas
+        .map((r) => r.instantePrimeraOrdenSegundos)
+        .filter((t) => t !== null && t !== undefined);
+      return { media: ts.reduce((a, b) => a + b, 0) / ts.length, cuantas: ts.length };
+    };
+    const a = media(sin);
+    const b = media(con);
+
+    // Con el disparador pide antes, y lo pide en todas las réplicas.
+    expect(b.media).toBeLessThan(a.media);
+    expect(b.cuantas).toBe(semillasReplicas().length);
+    expect(a.cuantas).toBeLessThanOrEqual(b.cuantas);
   });
 });

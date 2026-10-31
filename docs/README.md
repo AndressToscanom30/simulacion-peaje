@@ -17,6 +17,7 @@ conviene pasar por los tres primeros.
 | `parametros.md` | Catálogo de los 33 parámetros del modelo: significado, unidad, valor por defecto, origen (contexto o decisión) y rango. Generado con `npm run parametros`, leyendo los valores por defecto del escenario base, así que no puede quedar desfasado. Es la especificación del formulario de la fase 5. |
 | `pendientes.md` | Preguntas abiertas y ambigüedades. Si algo no está claro se anota aquí y se sigue con la opción más razonable, dejando dicho cuál se tomó. Incluye lo que falta confirmar con la profesora. |
 | `bitacora.md` | Una entrada por intervención: fecha, qué cambió, qué quedó a medias y qué sigue. Sirve para retomar el trabajo sin releer todo el repo. |
+| `resultados/fase7-arranque-frio.md` | **Arranque en frío** (DEC-047): ¿aguanta la política un festivo que empiece con el peaje vacío? Cruza arranque, capacidad inicial, perfil de demanda y control. Generado con `npm run arranque`. |
 | `resultados/` | Salidas de las corridas. `validacion-fase1.md` es la validación del motor de un sentido contra los cuatro conteos; `diagnostico-festivo.md` compara la cola de campo con la simulada intervalo por intervalo; `fase2-regla.md` enfrenta la regla de apertura y cierre a la operación real; `fase3-reparto.md` reparte las 6 casetas entre los dos sentidos; `fase4-escenarios.md` es la matriz de 160 escenarios con el punto de quiebre. Son archivos generados: se regeneran con sus scripts, no se editan a mano. |
 
 ## Dónde está cada cosa en el código
@@ -54,6 +55,7 @@ npm run fase2       # operador contra regla, con sensibilidad de demora y servic
 npm run fase3       # reparto de las 6 casetas entre los dos sentidos
 npm run fase4       # matriz de 160 escenarios y punto de quiebre
 npm run parametros  # regenera el catálogo de parámetros
+npm run arranque    # arranque en frío: el caso malo de la política
 ```
 
 La interfaz (`npm run dev`) permite configurar cualquier parámetro, reproducir

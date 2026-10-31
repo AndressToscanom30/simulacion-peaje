@@ -1116,3 +1116,58 @@ tomaron durante el desarrollo.
   primero); encenderlo por defecto; inventar una ventana propia en vez de la de
   ρ; extrapolar la ventana parcial de los primeros 5 min; y presentar el
   disparador como algo que amplía la capacidad del peaje.
+
+## DEC-047 — El arranque en frío se mide con un perfil de rampa construido reordenando el festivo
+
+- **Fecha:** 30/10/2026
+- **Qué se mide y por qué:** la DEC-046 dejó declarado que durante los **primeros
+  5 min** la ventana móvil del disparador por tasa está a medio llenar, así que no
+  puede actuar a plena potencia justo en el arranque de un pico. Y PEN-016 tenía
+  medido que **quitarle a P→C la cola inicial empeora su espera** de 0,47 a 1,07
+  min, porque esa cola le hacía de aviso temprano a una regla reactiva. Las dos
+  cosas apuntan al mismo caso malo: **un festivo que empiece con el peaje vacío y
+  la demanda subiendo.** Este experimento lo mide.
+- **Los cuatro factores**, todos existentes salvo el perfil:
+  1. **Arranque:** cola heredada de 23 vehículos (lo observado) contra **cola 0**.
+  2. **Capacidad inicial:** 4 casetas (lo observado) contra **1 caseta**, que es
+     el peaje abriendo el pico con lo mínimo.
+  3. **Perfil de demanda:** el medido contra una **rampa** (ver abajo).
+  4. **Control:** regla por cola contra regla + disparador por tasa (DEC-046).
+- **La rampa se construye reordenando los 12 intervalos medidos del festivo de
+  menor a mayor**, no inventando demanda:
+
+  ```
+  medido: [92, 78, 60, 108, 92, 124, 78, 102, 86, 101, 99, 44]   total 1.064
+  rampa:  [44, 60, 78,  78, 86,  92, 92,  99, 101, 102, 108, 124] total 1.064
+  ```
+
+  Son **los mismos doce valores y el mismo total**: cambia el orden y nada más.
+  Así el contraste aísla el efecto de *cuándo* llega la demanda, con todo lo
+  demás idéntico, y **no entra ni un número que no se haya medido**.
+- **Es un escenario construido, no una medición, y va rotulado como tal.** El
+  festivo real no subió en rampa: arrancó ya alto (92 veh/5 min en el primer
+  intervalo). La rampa no dice qué pasó, dice qué pasaría si el mismo tráfico
+  llegara ordenado de menos a más. Mismo criterio y mismo rótulo que el escenario
+  de sanidad de día normal, que también es construido y lo declara.
+- **Se añade la medida `instantePrimeraOrdenSegundos`:** el instante de la
+  primera orden de apertura propia, que es lo que mide la reacción de cada
+  control (la caseta abre la demora después). **No se agrega con las demás medidas
+  escalares** porque vale `null` cuando no hubo ninguna apertura y el `null` no
+  tiene media: el informe promedia solo las réplicas que abrieron y dice cuántas
+  fueron. Las reasignaciones no cuentan como primera orden propia.
+- **Informe propio y generado:** `docs/resultados/fase7-arranque-frio.md`, con
+  `npm run arranque`. No se mete en los informes de las fases 1 a 4, que son de
+  fases cerradas, y se genera como todos los demás (DEC-023).
+- **La premisa con la que se planteó resultó falsa, y queda anotado.** Arriba se
+  dice que el caso malo es «el peaje vacío **y la demanda subiendo**». Lo primero
+  sí; lo segundo salió al revés: la demanda que sube despacio es el caso
+  **fácil** para una regla reactiva, porque le regala tiempo para abrir casetas
+  antes de que llegue lo gordo. El perfil medido sale peor que la rampa en los
+  4 de 4 casos en frío. **El caso malo es la demanda que ya empieza arriba**, que
+  es lo que hizo el festivo medido (92 veh/5 min en el primer intervalo). La
+  rampa sigue siendo útil justo por eso: es el contraste que lo demuestra. Se
+  corrigió la redacción de PEN-016, que decía lo mismo que esta premisa.
+- **Descarta:** inventar un perfil de demanda creciente con números que nadie
+  midió; presentar la rampa como lo que ocurrió en el festivo; agregar
+  `instantePrimeraOrdenSegundos` con las demás escalares; y tocar los informes de
+  las fases cerradas para meter este experimento.

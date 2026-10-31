@@ -254,7 +254,7 @@ cosméticos porque el modelo no tiene distancias ni velocidades. Ver
 
 Lo que sostiene que el programa hace lo que dice:
 
-- **389 pruebas** en verde, con las regresiones de las fases 1 a 4 intactas.
+- **395 pruebas** en verde, con las regresiones de las fases 1 a 4 intactas.
 - **Equivalencia exacta** del motor de dos sentidos contra los de uno: correr el
   peaje con un sentido inactivo da los mismos números que las fases 1 y 2.
 - **El grabador de trazas no cambia ningún resultado**, comprobado en 5
@@ -481,6 +481,42 @@ inicial le hace de aviso temprano a una regla reactiva** (PEN-016): sin ella el
 umbral se cruza más tarde y, cuando la caseta abre cinco minutos después, la cola
 ya creció. Es la misma reactividad de PEN-011 por otra vía.
 
+### Arranque en frío — El caso malo de la política
+
+[`fase7-arranque-frio.md`](resultados/fase7-arranque-frio.md) (DEC-047), 32
+casos. Cruza cuatro factores: arranque (cola heredada de 23 / cola 0), capacidad
+inicial (4 casetas / 1), perfil de demanda (el medido / una **rampa**) y control
+(regla por cola / regla + tasa), en los dos regímenes.
+
+La **rampa** son los 12 intervalos medidos del festivo **reordenados de menor a
+mayor**: mismos valores, mismo total, otro orden. Es un escenario **construido**,
+no una medición, y así va rotulado; el festivo real arrancó ya alto, en 92 veh/5
+min.
+
+**El disparador por tasa recupera lo que daba la cola heredada, y con holgura:**
+
+| Arranque | `Wq` regla por cola | `Wq` regla + tasa | 1.ª orden regla | 1.ª orden tasa |
+|---|---|---|---|---|
+| cola 23 | 0,32 min | 0,23 min | 0,17 min | 0,17 min |
+| **cola 0** | **0,42 min** | **0,28 min** | **20,46 min** (27/30) | **11,38 min** (30/30) |
+
+En frío y con disparador sale **mejor** (0,28) que en caliente sin él (0,32). Y
+la columna que lo explica es la última: la regla por cola tarda **20,46 min** en
+pedir la primera caseta —y en 3 de 30 réplicas no la pide nunca—, mientras el
+disparador la pide a los **11,38 min** en las 30. **9,09 min de ventaja.**
+
+**Dos hallazgos más, y los dos salen al revés de lo que el experimento suponía:**
+
+- **La demanda que sube es el caso fácil, no el difícil.** El perfil medido sale
+  peor que la rampa en los **4 de 4** casos en frío (con 1 caseta inicial, 2,35
+  contra 0,78 min). Una rampa le **regala tiempo** a una regla reactiva para ir
+  abriendo antes de que llegue lo gordo. **El caso malo es la demanda que ya
+  empieza arriba**, y eso no es hipotético: es lo que hizo el festivo medido. El
+  retorno de un festivo no sube despacio, empieza en hora punta. Corrige la
+  premisa con la que se planteó el experimento y la redacción de PEN-016.
+- **La capacidad inicial pesa mucho más que el control.** Ver la conclusión 6 de
+  la etapa 7.
+
 ---
 
 ## Etapa 7 — Interpretación
@@ -530,6 +566,16 @@ De 6 a 8 casetas el quiebre se corre de ×1,10 a ×1,55 **con** la regla y
 cuello es que el contraflujo se queda en 1 caseta. Es un argumento contra
 resolver esto con obra.
 
+**6. Y al revés: ninguna regla compensa abrir el pico sin capacidad.**
+Es el resultado del estudio de arranque en frío (DEC-047,
+[`fase7-arranque-frio.md`](resultados/fase7-arranque-frio.md)). Con el perfil
+medido y servicio base, abrir la hora con **1 caseta en vez de 4** multiplica la
+espera por **8,3** —de 0,28 a 2,35 min— y **ningún control cumple el criterio**,
+ni con el disparador por tasa, que ahí es inerte. La regla solo añade una caseta
+a la vez y cada una cuesta la demora, así que **no recupera la capacidad que no se
+le dio al empezar**: 48,6 carriles-intervalo contra 51,8. El control gestiona
+holgura; no la fabrica.
+
 ### Por qué los resultados se presentan en términos relativos
 
 El modelo dice que la operación real **ya cumple** (PEN-009). Si se tomaran los
@@ -576,11 +622,11 @@ entre lo que se escribe y lo que se genera:
 | Archivo | Papel |
 |---|---|
 | [`contexto/contexto-inicial.md`](contexto/contexto-inicial.md) | **Fuente de verdad.** Modelo, parámetros, regla, criterios, datos. No se edita para arreglar un resultado |
-| [`decisiones/registro.md`](decisiones/registro.md) | **46 decisiones** con fecha, motivo y qué descartan. No se reabren: para cambiar una se añade otra que diga qué supera |
+| [`decisiones/registro.md`](decisiones/registro.md) | **47 decisiones** con fecha, motivo y qué descartan. No se reabren: para cambiar una se añade otra que diga qué supera |
 | [`pendientes.md`](pendientes.md) | **22 preguntas abiertas.** Lo que no está decidido, con la opción tomada mientras tanto |
 | [`planes/plan-actual.md`](planes/plan-actual.md) | Plan por fases, con casillas |
 | [`bitacora.md`](bitacora.md) | Una entrada por intervención |
-| [`resultados/`](resultados/) | **Generados.** Cinco informes, se regeneran con sus scripts y no se editan a mano |
+| [`resultados/`](resultados/) | **Generados.** Seis informes, se regeneran con sus scripts y no se editan a mano |
 | [`parametros.md`](parametros.md) | **Generado.** Los 31 parámetros leídos del escenario base |
 | `estudio.md`, `politica-recomendada.md` | Este documento y la política: prosa, con las cifras transcritas y su fuente nombrada |
 | [`ui.md`](ui.md), [`vista3d.md`](vista3d.md), [`traza.md`](traza.md) | Cómo funciona lo que se construyó |
@@ -683,12 +729,12 @@ que el estudio puede responder.
 ### Modelo
 
 6. ~~Implementar y medir el disparador anticipativo por tasa.~~ **Hecho**
-   (DEC-046, PEN-011 cerrado). Lo que queda de aquí: **medir el arranque en
-   frío** con el disparador encendido —un festivo que empiece con el peaje vacío
-   y la demanda subiendo—, porque durante los primeros 5 min la ventana móvil
-   está a medio llenar y el disparador no puede actuar a plena potencia justo
-   cuando más falta haría (PEN-016). Y decidir si pasa a ser el valor por
-   defecto del modelo, que es otra decisión.
+   (DEC-046, PEN-011 cerrado). ~~Medir el arranque en frío.~~ **Hecho también**
+   (DEC-047, PEN-016 resuelto). Lo que queda de aquí: decidir si el disparador
+   pasa a ser el **valor por defecto** del modelo, que es otra decisión, y medir
+   el arranque en frío **con los dos sentidos** sobre el pozo común, porque el
+   informe de arranque es de un solo sentido y ahí la caseta que la regla pide
+   está siempre disponible.
 7. **Rediseñar el criterio de reasignación.** ρ normalizado por `c` favorece al
    sentido con menos casetas, que no es el que más lo necesita (PEN-014). Un
    criterio por cola absoluta, o por espera estimada, no tendría ese defecto.
@@ -711,7 +757,7 @@ que el estudio puede responder.
 ## Cierre
 
 El estudio entrega una herramienta de simulación completa —motor reproducible,
-33 parámetros configurables, 214 escenarios, interfaz con vista 3D y 389
+33 parámetros configurables, 214 escenarios, interfaz con vista 3D y 395
 pruebas— y una política recomendada que sostiene el escenario adverso. Pero su
 resultado más sólido es de otro tipo: **la palanca no está en la regla, está en
 los datos que faltan.** Un dato no medido mueve el resultado veinte veces más

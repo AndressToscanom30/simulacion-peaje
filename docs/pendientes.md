@@ -409,23 +409,56 @@ mantiene la pregunta abierta hasta que alguien la responda.
   anticipativo) y PEN-014 (ρ favorece al sentido con menos casetas) actuando a la
   vez, y medido.
 - **Lo que NO significa:** que convenga empezar con cola. Significa que la regla
-  **depende de que la congestión ya se haya manifestado** para reaccionar. Un
-  festivo que arranque con el peaje vacío y la demanda subiendo es el caso malo
-  para esta política, no el bueno.
+  **depende de que la congestión ya se haya manifestado** para reaccionar.
+- **Corregido el 30/10/2026 por el informe de arranque en frío** (DEC-047,
+  `fase7-arranque-frio.md`): este pendiente decía que «un festivo que arranque
+  con el peaje vacío **y la demanda subiendo**» era el caso malo. Lo primero sí;
+  **lo segundo, al revés.** La demanda que sube despacio es el caso **fácil** para
+  una regla reactiva, porque le regala tiempo para abrir casetas antes de que
+  llegue lo gordo. Con el perfil medido reordenado en rampa, la espera en frío
+  baja de 2,35 a 0,78 min con una caseta inicial, y el perfil medido sale peor
+  que la rampa en los 4 de 4 casos en frío. **El caso malo es la demanda que ya
+  empieza arriba**, que es exactamente lo que hizo el festivo medido: arrancó en
+  92 veh/5 min, casi en el máximo. El retorno de un festivo no sube despacio,
+  empieza en hora punta.
 - **Mientras tanto:** se reporta tal cual. **No se tocó nada.** La sensibilidad
   queda en la matriz con su explicación generada.
-- **Resuelto en parte el 30/10/2026 (DEC-046).** Lo que estaba abierto aquí era
-  lo mismo que en PEN-011: el disparador anticipativo por tasa de llegadas. Ya
-  está implementado y medido, y **cerrado PEN-011**. Este pendiente fue una de
-  las tres vías que lo justificaron: si lo que salva a P→C es tener cola
-  **antes** de empezar, un aviso temprano es exactamente lo que falta.
-- **Qué sigue abierto aquí:** el disparador **no elimina** la dependencia que
-  este pendiente señala. Durante los primeros 5 min la ventana móvil está a medio
-  llenar, así que tampoco puede disparar a plena potencia justo en el arranque
-  (limitación declarada en DEC-046). El caso malo de esta política sigue siendo
-  un festivo que arranque con el peaje vacío y la demanda subiendo; lo que cambia
-  es que ahora hay un mecanismo que reacciona a la demanda y no solo a la cola.
-  Medir ese caso con el disparador encendido queda pendiente.
+- **Resuelto el 30/10/2026 (DEC-046 y DEC-047).** Lo que estaba abierto aquí era
+  lo mismo que en PEN-011: el disparador anticipativo por tasa de llegadas. Está
+  implementado, **medido también en arranque en frío** y PEN-011 queda cerrado.
+  Este pendiente fue una de las tres vías que lo justificaron: si lo que salva a
+  P→C es tener cola **antes** de empezar, un aviso temprano es exactamente lo que
+  falta.
+- **El disparador sí recupera lo que daba la cola heredada**, y con holgura
+  (`fase7-arranque-frio.md`). Con servicio base y las casetas observadas:
+
+  | Arranque | `Wq` regla por cola | `Wq` regla + tasa | 1.ª orden regla | 1.ª orden tasa |
+  |---|---|---|---|---|
+  | cola 23 | 0,32 min | 0,23 min | 0,17 min | 0,17 min |
+  | **cola 0** | **0,42 min** | **0,28 min** | **20,46 min** (27/30) | **11,38 min** (30/30) |
+
+  El arranque en frío le cuesta 0,10 min a la regla por cola y el disparador
+  recupera 0,14, así que **en frío y con disparador sale mejor (0,28) que en
+  caliente sin él (0,32)**. Lo más claro está en la primera orden de apertura:
+  la regla por cola tarda **20,46 min** en pedir la primera caseta, y en 3 de las
+  30 réplicas no la pide nunca; con el disparador la pide a los **11,38 min** en
+  las 30. **9,09 min de ventaja.**
+- **Lo que este pendiente medía en los dos sentidos era peor por otra razón.**
+  Aquí arriba está el 0,47 → 1,07 min de la fase 4, que es mucho más que el
+  0,32 → 0,42 del informe de arranque. No es contradicción: la fase 4 mide **los
+  dos sentidos** sobre el pozo común, y allí la caseta que P→C no pide **se la
+  queda C→P** (PEN-014), así que la penalización va doble. El informe de arranque
+  es de un solo sentido. Mismo mecanismo, distinto tamaño del castigo.
+- **Qué sigue abierto:** nada de la pregunta original. Lo que el informe deja
+  **nuevo** y abierto es otra cosa, y es más grande: **arrancar el pico con una
+  sola caseta no lo arregla ningún control.** Con el perfil medido y servicio
+  base, pasar de 4 casetas iniciales a 1 multiplica la espera por **8,3** (0,28 →
+  2,35 min) y ninguno de los dos controles cumple el criterio; el disparador es
+  ahí literalmente inerte (2,35 contra 2,35). La regla **no recupera la capacidad
+  que no se le dio al empezar**, porque solo añade una caseta a la vez y cada una
+  cuesta la demora. Eso no es un pendiente del modelo: es el argumento más fuerte
+  del estudio a favor del punto 1 de la política (arrancar el pico con la
+  capacidad puesta).
 
 ### PEN-017 — La interfaz reproduce una traza completa, así que el horizonte está acotado por la memoria
 

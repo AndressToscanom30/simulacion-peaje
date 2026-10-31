@@ -3,9 +3,10 @@
 Estado: 30/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Las siete fases están cerradas**, más un añadido posterior: el **disparador
-anticipativo por tasa** (DEC-046), que el estudio recomendaba sin medir y ya
-está implementado y medido. El estudio está completo: el documento con las ocho
+**Las siete fases están cerradas**, más dos añadidos posteriores: el
+**disparador anticipativo por tasa** (DEC-046), que el estudio recomendaba sin
+medir y ya está implementado y medido, y el **estudio de arranque en frío**
+(DEC-047), que cierra PEN-016. El estudio está completo: el documento con las ocho
 etapas está en `docs/estudio.md` y la política recomendada en
 `docs/politica-recomendada.md`.
 
@@ -263,6 +264,48 @@ Resultado: el estudio se formula **en términos relativos y como seguro, no como
 predicción** (DEC-043), porque tres resultados medidos lo obligan: el modelo dice
 que la operación real ya cumple, subestima el pico con sesgo de un solo signo, y
 la entrada que más mueve el resultado no se midió.
+
+## Añadido — Arranque en frío ✅
+
+Lo que la DEC-046 y PEN-016 dejaron abierto: ¿aguanta la política un festivo que
+empiece con el peaje vacío?
+
+- [x] **DEC-047**: diseño del experimento. Cuatro factores —arranque (cola 23 /
+      cola 0), capacidad inicial (4 casetas / 1), perfil (medido / rampa) y
+      control (regla / regla+tasa)— en los dos regímenes: **32 casos**
+- [x] La **rampa** son los 12 intervalos medidos **reordenados de menor a mayor**:
+      mismos valores, mismo total, otro orden. Escenario **construido** y
+      rotulado como tal; no entra ni un número sin medir
+- [x] Medida nueva `instantePrimeraOrdenSegundos`, que es la que mide la reacción
+      de cada control. No se agrega con las demás escalares porque vale `null`
+      cuando no hubo apertura y el `null` no tiene media
+- [x] Informe generado → `docs/resultados/fase7-arranque-frio.md`
+      (`npm run arranque`)
+- [x] **6 pruebas nuevas (395 en total)**
+- [x] **PEN-016 resuelto**; su redacción corregida
+
+**Resultado 1: el disparador recupera lo que daba la cola heredada, y con
+holgura.** Con servicio base y las casetas observadas, en frío la regla por cola
+da 0,42 min y con disparador 0,28; es decir, **en frío con disparador sale mejor
+que en caliente sin él** (0,32). Lo contundente está en la reacción: la regla por
+cola tarda **20,46 min** en pedir la primera caseta y en 3 de 30 réplicas no la
+pide nunca, mientras el disparador la pide a los **11,38 min** en las 30.
+**9,09 min de ventaja.**
+
+**Resultado 2, y es el que más consecuencias prácticas tiene: ninguna regla
+compensa abrir el pico sin capacidad.** Con el perfil medido y servicio base,
+pasar de 4 casetas iniciales a 1 multiplica la espera por **8,3** (0,28 → 2,35
+min) y **ningún control cumple**; el disparador es ahí literalmente inerte (2,35
+contra 2,35). La regla solo añade una caseta a la vez y cada una cuesta la
+demora, así que **no recupera la capacidad que no se le dio al empezar**: 48,6
+carriles-intervalo contra 51,8.
+
+**Resultado 3, que sale al revés de la premisa del propio experimento: la demanda
+que sube es el caso fácil.** El perfil medido es peor que la rampa en los 4 de 4
+casos en frío (con 1 caseta, 2,35 contra 0,78 min), porque una rampa le regala
+tiempo a una regla reactiva. **El caso malo es la demanda que ya empieza
+arriba**, que es lo que hizo el festivo medido: arrancó en 92 veh/5 min. Se
+corrigió la redacción de PEN-016, que decía lo contrario.
 
 La conclusión de mayor valor es incómoda: **la palanca no está en la regla, está
 en los datos que faltan.** El sustituto no medido de la demanda de C→P mueve el

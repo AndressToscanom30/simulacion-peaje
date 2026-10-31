@@ -2,6 +2,86 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-10-30 — Arranque en frío: el caso malo de la política (DEC-047)
+
+Lo que la DEC-046 y PEN-016 dejaron abierto esta misma tarde: medir un festivo
+que empiece con el peaje vacío, con el disparador por tasa encendido.
+
+**Qué cambió:**
+
+- **DEC-047** con el diseño: cuatro factores —arranque (cola 23 / cola 0),
+  capacidad inicial (4 casetas / 1), perfil de demanda (medido / rampa) y control
+  (regla / regla+tasa)— en los dos regímenes de servicio. 32 casos × 30 réplicas.
+- **La rampa se construye reordenando los 12 intervalos medidos del festivo de
+  menor a mayor.** Mismos valores, mismo total, otro orden: así el contraste
+  aísla *cuándo* llega la demanda sin que entre ni un número sin medir. Va
+  rotulado como **escenario construido**, igual que el de día normal.
+- **Medida nueva `instantePrimeraOrdenSegundos`**, el instante de la primera
+  orden de apertura propia. Es la que mide la reacción, que es de lo que va este
+  experimento. **No se agrega con las demás escalares** porque vale `null` cuando
+  no hubo apertura y el `null` no tiene media: el informe promedia solo las
+  réplicas que abrieron y dice cuántas fueron.
+- `perfilRampa()` vive en `src/config/escenarios.js`, no en el script, para
+  poder probarlo.
+- Informe propio y generado: `docs/resultados/fase7-arranque-frio.md`
+  (`npm run arranque`). No se tocaron los informes de las fases cerradas.
+
+**Qué salió:**
+
+- **El disparador recupera lo que daba la cola heredada, y con holgura.** En frío
+  la regla por cola da 0,42 min y con disparador 0,28, así que **en frío con
+  disparador sale mejor que en caliente sin él** (0,32). Lo más contundente está
+  en la reacción: la regla por cola tarda **20,46 min** en pedir la primera
+  caseta y en **3 de 30 réplicas no la pide nunca**; con el disparador la pide a
+  los **11,38 min** en las 30. **9,09 min de ventaja.** Y eso pese a la
+  limitación declarada en DEC-046: la ventana está a medio llenar los primeros
+  5 min y aun así gana.
+- **Ninguna regla compensa abrir el pico sin capacidad**, y esto es lo que más
+  consecuencias prácticas tiene. Con el perfil medido y servicio base, pasar de 4
+  casetas iniciales a 1 multiplica la espera por **8,3** (0,28 → 2,35 min) y
+  ningún control cumple; el disparador es ahí **literalmente inerte** (2,35
+  contra 2,35), porque con una caseta y el pico encima la cola cruza su umbral a
+  los 0,40 min y no queda nada que anticipar. La regla no recupera la capacidad
+  que no se le dio: 48,6 carriles-intervalo contra 51,8, porque solo añade una
+  caseta a la vez y cada una cuesta la demora.
+- **La demanda que sube es el caso fácil, no el difícil.** Esto sale **al revés
+  de la premisa con la que planteé el experimento**. El perfil medido es peor que
+  la rampa en los **4 de 4** casos en frío (con 1 caseta, 2,35 contra 0,78 min),
+  porque una rampa empieza en 44 veh/5 min y le **regala tiempo** a una regla
+  reactiva. El caso malo es **la demanda que ya empieza arriba**, que es
+  exactamente lo que hizo el festivo medido: arrancó en 92 veh/5 min, casi en el
+  máximo. El retorno de un festivo no sube despacio, empieza en hora punta.
+
+**Dos cosas que corregí sobre la marcha, y conviene decirlo:**
+
+1. **La redacción de PEN-016 estaba mal** en un punto: decía que el caso malo era
+   «un festivo que arranque con el peaje vacío **y la demanda subiendo**». Lo
+   primero sí, lo segundo al revés. Corregido ahí y en el informe, que había
+   salido con una sección titulada «el caso peor: … y la demanda subiendo» sobre
+   unos datos que decían lo contrario. El título ahora elige el caso peor por los
+   datos, no de antemano.
+2. **Reconciliación con la cifra de PEN-016.** El informe da 0,32 → 0,42 min por
+   quitar la cola inicial, y PEN-016 daba 0,47 → 1,07. No es contradicción: la
+   fase 4 mide **los dos sentidos** sobre el pozo común y allí la caseta que P→C
+   no pide se la queda C→P (PEN-014), así que el castigo va doble; este informe es
+   de un solo sentido. Queda dicho en los dos sitios para que nadie lo lea como
+   una incoherencia.
+
+**Qué quedó a medias:** nada. **395 pruebas en verde** (6 nuevas), informe
+generado, `npm run build` bien.
+
+**Qué sigue abierto:**
+
+- **El arranque en frío con los dos sentidos.** Este informe es de un solo
+  sentido, donde la caseta que la regla pide está siempre disponible. Con el pozo
+  compartido el castigo es mayor, como muestra la propia cifra de PEN-016.
+- **Si el disparador pasa a ser el valor por defecto del modelo.** Sigue siendo
+  otra decisión y sigue sin tomarse.
+- **PEN-013, PEN-010 y PEN-008**, que son mediciones de campo: contar C→P en un
+  festivo, cronometrar atenciones en un festivo y en P→C, y registrar la cola por
+  caseta en un pico.
+- **Rediseñar la reasignación por ρ** (PEN-014).
+
 ## 2026-10-30 — Disparador anticipativo por tasa: implementado y medido (DEC-046)
 
 La fase 7 recomendaba el disparador anticipativo por tasa **sin haberlo medido**

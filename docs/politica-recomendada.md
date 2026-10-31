@@ -48,17 +48,29 @@ añadidos que el estudio sí respalda. El orden importa: 1 y 2 son los que pagan
 **En un festivo, abrir 4 casetas en el sentido de retorno antes de que empiece
 la hora pico, sin esperar a que la cola lo pida.**
 
-Es lo que hizo el operador real, y es la mitad de por qué le fue bien. La
-evidencia es un resultado que parece al revés y no lo es (PEN-016): si P→C
-**arranca sin cola**, su espera **empeora**, de 0,47 a 1,07 min, y deja de
-cumplir. Los 23 vehículos heredados le estaban haciendo de **aviso temprano** a
-una regla que es reactiva: sin ellos el umbral se cruza más tarde, y cuando la
-caseta abre cinco minutos después, la cola ya creció
-(`fase4-escenarios.md`, sensibilidad «cola inicial 0»).
+Es lo que hizo el operador real, y es la mitad de por qué le fue bien. Hay dos
+pruebas, y la segunda es la más contundente de todo el estudio.
 
-Dicho de otro modo: **la regla por cola necesita que la cola ya esté ahí para
-reaccionar, y en el arranque de un pico eso llega tarde.** Arrancar con
-capacidad puesta es lo que compensa.
+**Primera: la cola heredada hacía de aviso temprano.** Si P→C **arranca sin
+cola**, su espera **empeora**, de 0,47 a 1,07 min, y deja de cumplir
+(`fase4-escenarios.md`, sensibilidad «cola inicial 0»; PEN-016). Los 23 vehículos
+heredados estaban cruzando el umbral en `t = 0` y disparando la orden de abrir
+antes de que llegara el pico. Sin ellos, la regla por cola tarda **20,46 min** en
+pedir la primera caseta, y en 3 de 30 réplicas no la pide nunca
+(`fase7-arranque-frio.md`). **La regla por cola necesita que la cola ya esté ahí
+para reaccionar, y en el arranque de un pico eso llega tarde.**
+
+**Segunda: la capacidad que no se pone al empezar no se recupera.** Con el perfil
+medido y servicio base, abrir la hora con **1 caseta en vez de 4** multiplica la
+espera por **8,3** —de 0,28 a 2,35 min— y **ningún control cumple el criterio**,
+ni con el disparador por tasa, que ahí es literalmente inerte (2,35 contra
+2,35). El motivo está en los carriles-intervalo, 48,6 contra 51,8: la regla solo
+puede añadir **una caseta a la vez** y cada una cuesta la demora de apertura, así
+que para cuando llega al tope la hora se acabó (`fase7-arranque-frio.md`).
+
+Es el resultado con más consecuencias prácticas del estudio: **ninguna regla de
+control compensa haber abierto el pico sin capacidad.** El disparador por tasa
+sirve cuando hay holgura que gestionar, no cuando falta capacidad.
 
 ### 2. Disparar también por tasa de llegadas, no solo por cola
 
@@ -121,7 +133,9 @@ La demora física de 5 min no se puede bajar a 0 —hay que mover personal—, p
 >
 > Y una limitación del propio mecanismo: durante los **primeros 5 min** la
 > ventana móvil está a medio llenar, así que no puede disparar a plena potencia
-> en el arranque del pico, que es donde más falta haría (PEN-016).
+> en el arranque del pico. **Se midió, y aun así gana:** en arranque en frío pide
+> la primera caseta a los 11,38 min contra los 20,46 de la regla por cola, y en
+> las 30 réplicas en vez de 27 (`fase7-arranque-frio.md`, DEC-047).
 
 ### 3. No usar la reasignación por ρ tal como está especificada
 

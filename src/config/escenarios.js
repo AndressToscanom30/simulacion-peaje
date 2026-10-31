@@ -35,6 +35,19 @@ export const REGIMENES_SERVICIO = {
 export const COLA_INICIAL = { viernes: 0, domingoCP: 0, domingoPC: 0, festivoPC: 23 };
 
 /**
+ * Perfil de **rampa** para el estudio de arranque en frío (DEC-047): los mismos
+ * intervalos medidos, reordenados de menor a mayor.
+ *
+ * No inventa demanda: es una permutación, así que conserva el total, la media y
+ * todos los valores. Lo único que cambia es **cuándo** llega cada cosa, que es
+ * justo lo que el experimento quiere aislar. Es un perfil **construido**, no una
+ * medición, y los informes lo rotulan así.
+ */
+export function perfilRampa(llegadas) {
+  return [...llegadas].sort((a, b) => a - b);
+}
+
+/**
  * Arma la configuración de un sentido.
  *
  * @param {object} args
