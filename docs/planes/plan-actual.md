@@ -1,12 +1,13 @@
 # Plan actual
 
-Estado: 30/10/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 31/10/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
-**Las siete fases están cerradas**, más dos añadidos posteriores: el
+**Las siete fases están cerradas**, más tres añadidos posteriores: el
 **disparador anticipativo por tasa** (DEC-046), que el estudio recomendaba sin
-medir y ya está implementado y medido, y el **estudio de arranque en frío**
-(DEC-047), que cierra PEN-016. El estudio está completo: el documento con las ocho
+medir y ya está implementado y medido; el **estudio de arranque en frío**
+(DEC-047), que cierra PEN-016; y el **seguimiento de pendientes con el autor de
+las mediciones** (DEC-048 y DEC-049), que cierra PEN-003, PEN-004 y PEN-007. El estudio está completo: el documento con las ocho
 etapas está en `docs/estudio.md` y la política recomendada en
 `docs/politica-recomendada.md`.
 
@@ -264,6 +265,65 @@ Resultado: el estudio se formula **en términos relativos y como seguro, no como
 predicción** (DEC-043), porque tres resultados medidos lo obligan: el modelo dice
 que la operación real ya cumple, subestima el pico con sesgo de un solo signo, y
 la entrada que más mueve el resultado no se midió.
+
+## Añadido — Seguimiento de pendientes con el autor de las mediciones ✅
+
+El autor respondió tres preguntas sobre los datos. Las tres **confirman
+supuestos que el modelo ya tenía**, así que no cambió ningún número de ningún
+informe: se regeneraron los siete y la única diferencia fue la fecha.
+
+- [x] **PEN-004 cerrado.** La columna `cola` es una **lectura puntual**, no el
+      máximo del intervalo. Queda fijado que la cifra comparable es el máximo de
+      las 12 lecturas muestreadas y no la cola máxima continua. El motor ya
+      reportaba las dos (DEC-022)
+- [x] **PEN-007 cerrado con DEC-048.** El autor contaba las casetas que
+      **atendían**, y los datos muestran que coincide con las **abiertas**: si
+      fuera la ocupación instantánea, en el viernes habría que haber acertado 12
+      veces seguidas un suceso de probabilidad 0,23 (p = 2 × 10⁻⁸), y en
+      domingoPC 10 veces uno de 0,66 (p = 1,5 × 10⁻²). En el festivo la
+      distinción da igual: con la cola nunca por debajo de 14 vehículos, ninguna
+      caseta abierta estaba ociosa, así que **la quinta abrió en el intervalo 6**
+      y el supuesto del motor es correcto. Queda declarada como limitación menor
+      que en los conteos ligeros pudo haber alguna caseta abierta y ociosa sin
+      registrar
+- [x] **PEN-003 cerrado con DEC-049**, y además con la alternativa **medida**
+
+### El periodo de calentamiento: implementado, medido y **no adoptado**
+
+- [x] `src/motor/calentamiento.js`: simula tramos previos con la tasa del primer
+      intervalo y le pasa al sentido la cola resultante **con la espera ya
+      acumulada**, en su propio flujo de PRNG. Apagado por defecto
+- [x] Tres tratamientos con las mismas semillas para **separar los dos efectos**
+      que el calentamiento cambia a la vez: el tamaño de la cola y la
+      contabilidad de la espera → `docs/resultados/fase7-calentamiento.md`
+      (`npm run calentamiento`)
+- [x] Barrido de duraciones (5, 10, 15, 30 y 60 min) en los dos regímenes
+- [x] **11 pruebas nuevas (406 en total)**
+
+**Resultado: la DEC-018 se queda, y la comparación es lo que lo respalda.** Tres
+razones, en orden de peso:
+
+1. **Lo que PEN-003 temía es insignificante.** La espera previa no contabilizada
+   vale **≤ 0,05 min** sobre el `Wq` de la hora. Con 1.064 vehículos, la espera
+   previa de una veintena diluye a casi nada. La aproximación costaba muy poco, y
+   eso es lo que había que comprobar.
+2. **El calentamiento no es más realista, es realista de otra manera.** Deja
+   **5,1 vehículos contra los 23 observados** con servicio base, porque el modelo
+   no reproduce la cola del festivo en ningún intervalo (PEN-008) y la cola
+   inicial es la lectura número cero de esa serie. Cambiar un dato observado por
+   una salida del modelo que se queda corta metería el sesgo de PEN-008 también
+   en el arranque. De hecho **ensancha** la brecha contra el 1,28 min declarado.
+3. **Con servicio lento no está bien planteado.** ρ = 1,188 > 1: el periodo
+   previo no tiene estado estacionario y la cola la fija la duración elegida, de
+   **15,5 a 171,1 vehículos** según se calienten 5 o 60 min. Elegir la duración
+   sería elegir el resultado.
+
+**El aviso de PEN-016 se confirmó, y con consecuencia:** con calentamiento el
+disparador por tasa **deja de ganarle al operador** (0,25 contra 0,22 min,
+cuando con la DEC-018 era 0,23 contra 0,28). **Parte de la ventaja que la regla
+saca en el festivo viene de arrancar con una cola grande**, y esa cola es un dato
+observado, no una propiedad de la regla. Coincide con lo que el arranque en frío
+(DEC-047) midió por otra vía, y no obliga a rehacer nada de él.
 
 ## Añadido — Arranque en frío ✅
 

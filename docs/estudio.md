@@ -140,6 +140,16 @@ dentro de cada intervalo de 5 min.
 | Los dos sentidos a la vez | Nunca se midieron juntos: la competencia por casetas es supuesto | — |
 | Reparto de la cola entre casetas | No se registró | PEN-008 |
 
+**Tres preguntas sobre los datos quedaron resueltas por el autor de las
+mediciones el 31/10/2026**, y las tres confirman supuestos que el modelo ya
+tenía, así que no cambió ningún número:
+
+| Pregunta | Respuesta | Dónde |
+|---|---|---|
+| ¿La columna `cola` es una lectura puntual o el máximo del intervalo? | **Lectura puntual.** La cifra comparable es el máximo de las 12 lecturas muestreadas, no la cola máxima continua | PEN-004 |
+| ¿La columna `casetas` son las abiertas o las que atendían? | El autor contaba las que atendían, y **los datos muestran que coincide con las abiertas**: si fuera la ocupación instantánea, en el viernes habría que haber acertado 12 veces un suceso de probabilidad 0,23 (p = 2 × 10⁻⁸). En el festivo da igual: con cola nunca por debajo de 14, ninguna caseta abierta estaba ociosa | PEN-007, DEC-048 |
+| ¿Desde cuándo esperaba la cola inicial? | Se formó **en el mismo régimen** que las colas de los intervalos siguientes, sin atasco previo excepcional | PEN-003, DEC-049 |
+
 El primero es el que decide el resultado y vuelve a aparecer en todas las etapas
 que siguen.
 
@@ -254,7 +264,7 @@ cosméticos porque el modelo no tiene distancias ni velocidades. Ver
 
 Lo que sostiene que el programa hace lo que dice:
 
-- **395 pruebas** en verde, con las regresiones de las fases 1 a 4 intactas.
+- **406 pruebas** en verde, con las regresiones de las fases 1 a 4 intactas.
 - **Equivalencia exacta** del motor de dos sentidos contra los de uno: correr el
   peaje con un sentido inactivo da los mismos números que las fases 1 y 2.
 - **El grabador de trazas no cambia ningún resultado**, comprobado en 5
@@ -622,11 +632,11 @@ entre lo que se escribe y lo que se genera:
 | Archivo | Papel |
 |---|---|
 | [`contexto/contexto-inicial.md`](contexto/contexto-inicial.md) | **Fuente de verdad.** Modelo, parámetros, regla, criterios, datos. No se edita para arreglar un resultado |
-| [`decisiones/registro.md`](decisiones/registro.md) | **47 decisiones** con fecha, motivo y qué descartan. No se reabren: para cambiar una se añade otra que diga qué supera |
-| [`pendientes.md`](pendientes.md) | **22 preguntas abiertas.** Lo que no está decidido, con la opción tomada mientras tanto |
+| [`decisiones/registro.md`](decisiones/registro.md) | **49 decisiones** con fecha, motivo y qué descartan. No se reabren: para cambiar una se añade otra que diga qué supera |
+| [`pendientes.md`](pendientes.md) | **22 preguntas**, cinco de ellas ya cerradas. Lo que no está decidido, con la opción tomada mientras tanto |
 | [`planes/plan-actual.md`](planes/plan-actual.md) | Plan por fases, con casillas |
 | [`bitacora.md`](bitacora.md) | Una entrada por intervención |
-| [`resultados/`](resultados/) | **Generados.** Seis informes, se regeneran con sus scripts y no se editan a mano |
+| [`resultados/`](resultados/) | **Generados.** Siete informes, se regeneran con sus scripts y no se editan a mano |
 | [`parametros.md`](parametros.md) | **Generado.** Los 31 parámetros leídos del escenario base |
 | `estudio.md`, `politica-recomendada.md` | Este documento y la política: prosa, con las cifras transcritas y su fuente nombrada |
 | [`ui.md`](ui.md), [`vista3d.md`](vista3d.md), [`traza.md`](traza.md) | Cómo funciona lo que se construyó |
@@ -693,9 +703,9 @@ cambiaría a su favor.
 | Limitación | Pendiente |
 |---|---|
 | No se sabe si los datos de la ANI incluyen el carril TAG, y de ahí sale el factor ×1,13 | PEN-001 |
-| No se sabe cuánto llevaban esperando los 23 vehículos de la cola inicial; se les asigna llegada en `t = 0`, lo que **subestima** su espera | PEN-003 |
+| La cola inicial entra con llegada en `t = 0`, lo que **subestima** su espera previa. **Medido:** cuesta ≤ 0,05 min sobre el `Wq` de la hora, y la alternativa (calentamiento) sale peor | ~~PEN-003~~, DEC-049 |
 | La demora real de apertura no está medida | PEN-006 |
-| No se sabe si la `c` del conteo es la abierta o la que atendía | PEN-007 |
+| En los conteos de tráfico **ligero** pudo haber alguna caseta abierta y ociosa sin registrar, lo que haría su capacidad real algo mayor que la simulada. No afecta al festivo | ~~PEN-007~~, DEC-048 |
 | Con pozo de 8, los umbrales de `c` = 5 y 6 son extrapolados | DEC-031 |
 | La ventana de cierre de 15 min hace que la regla gaste más carriles que el operador | PEN-012 |
 | El horizonte del modo tiempo real está acotado por la memoria de la traza | PEN-017 |
@@ -757,7 +767,7 @@ que el estudio puede responder.
 ## Cierre
 
 El estudio entrega una herramienta de simulación completa —motor reproducible,
-33 parámetros configurables, 214 escenarios, interfaz con vista 3D y 395
+33 parámetros configurables, 214 escenarios, interfaz con vista 3D y 406
 pruebas— y una política recomendada que sostiene el escenario adverso. Pero su
 resultado más sólido es de otro tipo: **la palanca no está en la regla, está en
 los datos que faltan.** Un dato no medido mueve el resultado veinte veces más

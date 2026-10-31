@@ -1,6 +1,6 @@
 # Arranque en frío: el caso malo de la política
 
-Generado por `npm run arranque` el 2026-10-30.
+Generado por `npm run arranque` el 2026-10-31.
 **No editar a mano:** este archivo se regenera.
 
 32 casos, **30 réplicas** cada uno, semillas 1 a 30,

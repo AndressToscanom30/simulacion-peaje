@@ -1,6 +1,6 @@
 # Validación de la fase 1
 
-Generado por `npm run simular` el 2026-10-30.
+Generado por `npm run simular` el 2026-10-31.
 **No editar a mano:** este archivo se regenera.
 
 Motor de **un sentido** con `c(t)` programado, copiando las casetas que el

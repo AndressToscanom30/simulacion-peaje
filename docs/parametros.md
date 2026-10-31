@@ -1,6 +1,6 @@
 # Catálogo de parámetros
 
-Generado por `npm run parametros` el 2026-10-30.
+Generado por `npm run parametros` el 2026-10-31.
 **No editar a mano:** este archivo se regenera.
 
 Todo valor del modelo es configurable (DEC-030). Esta es la lista completa,

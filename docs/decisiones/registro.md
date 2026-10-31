@@ -1171,3 +1171,122 @@ tomaron durante el desarrollo.
   midió; presentar la rampa como lo que ocurrió en el festivo; agregar
   `instantePrimeraOrdenSegundos` con las demás escalares; y tocar los informes de
   las fases cerradas para meter este experimento.
+
+## DEC-048 — La `c` de los conteos se lee como casetas abiertas, confirmado por los datos
+
+- **Fecha:** 31/10/2026
+- **Cierra PEN-007** y **confirma el supuesto que el motor ya tenía**, así que no
+  cambia ni una línea de código ni un número de ningún informe.
+- **La pregunta era:** el autor contó «las casetas que estaban atendiendo», y el
+  motor las trata como casetas **abiertas** durante todo el intervalo. ¿Son lo
+  mismo? Si el operador hubiera tenido una caseta abierta pero ociosa en el
+  instante de la lectura, el conteo la habría omitido y el modelo simularía menos
+  capacidad de la que había.
+- **Respuesta del autor:** contaba las casetas que estaban atendiendo.
+- **Y los datos dicen que, en la práctica, la columna se comporta como casetas
+  abiertas**, porque en los conteos de tráfico ligero sería casi imposible
+  verlas todas ocupadas en todas las lecturas si no estuvieran siempre ocupadas:
+
+  | Conteo | `c` | λ | ρ | P(las `c` ocupadas) | Lecturas con esa `c` | P(verlas ocupadas en todas) |
+  |---|---|---|---|---|---|---|
+  | `viernes` | 2 | 238 veh/h | 0,40 | 0,2286 | 12 | **2,0 × 10⁻⁸** |
+  | `domingoPC` | 1 | 195 veh/h | 0,66 | 0,6555 | 10 | **1,5 × 10⁻²** |
+
+  (M/M/c por Erlang C con μ = 297,48 veh/h por caseta.) Si la columna fuera
+  «las que atendían en ese instante», en el viernes habría que haber acertado 12
+  veces seguidas un suceso de probabilidad 0,23. **No es lo que pasó**, así que
+  lo que se anotó es la capacidad dispuesta, no la ocupación instantánea.
+- **Y en el festivo, que es donde el pendiente planteaba la duda, la distinción
+  no cambia nada.** La cola nunca bajó de **14 vehículos** (mínimo de las 12
+  lecturas), así que toda caseta abierta estaba ocupada por construcción: con
+  cola no hay caseta ociosa. En los intervalos 1 a 5 había 4 casetas con colas
+  de 23, 30, 20, 26 y 21; **una quinta caseta abierta no habría estado ociosa**,
+  de modo que si hubiera estado abierta, se habría contado. Conclusión: **la
+  quinta abrió en el intervalo 6** y el supuesto del motor —abrirla al comenzar
+  ese intervalo— es correcto.
+- **Limitación menor que queda declarada:** en los conteos de **tráfico ligero**
+  (`viernes`, los dos domingos) pudo haber alguna caseta abierta y ociosa en el
+  instante de la lectura que no se registró. Si fue así, **la capacidad real de
+  esos conteos era algo mayor que la simulada**, lo que empujaría la espera
+  simulada de esos conteos ligeramente hacia arriba respecto de la real. No
+  afecta al festivo, que es el escenario de pico y el que dimensiona la
+  política, y el efecto va en la dirección contraria al sesgo de PEN-008, no se
+  suma a él.
+- **Descarta:** leer la columna `casetas` como ocupación instantánea; suponer
+  que la quinta caseta del festivo ya estaba abierta antes del intervalo 6; y
+  tocar el motor, que ya hacía lo correcto.
+
+## DEC-049 — El periodo de calentamiento se implementa y se mide, pero **no** sustituye a la DEC-018
+
+- **Fecha:** 31/10/2026
+- **No supera a la DEC-018: la confirma.** La cola inicial sigue entrando como
+  vehículos con llegada en `t = 0`. Lo que cambia es que ahora esa aproximación
+  está **medida contra su alternativa** en vez de solo declarada con cautela
+  (PEN-003).
+- **Qué se implementó:** un **periodo de calentamiento** (`src/motor/calentamiento.js`)
+  que simula tramos previos a la hora observada con la tasa del primer intervalo
+  y las casetas iniciales fijas, y le pasa al sentido la cola resultante **con la
+  espera que cada vehículo ya llevaba acumulada** (`colaInicialEsperas`). Así la
+  cola inicial emerge del modelo en vez de inyectarse, y su espera cuenta desde
+  que llegó. Corre en su **propio flujo de PRNG** (flujo 10, lejos de los flujos
+  0 y 1 de los sentidos) para que el tráfico previo no sea una copia del primer
+  intervalo observado.
+- **Por qué se midió:** el autor de las mediciones confirmó que la cola de 23
+  vehículos **«se formó como pudo haberse formado las colas de los siguientes
+  intervalos»**: el sistema venía en el mismo régimen antes de las 4:25, sin
+  atasco excepcional previo. Eso es exactamente lo que un calentamiento simula,
+  así que había que probarlo.
+- **Por qué no se adopta.** El experimento está en
+  `docs/resultados/fase7-calentamiento.md` (`npm run calentamiento`), con tres
+  tratamientos y las mismas semillas para poder separar los dos efectos que el
+  calentamiento cambia a la vez. Tres razones, en orden de peso:
+  1. **Lo que PEN-003 temía es, medido, insignificante.** Contar la espera desde
+     `t = 0` subestima la espera real de la cola inicial; eso es cierto, y ahora
+     se sabe cuánto: **nunca más de 0,05 min** sobre el `Wq` de la hora. Con
+     1.064 vehículos en la hora, la espera previa de una veintena diluye a casi
+     nada. La aproximación costaba muy poco, que es lo que había que comprobar.
+  2. **El calentamiento no es más realista, es realista de otra manera.** Con
+     servicio base deja unos **5,1 vehículos contra los 23 observados**, porque
+     el modelo no reproduce la cola del festivo en ninguno de sus 12 intervalos
+     (PEN-008) y la cola inicial es la lectura número cero de esa misma serie.
+     Sustituir un **dato observado** por una salida del modelo que se queda corta
+     metería el sesgo de PEN-008 también en el arranque, donde ahora no está. De
+     hecho, con calentamiento la brecha contra el 1,28 min declarado **se
+     ensancha**: el `Wq` del operador baja de 0,28 a 0,22 min.
+  3. **Con servicio lento el calentamiento no está bien planteado.** Con la tasa
+     del primer intervalo y 4 casetas a 15,5 s, **ρ = 1,188 > 1**: el periodo
+     previo no tiene estado estacionario y la cola crece mientras se la deje
+     crecer, de **15,5 a 171,1 vehículos** según se calienten 5 o 60 min, con el
+     `Wq` pasando de 1,38 a 7,89. La duración deja de ser una elección inocua y
+     pasa a ser **el parámetro que fija la cola inicial**, sin ningún dato que
+     diga cuál es la buena. Elegir la duración sería elegir el resultado.
+- **Qué implica para PEN-016, que es lo que había que vigilar.** El aviso se
+  confirma y con una consecuencia concreta: con servicio base, el disparador por
+  tasa **le ganaba al operador** (0,23 contra 0,28 min) y con calentamiento
+  **deja de ganarle** (0,25 contra 0,22). No es que el disparador empeore: al
+  operador le beneficia arrancar con menos cola, porque sus casetas están
+  programadas y no dependen de ningún aviso, mientras la regla pierde el aviso
+  que la cola de 23 le daba. Dicho claro: **parte de la ventaja que la regla
+  saca en el festivo viene de arrancar con una cola grande**, y esa cola es un
+  dato observado, no una propiedad de la regla. Coincide con lo que el estudio
+  de arranque en frío (DEC-047) midió por otra vía.
+- **Qué implica para la DEC-047:** nada que haya que rehacer. El estudio de
+  arranque en frío parte de cola 0, que es el extremo opuesto, y sus
+  conclusiones siguen en pie. Las dos vías dicen lo mismo: la regla depende de
+  la cola de arranque más de lo que gustaría.
+- **Dónde vive y dónde no.** El calentamiento está en `parametros.js`
+  (`calentamiento.intervalos`, por defecto **0**) y en su script, y
+  **deliberadamente no está en el escenario ni en el formulario**: enchufarlo al
+  escenario declarativo exigiría correr una presimulación por réplica dentro de
+  `corridas.js`, y poner un control en el formulario que no se adopta sería un
+  mando muerto. Si algún día se adoptara, eso es parte del trabajo.
+- **Solo aplicaría al festivo.** Es el único conteo con cola inicial observada
+  distinta de 0 (DEC-010); en los demás la cola 0 es un dato, no un supuesto, y
+  calentar los sobreescribiría.
+- **No cambia ningún resultado publicado.** Con `intervalos` a 0 el motor da
+  exactamente los mismos números, y hay pruebas que lo fijan.
+- **Descarta:** sustituir la DEC-018 por el calentamiento; elegir una duración de
+  calentamiento sin dato que la fije; usar el calentamiento en los conteos cuya
+  cola inicial se observó como 0; y presentar el calentamiento como «el
+  tratamiento realista» frente a una DEC-018 «aproximada», cuando cada uno
+  acierta en una mitad.

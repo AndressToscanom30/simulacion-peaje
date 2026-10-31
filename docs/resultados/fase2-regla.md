@@ -1,6 +1,6 @@
 # Fase 2: la regla de apertura y cierre contra la operación real
 
-Generado por `npm run fase2` el 2026-10-30.
+Generado por `npm run fase2` el 2026-10-31.
 **No editar a mano:** este archivo se regenera.
 
 21 casos, **30 réplicas** cada uno, semillas 1 a 30,

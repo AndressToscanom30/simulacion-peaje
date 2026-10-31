@@ -16,7 +16,8 @@
     "fase3": "node scripts/fase3.js",
     "parametros": "node scripts/parametros.js",
     "fase4": "node scripts/fase4.js",
-    "arranque": "node scripts/fase7-arranque.js"
+    "arranque": "node scripts/fase7-arranque.js",
+    "calentamiento": "node scripts/fase7-calentamiento.js"
   },
   "dependencies": {
     "@react-three/fiber": "8.18.0",

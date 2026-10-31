@@ -56,32 +56,65 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Segunda vía de confirmación de DEC-042:** que el cálculo solo cuadre con la
   columna leída como total es, por sí mismo, prueba de que lo es.
 
-### PEN-003 — ¿Desde cuándo cuenta la espera de los vehículos de la cola inicial?
+### PEN-003 — La espera de la cola inicial ✅ CERRADO
 
 - **Origen:** fase 1. El festivo arranca con 23 vehículos en cola (DEC-010), pero
-  no se sabe cuánto llevaban esperando.
-- **Mientras tanto (DEC-018):** se les asigna llegada en `t = 0`, así que su
-  espera cuenta desde el arranque. Eso **subestima** su espera real. Para que la
-  diferencia sea visible, cada réplica reporta `Wq` de dos formas: con todos los
-  vehículos y solo con los que llegan durante la hora.
+  no se sabía cuánto llevaban esperando.
+- **Mientras tanto (DEC-018):** se les asignaba llegada en `t = 0`, así que su
+  espera contaba desde el arranque. Eso **subestima** su espera real, y por eso
+  cada réplica reporta `Wq` de dos formas, con todos los vehículos y solo con los
+  que llegan durante la hora.
+- **Respuesta del autor (31/10/2026):** la cola inicial **«se formó como pudo
+  haberse formado las colas de los siguientes intervalos»**. El sistema venía en
+  el mismo régimen antes de las 4:25: no hubo un atasco excepcional previo.
+- **Cerrado el 31/10/2026 por DEC-049**, que además **mide la alternativa** en
+  vez de solo cerrar la pregunta. Se implementó un **periodo de calentamiento**
+  (tramos previos con la tasa del primer intervalo, de modo que la cola emerja
+  sola con su espera acumulada) y se corrió contra la DEC-018 con las mismas
+  semillas → `docs/resultados/fase7-calentamiento.md`.
+- **El resultado es que la DEC-018 se queda, y por buenos motivos:**
+  1. **Lo que este pendiente temía es insignificante.** La espera previa no
+     contabilizada vale **≤ 0,05 min** sobre el `Wq` de la hora. Con 1.064
+     vehículos, la espera previa de una veintena diluye a casi nada. La
+     aproximación costaba muy poco.
+  2. **El calentamiento deja 5,1 vehículos contra los 23 observados** (servicio
+     base), porque el modelo no reproduce la cola del festivo en ningún intervalo
+     (PEN-008) y la cola inicial es la lectura número cero de esa misma serie.
+     Cambiar un dato observado por una salida del modelo que se queda corta
+     metería el sesgo de PEN-008 también en el arranque.
+  3. **Con servicio lento el calentamiento no está bien planteado:** ρ = 1,188,
+     así que el periodo previo no tiene estado estacionario y la cola la fija la
+     duración elegida (de 15,5 a 171,1 vehículos según se calienten 5 o 60 min).
+     Elegir la duración sería elegir el resultado.
+- **El calentamiento queda implementado y apagado**, como escenario de
+  sensibilidad. No está en el formulario a propósito (DEC-049).
+- **Un hallazgo que sale de aquí y pesa más que la pregunta original:** con
+  calentamiento, el disparador por tasa **deja de ganarle al operador** (0,25
+  contra 0,22 min, cuando con la DEC-018 era 0,23 contra 0,28). Es PEN-016 en su
+  forma más clara: **parte de la ventaja que la regla saca en el festivo viene de
+  arrancar con una cola grande**, y esa cola es un dato observado, no una
+  propiedad de la regla. Anotado también ahí.
 
-### PEN-004 — ¿La cola máxima observada es de una lectura puntual o un máximo continuo?
+### PEN-004 — La cola observada es una lectura puntual ✅ CERRADO
 
 - **Origen:** fase 1. Las colas máximas observadas (32 / 8 / 7 / 1) salen de
   lecturas puntuales, una por intervalo de 5 min: 12 observaciones por conteo.
-- **Qué pasa:** el motor registra la cola máxima **continua** de la hora, que por
-  construcción es mayor o igual que el máximo de 12 lecturas puntuales. Comparar
-  las dos cosas de frente sesga la simulación hacia arriba.
-- **Mientras tanto:** la validación reporta las dos: la cola máxima continua y
-  el máximo de las 12 lecturas muestreadas en instantes aleatorios, que es la
-  comparable con lo observado.
-- **Corregido el 30/10/2026 (DEC-042):** se retira la nota del 27/10 que decía
-  que "ni siquiera el máximo muestreado es comparable de frente", porque se
-  apoyaba en la DEC-024. La lectura observada **es** el total del sentido, así
-  que el máximo de las 12 lecturas muestreadas **sí** es la cifra comparable.
-  Lo que sigue abierto es lo de este pendiente y nada más: la distinción entre
-  una lectura puntual y un máximo continuo, que es real y es la razón de
-  reportar las dos cifras.
+- **Qué estaba en duda:** si cada cifra de la columna `cola` era **una mirada**
+  dentro del intervalo o el **máximo** de esos cinco minutos. La diferencia
+  importa porque el motor registra las dos cosas: la cola máxima **continua** de
+  la hora y el máximo de las 12 lecturas muestreadas.
+- **Cerrado el 31/10/2026 por confirmación del autor de las mediciones:** cada
+  cifra es **una lectura puntual**, una mirada dentro del intervalo, **no** el
+  máximo de los cinco minutos.
+- **Qué queda fijado:** la cifra comparable con la simulación es el **máximo de
+  las 12 lecturas muestreadas**, no la cola máxima continua. La continua es por
+  construcción mayor o igual, así que compararla con lo observado sesgaría la
+  simulación hacia arriba. El motor **ya reportaba las dos** (DEC-022) y los
+  informes ya usaban la muestreada para comparar, así que no cambia ningún
+  número: lo que cambia es que ya no es una suposición.
+- **Y encaja con la DEC-042:** la columna es el total en espera por sentido y es
+  una lectura puntual de ese total. Las dos mitades de la definición están ahora
+  confirmadas por el autor.
 
 ### PEN-005 — ¿Qué es exactamente el "caudal de la hora"?
 
@@ -103,13 +136,34 @@ mantiene la pregunta abierta hasta que alguien la responda.
   intervalo, sin demora. El parámetro ya está en `parametros.js` esperando la
   fase 2.
 
-### PEN-007 — ¿La `c` observada del conteo es la que estaba abierta o la que atendía?
+### PEN-007 — La `c` del conteo son casetas abiertas ✅ CERRADO
 
 - **Origen:** fase 1. En el festivo el arreglo `casetas` pasa de 4 a 5 en el
-  intervalo 6, pero no se sabe si el operador la abrió en ese instante o si ya
+  intervalo 6, pero no se sabía si el operador la abrió en ese instante o si ya
   estaba abierta y empezó a atender ahí.
-- **Mientras tanto:** se toma como el número de casetas **abiertas** durante el
-  intervalo, y el motor las abre al comenzar el intervalo.
+- **Cerrado el 31/10/2026 por DEC-048.** El autor contaba las casetas que
+  **estaban atendiendo**, y los datos muestran que en la práctica eso coincide
+  con las casetas **abiertas**, que es lo que el motor ya suponía:
+
+  | Conteo | `c` | ρ | P(las `c` ocupadas) | Lecturas | P(verlas ocupadas en todas) |
+  |---|---|---|---|---|---|
+  | `viernes` | 2 | 0,40 | 0,2286 | 12 | **2,0 × 10⁻⁸** |
+  | `domingoPC` | 1 | 0,66 | 0,6555 | 10 | **1,5 × 10⁻²** |
+
+  Si la columna fuera la ocupación instantánea, en el viernes habría que haber
+  acertado 12 veces seguidas un suceso de probabilidad 0,23. Lo que se anotó es
+  la capacidad dispuesta.
+- **En el festivo la distinción no cambia nada:** la cola nunca bajó de 14
+  vehículos, así que con cola no hay caseta ociosa. En los intervalos 1 a 5 había
+  4 casetas con colas de 23, 30, 20, 26 y 21, de modo que **una quinta abierta no
+  habría estado ociosa** y se habría contado. La quinta abrió en el intervalo 6 y
+  el supuesto del motor es correcto.
+- **No cambia ni una línea de código ni un número de ningún informe.**
+- **Limitación menor declarada (DEC-048):** en los conteos de tráfico ligero pudo
+  haber alguna caseta abierta y ociosa sin registrar. Si fue así, la capacidad
+  real de esos conteos era algo mayor que la simulada, lo que empuja su espera
+  simulada ligeramente hacia arriba respecto de la real. No afecta al festivo, y
+  el efecto va en **dirección contraria** al sesgo de PEN-008, no se suma.
 
 ### PEN-008 — El modelo de cola única subestima la congestión del pico
 
@@ -410,6 +464,14 @@ mantiene la pregunta abierta hasta que alguien la responda.
   vez, y medido.
 - **Lo que NO significa:** que convenga empezar con cola. Significa que la regla
   **depende de que la congestión ya se haya manifestado** para reaccionar.
+- **Añadido el 31/10/2026 (DEC-049), y es la forma más clara de este aviso:** con
+  un periodo de calentamiento, que deja una cola de arranque más corta, el
+  disparador por tasa **deja de ganarle al operador** (0,25 contra 0,22 min,
+  cuando con la DEC-018 era 0,23 contra 0,28). Al operador le beneficia arrancar
+  con menos cola, porque sus casetas van programadas y no dependen de ningún
+  aviso. Dicho claro: **parte de la ventaja que la regla saca en el festivo viene
+  de arrancar con una cola grande**, y esa cola es un dato observado, no una
+  propiedad de la regla. Ver `fase7-calentamiento.md` y PEN-003.
 - **Corregido el 30/10/2026 por el informe de arranque en frío** (DEC-047,
   `fase7-arranque-frio.md`): este pendiente decía que «un festivo que arranque
   con el peaje vacío **y la demanda subiendo**» era el caso malo. Lo primero sí;

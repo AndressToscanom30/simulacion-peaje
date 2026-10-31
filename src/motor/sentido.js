@@ -70,7 +70,20 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     gammaEscalaSegundos,
     maximoTolerableWqSegundos,
     guardarEsperas = false,
+    colaInicialEsperas = null,
   } = config;
+
+  /**
+   * Cola inicial con **espera ya acumulada** (DEC-049): un número por vehículo,
+   * los segundos que llevaba esperando en `t = 0`. Es lo que produce el periodo
+   * de calentamiento. Cuando viene, manda sobre `colaInicial`.
+   */
+  const esperasHeredadas =
+    Array.isArray(colaInicialEsperas) && colaInicialEsperas.length > 0
+      ? [...colaInicialEsperas].sort((a, b) => b - a) // FIFO: el que más lleva, primero
+      : null;
+  /** Cuántos vehículos hereda el sentido, venga de donde venga. */
+  const cuantosHeredados = esperasHeredadas ? esperasHeredadas.length : colaInicial;
 
   const porRegla = modoCasetas === MODO_CASETAS.REGLA;
   const intervalos = llegadas.length;
@@ -145,7 +158,10 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   const enEspera = () => cola.length - cabeza;
 
   const indiceIntervalo = (t) =>
-    Math.min(Math.floor(t / duracionIntervaloSegundos), intervalos - 1);
+    // El tope de abajo es por las esperas heredadas del calentamiento, que
+    // entran con instante de llegada negativo: su espera se atribuye al primer
+    // intervalo medido (DEC-049).
+    Math.max(0, Math.min(Math.floor(t / duracionIntervaloSegundos), intervalos - 1));
 
   const finDeIntervalo = (i) => (i + 1) * duracionIntervaloSegundos;
 
@@ -339,6 +355,9 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       cabeza += 1;
 
       const espera = reloj.ahora - vehiculo.instanteLlegada;
+      // Se anota en el vehículo para poder reconstruir desde fuera quién estaba
+      // en cola en un instante dado, que es lo que el calentamiento necesita.
+      vehiculo.instanteInicioServicio = reloj.ahora;
       esperas.push(espera);
       esperasPorIntervalo[vehiculo.intervaloLlegada].push(espera);
 
@@ -553,9 +572,19 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       ajustarCasetas(casetasIniciales);
       contandoCambios = true;
 
-      // Cola inicial: vehículos con llegada en t = 0 (DEC-018, PEN-003). No
-      // entran a la ventana móvil de ρ: son rezago, no demanda medida (DEC-027).
-      for (let i = 0; i < colaInicial; i += 1) encolar(0, { inicial: true });
+      // Cola inicial. Dos tratamientos (PEN-003):
+      //  - DEC-018: `colaInicial` vehículos con llegada en t = 0, sin espera
+      //    previa. Subestima su espera real.
+      //  - DEC-049: `colaInicialEsperas` trae la espera que cada uno ya llevaba,
+      //    que es lo que deja el periodo de calentamiento. Entran con instante
+      //    de llegada negativo, así que su espera cuenta desde que llegaron.
+      // En los dos casos no entran a la ventana móvil de ρ: son rezago, no
+      // demanda medida (DEC-027).
+      if (esperasHeredadas) {
+        for (const espera of esperasHeredadas) encolar(-espera, { inicial: true });
+      } else {
+        for (let i = 0; i < colaInicial; i += 1) encolar(0, { inicial: true });
+      }
 
       if (!porRegla) {
         for (let i = 1; i < intervalos; i += 1) {
@@ -680,7 +709,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       const wqPorIntervaloSegundos = esperasPorIntervalo.map(media);
       const intervalosConDato = wqPorIntervaloSegundos.filter((w) => w !== null);
       const intervalosSobreUmbral = intervalosConDato.filter((w) => w > maximoTolerableWqSegundos);
-      const esperasSinColaInicial = esperas.slice(colaInicial);
+      const esperasSinColaInicial = esperas.slice(cuantosHeredados);
 
       return {
         etiqueta,
@@ -724,6 +753,16 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
          * cola hubiera cruzado su umbral (DEC-046). Con el disparador apagado
          * es siempre 0.
          */
+        /** Vehículos heredados en `t = 0`, por cualquiera de los dos tratamientos. */
+        colaInicialVehiculos: cuantosHeredados,
+        /**
+         * Espera que la cola heredada ya llevaba acumulada en `t = 0`, en
+         * segundos. Con el tratamiento de la DEC-018 es 0 por definición; con
+         * calentamiento es lo que el propio modelo generó (DEC-049).
+         */
+        esperaHeredadaMediaSegundos: esperasHeredadas
+          ? esperasHeredadas.reduce((a, b) => a + b, 0) / esperasHeredadas.length
+          : 0,
         aperturasAnticipadas,
         /**
          * Instante de la primera orden de apertura propia, en segundos, o

@@ -152,6 +152,29 @@ export const parametros = {
     esperaDesempateSegundos: 2.5 * SEGUNDOS_POR_MINUTO,
   },
 
+  // -------------------------------------------------------- calentamiento ---
+  /**
+   * Periodo de calentamiento previo a la hora observada (DEC-049, PEN-003).
+   * Simula tramos anteriores con la tasa del primer intervalo para que la cola
+   * inicial **emerja** del modelo en vez de inyectarse en `t = 0` (DEC-018).
+   *
+   * **Por defecto 0, es decir apagado:** el tratamiento que manda sigue siendo
+   * el de la DEC-018 y ningún resultado publicado se mueve. Se enciende por
+   * escenario para compararlo.
+   */
+  calentamiento: {
+    /** Tramos de 5 min de calentamiento. 0 = sin calentar. */
+    intervalos: 0,
+    /** Duraciones que se comparan en el experimento, en intervalos. */
+    intervalosComparados: [1, 2, 3, 6, 12],
+    /**
+     * Índice base del flujo de PRNG del calentamiento, uno por sentido. Los
+     * flujos 0 y 1 son de los dos sentidos (DEC-027), así que el calentamiento
+     * arranca lejos para no pisarlos nunca.
+     */
+    flujoBase: 10,
+  },
+
   // ----------------------------------------------------------- desempeño ---
   /** Criterio de desempeño (DEC-009). */
   desempeno: {

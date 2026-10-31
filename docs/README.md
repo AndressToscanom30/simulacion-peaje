@@ -18,6 +18,7 @@ conviene pasar por los tres primeros.
 | `pendientes.md` | Preguntas abiertas y ambigüedades. Si algo no está claro se anota aquí y se sigue con la opción más razonable, dejando dicho cuál se tomó. Incluye lo que falta confirmar con la profesora. |
 | `bitacora.md` | Una entrada por intervención: fecha, qué cambió, qué quedó a medias y qué sigue. Sirve para retomar el trabajo sin releer todo el repo. |
 | `resultados/fase7-arranque-frio.md` | **Arranque en frío** (DEC-047): ¿aguanta la política un festivo que empiece con el peaje vacío? Cruza arranque, capacidad inicial, perfil de demanda y control. Generado con `npm run arranque`. |
+| `resultados/fase7-calentamiento.md` | **Periodo de calentamiento** (DEC-049): deja que la cola inicial emerja del modelo en vez de inyectarla, y lo compara con el tratamiento de la DEC-018 con las mismas semillas. Generado con `npm run calentamiento`. |
 | `resultados/` | Salidas de las corridas. `validacion-fase1.md` es la validación del motor de un sentido contra los cuatro conteos; `diagnostico-festivo.md` compara la cola de campo con la simulada intervalo por intervalo; `fase2-regla.md` enfrenta la regla de apertura y cierre a la operación real; `fase3-reparto.md` reparte las 6 casetas entre los dos sentidos; `fase4-escenarios.md` es la matriz de 160 escenarios con el punto de quiebre. Son archivos generados: se regeneran con sus scripts, no se editan a mano. |
 
 ## Dónde está cada cosa en el código
@@ -34,6 +35,7 @@ conviene pasar por los tres primeros.
 | `src/ui/` | La interfaz: `reloj.js` y `modeloFormulario.js` son puros y se prueban sin DOM; `worker/` corre el motor fuera del hilo de la pantalla; `componentes/` son los componentes de React. |
 | `src/ui/vista3d/` | La visualización 3D. `modeloEscena.js` y `geometria.js` son **puros** (sin three) y se prueban en Node; `Escena3D.jsx` y `modeloCarro.js` son lo único que toca three y se cargan en diferido. |
 | `src/config/escena3d.js` | Constantes visuales de la escena: dimensiones, duraciones, colores, calidades y cámaras. |
+| `src/motor/calentamiento.js` | Periodo de calentamiento: deja que la cola inicial emerja del modelo con su espera ya acumulada (DEC-049). Apagado por defecto. |
 | `src/motor/` | Motor de simulación en JS puro (sin React, sin DOM, sin Three.js). Corre con Node. `sentido.js` tiene la lógica de un sentido; `simulador.js` la corre sola (fases 1 y 2) y `peaje.js` corre los dos sentidos sobre el pozo común de `pozo.js` (fase 3). |
 | `scripts/simular.js` | Validación de la fase 1 (`npm run simular`). |
 | `scripts/diagnostico-festivo.js` | Diagnóstico de la cola, campo contra simulación (`npm run diagnostico`). |
@@ -56,6 +58,7 @@ npm run fase3       # reparto de las 6 casetas entre los dos sentidos
 npm run fase4       # matriz de 160 escenarios y punto de quiebre
 npm run parametros  # regenera el catálogo de parámetros
 npm run arranque    # arranque en frío: el caso malo de la política
+npm run calentamiento # cola inicial emergente contra la inyectada (DEC-018)
 ```
 
 La interfaz (`npm run dev`) permite configurar cualquier parámetro, reproducir
