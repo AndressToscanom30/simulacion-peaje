@@ -5,6 +5,7 @@ import {
   opcionesDe,
   serieDelCampo,
   esSensibilidad,
+  valorDelCampo,
 } from '../modeloFormulario.js';
 import { valorLegible } from '../formato.js';
 
@@ -16,7 +17,9 @@ import { valorLegible } from '../formato.js';
  * parámetro, que es lo que hace falta para no configurar a ciegas.
  */
 export default function Campo({ campo, escenario, valorBase, modificado, alCambiar, alRestablecer }) {
-  const valor = leerRuta(escenario, campo.ruta);
+  // `valorDelCampo` y no `leerRuta`: los parámetros derivados no viven en el
+  // escenario, se calculan (DEC-051).
+  const valor = valorDelCampo(escenario, campo);
   const sensibilidad = esSensibilidad(campo, escenario);
   const idCampo = `campo-${campo.ruta}`;
 

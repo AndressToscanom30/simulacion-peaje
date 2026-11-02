@@ -262,3 +262,445 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 @media (prefers-reduced-motion: reduce) {
   .vista3d__lienzo { scroll-behavior: auto; }
 }
+
+/* ==========================================================================
+   Estructura de la etapa 2: la simulación 3D es la página (DEC-053).
+
+   Aquí solo va la estructura: pantalla completa, panel lateral,
+   superposiciones y cajón. La paleta, la tipografía y el modo claro son la
+   etapa 4; estas reglas usan las variables que ya existían.
+   ========================================================================== */
+
+.aplicacion {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* ------------------------------------------------------- barra superior --- */
+
+.barra-superior {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0.8rem;
+  border-bottom: 1px solid var(--borde);
+  background: var(--fondo-panel);
+}
+
+.barra-superior__nombre {
+  font-weight: 600;
+}
+
+.barra-superior__vistas {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.barra-superior__vistas a {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  color: var(--texto);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.barra-superior__vistas a.activo {
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+
+.barra-superior__aviso {
+  margin-left: auto;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--modificado-borde);
+  border-radius: 999px;
+  background: var(--modificado);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------- vistas --- */
+
+.vista {
+  flex: 1;
+  min-height: 0;
+}
+
+.vista--lotes,
+.vista--configuracion {
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* -------------------------------------------------- vista de simulación --- */
+
+.vista-simulacion {
+  display: grid;
+  grid-template-columns: minmax(18rem, 22rem) 1fr;
+  grid-template-rows: 1fr auto;
+  height: calc(100vh - 3rem);
+  min-height: 0;
+}
+
+.vista-simulacion--panel-cerrado {
+  grid-template-columns: auto 1fr;
+}
+
+.vista-simulacion__panel {
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--borde);
+  background: var(--fondo-panel);
+  overflow: hidden;
+}
+
+.vista-simulacion__tirador {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 1px solid var(--borde);
+  border-radius: 0;
+  text-align: left;
+  background: var(--fondo-suave);
+}
+
+.vista-simulacion__escena {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.vista-simulacion__lienzo {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* Mientras se recalcula, lo anterior sigue visible pero atenuado (DEC-054). */
+.vista-simulacion__lienzo--atenuado {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.vista-simulacion__recalculando {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.5rem;
+  background: var(--fondo-panel);
+}
+
+.vista-simulacion__esperando {
+  margin: auto;
+}
+
+/* La escena del panel 3D ocupa todo el hueco que le toca. */
+.vista-simulacion__lienzo .vista3d {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------------ HUD --- */
+
+.hud {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: calc(100% - 1rem);
+  pointer-events: none;
+}
+
+.hud__reloj {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.4rem;
+  background: var(--fondo-panel);
+}
+
+.hud__hora {
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+}
+
+.hud__sentidos {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hud__sentido {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 0.4rem;
+  background: var(--fondo-panel);
+}
+
+.hud__sentido h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.9rem;
+}
+
+.hud__sentido dl {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 0.1rem 0.8rem;
+  margin: 0;
+}
+
+.hud__sentido dt {
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.hud__sentido dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.hud__nota {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+/* --------------------------------------------- barra de reproducción ----- */
+
+.barra-reproduccion {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0.6rem;
+  border-top: 1px solid var(--borde);
+  background: var(--fondo-panel);
+}
+
+.barra-reproduccion__botones {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.barra-reproduccion__tiempo {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.barra-reproduccion__hora {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.barra-reproduccion__error {
+  color: var(--alerta);
+  font-size: 0.85rem;
+}
+
+/* -------------------------------------------------------- panel lateral --- */
+
+.panel-controles {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.panel-controles__cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.6rem;
+}
+
+.panel-controles__acciones {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.6rem;
+  border-top: 1px solid var(--borde);
+  background: var(--fondo-suave);
+}
+
+.panel-seccion {
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.panel-seccion:last-child {
+  border-bottom: 0;
+}
+
+.panel-seccion h3 {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+}
+
+.panel-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.panel-nota,
+.panel-resultado {
+  margin: 0.2rem 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.panel-resultado strong {
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel-aviso {
+  margin: 0.3rem 0;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--modificado-borde);
+  background: var(--modificado);
+  font-size: 0.85rem;
+}
+
+.panel-dias {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+}
+
+.panel-dias div {
+  margin-bottom: 0.3rem;
+}
+
+.panel-dias dt {
+  font-weight: 600;
+}
+
+.panel-dias dd {
+  margin: 0;
+}
+
+.panel-sin-aplicar {
+  margin: 0;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--modificado-borde);
+  border-radius: 0.3rem;
+  background: var(--modificado);
+  font-size: 0.85rem;
+}
+
+.panel-botones {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.boton-principal {
+  font-weight: 600;
+}
+
+.boton-texto {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--acento);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------- cajón --- */
+
+.cajon {
+  grid-column: 2;
+  flex: 0 0 auto;
+  border-top: 1px solid var(--borde);
+  background: var(--fondo-panel);
+  max-height: 45vh;
+  overflow-y: auto;
+}
+
+.cajon--principal {
+  grid-column: 2;
+  max-height: none;
+  padding: 0.8rem;
+}
+
+.cajon__tirador {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+  text-align: left;
+  background: var(--fondo-suave);
+}
+
+.cajon__contenido {
+  padding: 0.8rem;
+}
+
+/* ---------------------------------------------------- hoja de supuestos --- */
+
+.hoja-supuestos {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: var(--fondo);
+}
+
+.hoja-supuestos__cerrar {
+  float: right;
+}
+
+/* ------------------------------------------------------------- estrecho --- */
+
+@media (max-width: 60rem) {
+  .vista-simulacion {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+  }
+
+  .vista-simulacion__panel {
+    grid-row: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .cajon,
+  .cajon--principal {
+    grid-column: 1;
+  }
+
+  .vista-simulacion__escena {
+    min-height: 60vh;
+  }
+}

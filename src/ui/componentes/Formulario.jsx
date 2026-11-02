@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  valorDelCampo,
   camposDelFormulario,
   leerRuta,
   problemas,
@@ -143,7 +144,7 @@ export default function Formulario({ escenario, alCambiar, alRestablecer, alReem
                 key={campo.id}
                 campo={campo}
                 escenario={escenario}
-                valorBase={leerRuta(ESCENARIO_COMPLETO_BASE, campo.ruta)}
+                valorBase={valorDelCampo(ESCENARIO_COMPLETO_BASE, campo)}
                 modificado={modificadas.has(campo.ruta)}
                 alCambiar={alCambiar}
                 alRestablecer={alRestablecer}

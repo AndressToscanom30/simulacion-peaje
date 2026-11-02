@@ -1413,3 +1413,139 @@ tomaron durante el desarrollo.
   desde el panel; escribir la hora en la interfaz; reordenar los sentidos al
   cambiar de situación; y que cambiar de día arrastre el servicio, el pozo o la
   regla.
+
+## DEC-053 — La vista principal es la simulación 3D a pantalla completa, con tres vistas por hash
+
+- **Fecha:** 02/11/2026
+- **No supera a ninguna decisión del registro.** Se buscó una que fijara las tres
+  pestañas («Tiempo real», «Por lotes», «Configuración») y **no existe**: eran
+  una decisión de implementación de la fase 5, descrita en `docs/ui.md` pero
+  nunca registrada. Así que esta entrada no supera nada; sí **deja sin efecto la
+  descripción de las tres pestañas** de `docs/ui.md`, que la etapa 5 reescribe.
+- **Decisión:** la **simulación 3D a pantalla completa** es la vista de arranque
+  y la principal. El estudio por lotes y la configuración avanzada pasan a
+  vistas secundarias. Son tres y se eligen por `#hash`, **sin librería de
+  rutas** (DEC-034):
+
+  | Hash | Vista |
+  |---|---|
+  | `#/simulacion` | Simulación 3D (la de arranque, y la de cualquier hash que no se reconozca) |
+  | `#/lotes` | Estudio por lotes |
+  | `#/configuracion` | Configuración avanzada |
+
+- **La traducción de hash a vista es pura** y vive en `src/ui/rutas.js`, con su
+  prueba: acepta las formas que de verdad salen en la barra de direcciones
+  (vacío, `#`, `#lotes`, con barra final, con mayúsculas) y lo que no reconoce
+  cae en la simulación, para que un enlace viejo abra algo útil y no una
+  pantalla en blanco. La barra superior usa **enlaces de verdad**, así que atrás
+  y adelante del navegador funcionan solos (comprobado en el navegador).
+- **Qué se conserva y dónde:** el HUD con el reloj y los contadores por sentido,
+  la barra de reproducción, los tres gráficos, el esquema de casetas y la tabla
+  de medidas son **los mismos componentes**; cambian de sitio, no de contenido.
+  Los gráficos, el esquema y la tabla van a un **cajón plegable**; el HUD y la
+  barra de reproducción, **superpuestos** a la escena.
+- **El interruptor de «ocultar vista 3D» desaparece**, porque la escena es la
+  página. `PanelVista3D` lo sigue aceptando por una propiedad `conInterruptor`
+  que vale `true` por defecto: así la pestaña vieja y **sus pruebas, que esta
+  etapa no podía cambiar**, siguen funcionando igual.
+- **Sin WebGL:** el aviso que ya existía, y el **cajón pasa a ser el contenido
+  principal**, abierto y sin plegable. Todo lo demás sigue funcionando.
+- **Lo que NO se toca:** `src/motor/` (nada), `modeloEscena.js` ni
+  `geometria.js` (DEC-036), y `Escena3D` sigue cargándose en diferido
+  (DEC-037).
+- **Motivo:** el propósito del programa es ver el peaje funcionando y probar
+  políticas. Con tres pestañas de igual rango, lo que el estudio tiene de
+  demostrativo quedaba escondido detrás de un formulario de 34 campos. Con la
+  escena como página y los controles al lado, abrir la aplicación ya enseña algo.
+- **Descarta:** las tres pestañas de igual rango; una librería de rutas; botones
+  en vez de enlaces para navegar (romperían atrás y adelante); y esconder el
+  estudio por lotes o la configuración avanzada, que siguen siendo vistas de
+  primer nivel en la barra.
+
+## DEC-054 — El panel edita un borrador y recalcular es una acción explícita
+
+- **Fecha:** 02/11/2026
+- **No supera la DEC-033: se apoya en ella.** La DEC-033 fijó que el modo tiempo
+  real **reproduce una traza grabada** en vez de simular paso a paso. De ahí se
+  sigue que cambiar un parámetro no puede actualizar lo que se ve: habría que
+  grabar otra traza. Esta decisión no discute eso, lo hace visible en la
+  interfaz.
+- **Decisión:** la aplicación guarda **dos escenarios**:
+  - **`aplicado`**: el que generó la traza que se está viendo.
+  - **`borrador`**: el que editan el panel de la simulación **y** la
+    configuración avanzada. Los dos editan el mismo borrador.
+
+  Editar **no cambia** lo que se ve. Solo **«Aplicar y recalcular»** copia el
+  borrador a aplicado y pide la traza nueva.
+- **Qué se ve mientras tanto:**
+  - Si el borrador difiere de lo aplicado, la barra superior y el panel dicen
+    **«Cambios sin aplicar»**. La comparación es `sonIguales`, la que ya usaba
+    el formulario; no se escribió otra.
+  - Si el borrador tiene problemas de validación, el botón de aplicar queda
+    **deshabilitado** y los problemas se listan.
+  - **«Descartar cambios»** devuelve el borrador a lo aplicado.
+  - Mientras se recalcula, **la traza anterior sigue en pantalla, atenuada**, con
+    «Recalculando…» y un botón de **cancelar**. Cancelar conserva la traza
+    anterior y deja el borrador como estaba.
+  - Con la traza nueva, el reloj vuelve a **t = 0, en pausa**.
+- **Al abrir se simula lo aplicado sin pulsar nada.** Antes había que pulsar
+  «Simular y reproducir» para ver algo; ahora la pantalla llega con la
+  simulación hecha.
+- **`localStorage` guarda el escenario APLICADO**, no el borrador: lo que se
+  recuerda es lo que se vio. Si falla, se arranca en el base sin quejarse, como
+  siempre (`almacen.js`).
+- **Cancelar no corta el motor, corta la respuesta.** Una traza se corre de un
+  tirón y `trabajoTraza` no acepta señal de cancelación, al contrario que los
+  lotes. **No se tocó el motor:** el cliente lleva una **generación**, y
+  `descartarPendientes` la sube de modo que la respuesta que llegue de una
+  generación vieja se tira y la promesa se rechaza con un error marcado como
+  descartado, que la interfaz distingue de un fallo de verdad.
+  - **Y hay poco que cancelar:** una traza del festivo tarda **8,3 ms** y la del
+    caso de estrés con pozo de 10 y demanda ×1,6, **8,8 ms** (media de 5
+    corridas). El botón de cancelar es una red de seguridad, no un control de uso
+    frecuente; lo que de verdad aporta la espera visible es que no se vacíe la
+    pantalla.
+  - En el camino sin worker (las pruebas, y como red de seguridad) el cliente
+    **cede el control antes de calcular**. Así la interfaz alcanza a pintar
+    «Recalculando…» antes de bloquearse, y queda un hueco real donde cancelar.
+- **El botón «Correr 30 réplicas con esta configuración»** abre el estudio por
+  lotes, que corre contra el escenario **aplicado**. Si hay cambios sin aplicar
+  queda **deshabilitado** con el motivo «Aplica los cambios primero», para que
+  nunca se corran réplicas de algo distinto de lo que se está viendo.
+- **La semilla sigue siendo editable**, en un apartado «Avanzado» del panel, y
+  **también pasa por aplicar**: cambiarla es cambiar la simulación.
+- **Motivo:** con la traza grabada, lo contrario —recalcular en cada tecla—
+  obligaría a correr una réplica por pulsación y dejaría la pantalla
+  parpadeando. Y borrar la traza al editar, que es lo que hacía la pestaña
+  vieja, castiga al que solo quería mirar un parámetro: se quedaba sin nada que
+  ver. El borrador separa «estoy preparando algo» de «esto es lo que pasó».
+- **Descarta:** recalcular en cada cambio; borrar la traza al editar (se quitó
+  el `setTraza(null)` que lo hacía); guardar el borrador en `localStorage`;
+  tocar el motor para poder cancelar una traza; y dejar correr réplicas con una
+  configuración distinta de la que se está viendo.
+
+## DEC-055 — En la situación «domingo» el sentido Pamplona→Cúcuta va primero
+
+- **Fecha:** 02/11/2026
+- **Cierra PEN-023**, que quedó abierto en la etapa 1 porque el orden de los
+  sentidos de esa situación no estaba fijado en ningún sitio y lo eligió quien
+  la implementó.
+- **Decisión de la usuaria:** en la situación `domingo`, **P→C va primero**,
+  igual que en el escenario base y en la situación `festivo`.
+- **Por qué importa:** el **primer** sentido de la lista usa el flujo original
+  del PRNG (DEC-027 punto 1), así que el orden no es cosmético: decide qué
+  números aleatorios le tocan a cada sentido y, con ellos, los resultados de esa
+  situación.
+- **Qué queda, entonces:** `festivo` y `domingo` van P→C primero; `diaNormal`
+  va C→P primero, porque hereda el orden de `escenarioDiaNormal` de
+  `escenarios.js`, que ya estaba decidido y no se reabre. Esa asimetría es
+  deliberada y está anotada donde se define cada situación.
+- **Motivo:** deja el mismo sentido físico en el flujo original en las dos
+  situaciones que más se van a comparar, y P→C es el sentido que el estudio
+  dimensiona (el de retorno en el festivo). Está fijado con prueba, así que si
+  alguien lo cambia, se ve.
+- **No afecta a nada publicado:** las fases 1 a 7 no usan las situaciones, así
+  que ningún informe se mueve.
+- **Descarta:** ordenar los sentidos por demanda (en el domingo eso pondría C→P
+  primero, con 451 veh/h contra 195); reordenar los sentidos al cambiar de
+  situación; y cambiar el orden de `diaNormal` para que las tres coincidan.

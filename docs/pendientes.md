@@ -644,28 +644,40 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** `carro.factorDeLargo` en `src/config/escena3d.js` permite
   probarlo en un momento; si se sube, hay que subir también `cola.separacion`.
 
-### PEN-023 — El orden de los sentidos de la situación «domingo» lo elegí yo
+### PEN-023 — El orden de los sentidos del «domingo» ✅ CERRADO
 
 - **Origen:** etapa 1 de la mejora del frontend (DEC-052).
-- **Por qué importa:** el **primer** sentido de la lista usa el flujo original
-  del PRNG (DEC-027 punto 1), así que el orden no es cosmético: cambia qué
-  números aleatorios le tocan a cada sentido y, con ellos, los resultados de esa
-  situación. No cambia nada de las fases 1 a 7, que no usan las situaciones.
-- **Qué pasa:** las otras dos situaciones heredan un orden que ya estaba
-  decidido. `festivo` va **P→C primero**, como el `ESCENARIO_BASE` y como
-  `escenarioFestivo`, y por eso puede ser idéntico al base. `diaNormal` va
-  **C→P primero**, porque así lo tiene `escenarioDiaNormal` en
-  `escenarios.js`. Pero **`domingo` no tenía función previa**: no hay nada en el
-  repositorio que fije su orden.
-- **La opción que tomé:** **P→C primero**, igual que el festivo. Por dos
-  razones: deja el mismo sentido en el flujo original en las dos situaciones que
-  se van a comparar más, y P→C es el sentido que el estudio dimensiona (es el de
-  retorno en el festivo). Está fijado con prueba, así que si se cambia, se ve.
-- **Qué haría falta para cerrarlo:** decidir si el criterio es «el sentido de
-  mayor demanda primero» —que en el domingo sería C→P, con 451 veh/h contra
-  195— o «siempre el mismo sentido físico primero», que es lo que hice. Las dos
-  son defendibles; la primera haría que `domingo` y `festivo` no compartieran
-  criterio, la segunda que `domingo` y `diaNormal` no lo compartan.
-- **Mientras tanto:** queda como está y documentado aquí. Si alguna vez se
-  comparan réplica a réplica dos situaciones distintas, conviene releer esto
-  antes.
+- **Qué estaba abierto:** el **primer** sentido de la lista usa el flujo original
+  del PRNG (DEC-027 punto 1), así que el orden decide qué números aleatorios le
+  tocan a cada sentido y, con ellos, los resultados de esa situación. `festivo` y
+  `diaNormal` heredaban un orden ya decidido, pero **`domingo` no tenía
+  precedente** en el repositorio: lo eligió quien lo implementó (P→C primero).
+- **Cerrado el 02/11/2026 por DEC-055:** la usuaria confirma ese orden, **P→C
+  primero**, igual que el base y que el festivo. Queda fijado con prueba.
+- **La asimetría con `diaNormal` se queda, y es deliberada:** esa situación va
+  C→P primero porque hereda el orden de `escenarioDiaNormal` de `escenarios.js`,
+  que ya estaba decidido y no se reabre. Está anotado donde se define cada
+  situación.
+- **No movió nada publicado:** las fases 1 a 7 no usan las situaciones.
+
+### PEN-024 — `TiempoReal.jsx` ya no se usa, pero sigue en el repositorio
+
+- **Origen:** etapa 2 de la mejora del frontend (DEC-053).
+- **Qué pasa:** la vista de simulación nueva (`VistaSimulacion.jsx`) sustituyó a
+  la pestaña de tiempo real, así que **la aplicación no monta `TiempoReal.jsx`**.
+  El archivo sigue ahí porque `src/ui/__tests__/vista3d.test.jsx` lo importa y lo
+  monta, y el encargo de la etapa 2 pedía expresamente que ese archivo de
+  pruebas siguiera en verde **sin cambios**.
+- **Lo que eso obliga a conservar:** el archivo entero y la propiedad
+  `conInterruptor` de `PanelVista3D`, que existe para que la pestaña vieja siga
+  dibujando su interruptor de mostrar u ocultar. En la vista nueva va a `false`.
+- **Por qué no se quitó aquí:** quitarlo exigía reescribir `vista3d.test.jsx`, y
+  esa prueba es la que garantiza que la escena 3D sigue funcionando igual. Mejor
+  no tocar la red de seguridad en la misma etapa que mueve todo lo demás.
+- **Qué haría falta:** en la etapa 5, que ya reescribe `docs/ui.md` y
+  `docs/vista3d.md`, mover las dos pruebas de integración de `vista3d.test.jsx`
+  para que monten `VistaSimulacion` en vez de `TiempoReal`, y entonces borrar
+  `TiempoReal.jsx` y la propiedad `conInterruptor`.
+- **Mientras tanto:** es código muerto en producción —no entra en ninguna ruta
+  de la aplicación— pero vivo en las pruebas. Queda anotado para que nadie lo
+  tome por la vista actual.

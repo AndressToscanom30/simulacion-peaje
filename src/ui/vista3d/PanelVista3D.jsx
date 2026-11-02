@@ -10,8 +10,13 @@ import { horaDelConteo, num, relojSimulado } from '../formato.js';
  */
 const Escena3D = lazy(() => import('./Escena3D.jsx'));
 
-/** ¿Hay WebGL en este navegador? */
-function hayWebGL() {
+/**
+ * ¿Hay WebGL en este navegador?
+ *
+ * Exportada porque la vista de simulación la necesita para decidir si el cajón
+ * de gráficos es el contenido principal (DEC-053).
+ */
+export function hayWebGL() {
   try {
     const lienzo = document.createElement('canvas');
     return Boolean(
@@ -48,7 +53,20 @@ function prefiereOscuro() {
  * ya calculado, así que la vista 3D y los gráficos no pueden desincronizarse
  * (DEC-036).
  */
-export default function PanelVista3D({ traza, escenario, instante, visible, alCambiarVisible }) {
+export default function PanelVista3D({
+  traza,
+  escenario,
+  instante,
+  visible,
+  alCambiarVisible,
+  /**
+   * Si se dibuja el interruptor de mostrar u ocultar. En la vista de simulación
+   * va a `false`, porque ahí la escena **es** la página y no hay nada que
+   * ocultar (DEC-053). Por defecto `true`, que es como lo usaba la pestaña de
+   * tiempo real.
+   */
+  conInterruptor = true,
+}) {
   const [preajuste, setPreajuste] = useState('todo');
   /**
    * Cada clic en un preajuste es una **petición** nueva, aunque sea el mismo
@@ -102,14 +120,16 @@ export default function PanelVista3D({ traza, escenario, instante, visible, alCa
     <section className="vista3d">
       <div className="barra">
         <h3>Vista 3D</h3>
-        <label>
-          <input
-            type="checkbox"
-            checked={visible}
-            onChange={(evento) => alCambiarVisible(evento.target.checked)}
-          />
-          Mostrar
-        </label>
+        {conInterruptor && (
+          <label>
+            <input
+              type="checkbox"
+              checked={visible}
+              onChange={(evento) => alCambiarVisible(evento.target.checked)}
+            />
+            Mostrar
+          </label>
+        )}
         {visible && soportaWebGL && (
           <>
             <span className="grupo-velocidad">

@@ -2,6 +2,119 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-02 — Mejora del frontend, etapa 2: la estructura nueva
+
+Segunda de las cinco etapas de `docs/planes/mejora-frontend.md`. Sin diseño
+visual (eso es la etapa 4) y sin reescribir textos para quitarles la numeración
+interna (eso es la etapa 3).
+
+**Qué cambió:**
+
+- **DEC-053 — la simulación 3D a pantalla completa es la vista principal.** Tres
+  vistas por `#hash` (`#/simulacion`, `#/lotes`, `#/configuracion`), sin librería
+  de rutas. La traducción de hash a vista es **pura**, en `src/ui/rutas.js`, y
+  acepta las formas que de verdad salen en la barra de direcciones; lo que no
+  reconoce cae en la simulación. La barra superior usa **enlaces de verdad**, no
+  botones, así que atrás y adelante del navegador funcionan solos.
+- **DEC-054 — el panel edita un borrador y recalcular es explícito.** La
+  aplicación guarda el escenario **aplicado** (el que generó la traza que se ve)
+  y un **borrador** (lo que editan el panel y la configuración avanzada, los dos
+  el mismo). Editar ya no borra la traza: se quitó el `setTraza(null)` que lo
+  hacía. Aparece «Cambios sin aplicar», el botón se bloquea con los problemas
+  listados si la validación falla, y hay «Descartar cambios». `localStorage`
+  guarda el **aplicado**, que es lo que se vio.
+- **DEC-055 — en el «domingo» P→C va primero**, confirmado por la usuaria. Cierra
+  **PEN-023**.
+- Componentes nuevos: `BarraSuperior`, `VistaSimulacion`, `PanelControles`,
+  `Hud`, `BarraReproduccion` y `CajonMedidas`. Los gráficos, el esquema de
+  casetas y la tabla de medidas son **los mismos de antes**: cambian de sitio,
+  no de contenido.
+- Campo **hh:mm** para ir a una hora, con la conversión en una función pura y
+  probada. Se refiere al primer sentido y, si las horas difieren, muestra al lado
+  la del otro. Fuera de rango avisa y no mueve nada.
+- `horaInicioDelConteo` pasa a leer el campo `horaInicio` que añadió la etapa 1,
+  en vez de sacar la hora con una expresión regular de la etiqueta. Mismo
+  resultado, pero leyendo el dato.
+- `Campo` y `Formulario` pasan a usar `valorDelCampo` en vez de `leerRuta`: es lo
+  que hacía falta para que el **promedio de atención derivado** de la etapa 1 se
+  viera en pantalla. Antes salía vacío, y su «por defecto» salía «—».
+
+**El tiempo de una traza, medido**, que era lo que decidía cuánto esfuerzo
+merecía la espera visible: **8,3 ms** el festivo y **8,8 ms** el caso de estrés
+con pozo de 10 y demanda ×1,6 (media de 5 corridas). Así que «Recalculando…»
+apenas se ve. La espera visible sigue valiendo la pena porque evita que la
+pantalla se vacíe, pero el botón de **cancelar es una red de seguridad**, no un
+control de uso frecuente, y conviene no venderlo como otra cosa.
+
+**Cancelar sin tocar el motor.** Una traza se corre de un tirón y `trabajoTraza`
+no acepta señal de cancelación, al contrario que los lotes. Así que lo que se
+corta no es el trabajo sino **su respuesta**: el cliente lleva una generación,
+`descartarPendientes` la sube y la respuesta vieja se tira, rechazando la promesa
+con un error marcado como descartado que la interfaz distingue de un fallo. En el
+camino sin worker el cliente **cede el control antes de calcular**, para que la
+interfaz alcance a pintar «Recalculando…» y para que exista un hueco real donde
+cancelar.
+
+**Dos choques del encargo que hubo que resolver, y conviene que estén escritos:**
+
+1. **No había ninguna decisión que fijara las tres pestañas.** El encargo pedía
+   que la decisión nueva dijera que la superaba «si existe». Busqué en el
+   registro y **no existe**: las pestañas eran una decisión de implementación de
+   la fase 5, descrita en `docs/ui.md` pero nunca registrada. La DEC-053 lo dice
+   y deja sin efecto esa parte de `ui.md`, que la etapa 5 reescribe.
+2. **El interruptor de «ocultar vista 3D» tenía que desaparecer, pero
+   `vista3d.test.jsx` lo comprueba y no se podía tocar.** Resuelto con una
+   propiedad **aditiva** `conInterruptor` en `PanelVista3D`, que vale `true` por
+   defecto: la pestaña vieja y sus pruebas siguen igual, y la vista nueva pasa
+   `false`. El coste es que `TiempoReal.jsx` sigue en el repositorio aunque la
+   aplicación no lo monte: queda anotado en **PEN-024** para retirarlo en la
+   etapa 5, cuando se puedan mover esas pruebas.
+
+**Un fallo propio que costó encontrar.** La vista se quedaba en «Preparando la
+simulación…» para siempre. La causa: en modo de desarrollo React monta, desmonta
+y vuelve a montar, y al desmontar se termina el worker **con el pedido en
+vuelo**; el guardado que evita pedir dos veces es un `useRef`, que **sobrevive al
+remontaje**, así que el segundo montaje no volvía a pedir. Se arregla deshaciendo
+el guardado en la limpieza del efecto. Lo que me despistó un rato fue que, entre
+medias, el recargado en caliente mantenía el estado atascado de antes del
+arreglo: las sondas no aparecían porque el código nuevo sí estaba cargado, pero
+el componente seguía con el estado viejo. Con una recarga limpia se vio la
+secuencia entera y quedó confirmado.
+
+**Comprobado en el navegador** (no se guardaron capturas: eso es la etapa 5): la
+vista 3D arranca sola con lienzo, HUD y barra de reproducción sin pulsar nada;
+cambiar el factor a 2 sube el λ del panel a 2.128 y marca «Cambios sin aplicar»
+sin tocar la traza; aplicar recalcula (atendidos de P→C **1.150 → 2.167**), deja
+el reloj en t = 0 y limpia el aviso; el botón de lotes se bloquea con cambios sin
+aplicar; y la navegación entre las tres vistas funciona, incluido el botón atrás.
+
+**Pruebas: 457 → 488.** Las **7** de «la aplicación entera monta» se
+reescribieron porque dependían de las pestañas y de que hubiera que pulsar para
+simular; cada una dice en un comentario a qué sustituye y por qué. En orden:
+arranque (ya no hay pestañas ni botón de simular), cambio de vista (ahora por
+hash), controles de reproducción listos (llegan solos), saltar en la barra (los
+datos están en el HUD), tabla de medidas (vive en el cajón), `localStorage`
+(guarda el aplicado, así que hay que aplicar) y el caso de `localStorage` roto
+(igual, con la vista nueva). **`vista3d.test.jsx` y las de `modeloEscena`,
+`geometria` y `modeloCarro` siguen en verde sin tocarlas.**
+
+**Criterios de cierre:** `git status src/motor/` vacío, `modeloEscena.js` y
+`geometria.js` sin cambios, los informes de las fases 2 a 4 regenerados con
+**cero diferencias** y `npm run build` limpio.
+
+**Qué quedó a medias:** nada de la etapa 2.
+
+**Qué sigue abierto:**
+
+- **PEN-024**, nuevo: `TiempoReal.jsx` es código muerto en producción pero vivo
+  en `vista3d.test.jsx`. Retirarlo es de la etapa 5.
+- Las **etapas 3 a 5**: el lenguaje de usuario (la interfaz todavía muestra
+  «DEC-029» y compañía en los textos que solo se movieron de sitio), el diseño
+  visual con solo modo claro, y el cierre con `ui.md`, `vista3d.md` y capturas.
+- De las etapas anteriores: **PEN-013**, **PEN-010** y **PEN-008**, que son
+  mediciones de campo, y si el disparador por tasa pasa a ser el valor por
+  defecto (DEC-046).
+
 ## 2026-11-02 — Mejora del frontend, etapa 1: la capa pura
 
 Primera de las cinco etapas de `docs/planes/mejora-frontend.md`. **Solo la capa

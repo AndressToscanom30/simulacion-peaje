@@ -5,7 +5,7 @@
  */
 
 import { conteos } from '../config/datos.js';
-import { SEGUNDOS_POR_MINUTO } from '../config/parametros.js';
+import { MINUTOS_POR_HORA, SEGUNDOS_POR_MINUTO } from '../config/parametros.js';
 
 /** Coma decimal, como el resto del proyecto. */
 export const coma = (texto) => String(texto).replace('.', ',');
@@ -31,20 +31,77 @@ export function relojSimulado(segundos) {
 }
 
 /**
- * Hora de inicio del conteo, leída de su propia etiqueta.
+ * Hora de inicio del conteo.
  *
- * Las etiquetas de `datos.js` traen el tramo horario ("16:25–17:25"), que es el
- * dato de campo. No se inventa nada: si la etiqueta no lo trae, se devuelve
- * `null` y la interfaz muestra solo el tiempo simulado.
+ * Sale del campo `horaInicio` de `datos.js`, que es dato de campo (DEC-052). Si
+ * faltara, se recurre a leerla del tramo horario de la etiqueta ("16:25–17:25"),
+ * que es de dónde se sacaba antes. No se inventa nada: sin ninguna de las dos
+ * se devuelve `null` y la interfaz muestra solo el tiempo simulado.
  *
  * @param {string} clave conteo
  * @returns {{horas: number, minutos: number}|null}
  */
 export function horaInicioDelConteo(clave) {
-  const etiqueta = conteos[clave]?.etiqueta ?? '';
-  const encontrado = etiqueta.match(/(\d{1,2}):(\d{2})\s*[–-]/);
+  const conteo = conteos[clave];
+  const partido = partirHora(conteo?.horaInicio);
+  if (partido) return partido;
+
+  const encontrado = (conteo?.etiqueta ?? '').match(/(\d{1,2}):(\d{2})\s*[–-]/);
   if (!encontrado) return null;
   return { horas: Number(encontrado[1]), minutos: Number(encontrado[2]) };
+}
+
+/**
+ * Parte un `hh:mm` en horas y minutos. `null` si no es una hora válida.
+ *
+ * Acepta `9:05` y `09:05`; rechaza horas de más de 23 y minutos de más de 59,
+ * que es lo que un campo de texto puede recibir.
+ */
+export function partirHora(texto) {
+  const encontrado = String(texto ?? '').trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!encontrado) return null;
+  const horas = Number(encontrado[1]);
+  const minutos = Number(encontrado[2]);
+  if (horas > 23 || minutos > 59) return null;
+  return { horas, minutos };
+}
+
+/** Segundos desde medianoche de un `{horas, minutos}`. */
+const desdeMedianoche = ({ horas, minutos }) =>
+  horas * MINUTOS_POR_HORA * SEGUNDOS_POR_MINUTO + minutos * SEGUNDOS_POR_MINUTO;
+
+/**
+ * Instante simulado que corresponde a una hora del reloj `hh:mm`.
+ *
+ * La hora se refiere al conteo que se le pase, que en la interfaz es el del
+ * **primer sentido**. Devuelve `null` si el texto no es una hora, si el conteo
+ * no tiene hora de inicio o si la hora cae **fuera** de la ventana simulada:
+ * así el campo puede avisar en vez de mover el reloj a un sitio que no existe.
+ *
+ * @param {string} texto `hh:mm`
+ * @param {string} conteo clave del conteo que da la hora de arranque
+ * @param {number} duracionSegundos duración de la traza
+ * @returns {number|null} segundos desde el arranque
+ */
+export function instanteDeHora(texto, conteo, duracionSegundos) {
+  const pedida = partirHora(texto);
+  const inicio = horaInicioDelConteo(conteo);
+  if (!pedida || !inicio) return null;
+
+  const segundos = desdeMedianoche(pedida) - desdeMedianoche(inicio);
+  if (segundos < 0 || segundos > duracionSegundos) return null;
+  return segundos;
+}
+
+/**
+ * Hora del reloj `hh:mm` de un instante simulado, sin los segundos.
+ *
+ * Es la inversa de `instanteDeHora`, y la que rellena el campo de hora cuando
+ * el reloj se mueve por otro camino (la barra, el botón de reinicio).
+ */
+export function horaDeInstante(conteo, segundos) {
+  const completa = horaDelConteo(conteo, segundos);
+  return completa ? completa.slice(0, 5) : null;
 }
 
 /**

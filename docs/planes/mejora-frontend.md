@@ -99,19 +99,39 @@ Hay que registrarlas como decisiones nuevas en la etapa en que se implementen.
 «domingo», que no estaba fijado en ningún sitio y elegí yo (P→C primero). Importa
 porque el primer sentido usa el flujo original del PRNG.
 
-## Etapa 2 — Estructura nueva y flujo de recalcular
+## Etapa 2 — Estructura nueva y flujo de recalcular ✅
 
-- [ ] Tres vistas por `#hash`; la 3D es la de arranque
-- [ ] Al abrir se simula el escenario aplicado, sin pulsar nada
-- [ ] Panel de controles con borrador, «Cambios sin aplicar», *Aplicar y
-      recalcular*, cancelar, y el botón bloqueado si hay errores de validación
-- [ ] HUD y barra de reproducción sobre la escena; gráficos, esquema de
-      casetas y tabla de medidas en un cajón plegable; semilla en «Avanzado»
-- [ ] Sin WebGL, el cajón pasa a ser el contenido principal
-- [ ] Botón «Correr 30 réplicas con esta configuración» hacia los lotes
-- [ ] Pruebas de interfaz actualizadas, cada cambio con su motivo
-- [ ] Decisión: vista principal 3D y recalculado explícito (apoyada en la
-      DEC-033, sin reabrirla)
+- [x] Tres vistas por `#hash`; la 3D es la de arranque (DEC-053). La traducción
+      de hash a vista es pura, en `src/ui/rutas.js`, con prueba; la barra usa
+      enlaces de verdad, así que atrás y adelante del navegador funcionan
+- [x] Al abrir se simula el escenario aplicado, sin pulsar nada (DEC-054)
+- [x] Panel de controles con **borrador**, «Cambios sin aplicar», *Aplicar y
+      recalcular*, *Descartar cambios*, cancelar, y el botón bloqueado con los
+      problemas listados si la validación falla. El panel y la configuración
+      avanzada editan **el mismo borrador**
+- [x] HUD y barra de reproducción sobre la escena; gráficos, esquema de casetas
+      y tabla de medidas en un cajón plegable; semilla en «Avanzado». Campo
+      hh:mm para ir a una hora, con conversión pura y probada
+- [x] Sin WebGL, el cajón pasa a ser el contenido principal
+- [x] Botón «Correr 30 réplicas con esta configuración», deshabilitado con
+      cambios sin aplicar
+- [x] Pruebas: **488 en total** (eran 457). Las 7 de «la aplicación entera
+      monta» se reescribieron, cada una diciendo qué cambió; `vista3d.test.jsx`
+      y las de `modeloEscena` y `geometria` siguen en verde **sin tocarlas**
+- [x] Decisiones **DEC-053** (vista principal 3D y tres vistas por hash),
+      **DEC-054** (borrador y recalculado explícito, apoyada en la DEC-033 sin
+      reabrirla) y **DEC-055** (orden de sentidos del domingo, cierra PEN-023)
+- [x] Informes de las fases 2 a 4 regenerados con cero diferencias; `npm run
+      build` limpio; comprobado en el navegador que la vista 3D arranca sola,
+      que aplicar recalcula y que la navegación y el botón atrás funcionan
+
+**Medido:** una traza del festivo tarda **8,3 ms** y la del caso de estrés con
+pozo de 10 y demanda ×1,6, **8,8 ms**. Así que «Recalculando…» apenas se ve y el
+botón de cancelar es una red de seguridad, no un control de uso frecuente.
+
+**Lo que quedó pendiente de limpiar:** `TiempoReal.jsx` ya no lo usa la
+aplicación, pero sigue en el repositorio porque `vista3d.test.jsx` lo monta y
+esta etapa no podía tocar ese archivo. Retirarlo es de la etapa 5 (PEN-024).
 
 ## Etapa 3 — Lenguaje de usuario
 

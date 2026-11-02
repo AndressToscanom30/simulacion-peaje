@@ -6,7 +6,7 @@
  * el motor no dependa del DOM (DEC-012).
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react';
 
 import App from '../../App.jsx';
 import Formulario from '../componentes/Formulario.jsx';
@@ -16,6 +16,7 @@ import TablaMedidas from '../componentes/TablaMedidas.jsx';
 import { construirEscenario } from '../../config/escenario.js';
 import { cambiarCampo, restablecerCampo, SUPUESTOS } from '../modeloFormulario.js';
 import { simularTraza } from '../../corridas.js';
+import { crearClienteSimulacion, fueDescartado } from '../worker/cliente.js';
 import { reconstruirDesdeTraza } from '../../motor/traza.js';
 
 const base = construirEscenario();
@@ -246,65 +247,137 @@ describe('tabla de medidas', () => {
   });
 });
 
+/**
+ * Pruebas de la aplicación entera.
+ *
+ * **Reescritas en la etapa 2 de la mejora del frontend (DEC-053, DEC-054).**
+ * Las siete que había dependían de las tres pestañas y de que hubiera que
+ * pulsar «Simular y reproducir» para ver algo. Ahora:
+ *
+ * - no hay pestañas, hay tres vistas por `#hash`;
+ * - la traza se pide **al abrir**, sin pulsar nada;
+ * - el panel edita un **borrador** y recalcular es explícito.
+ *
+ * Cada prueba dice qué cambió respecto de la que sustituye.
+ */
 describe('la aplicación entera monta', () => {
-  it('arranca en tiempo real, con los supuestos y las tres pestañas', () => {
-    render(<App />);
-    expect(screen.getByText('Peaje Los Acacios')).toBeDefined();
-    expect(screen.getByText('Supuestos y limitaciones')).toBeDefined();
-    for (const pestana of ['Tiempo real', 'Por lotes', 'Configuración']) {
-      expect(screen.getByRole('button', { name: pestana }), pestana).toBeDefined();
-    }
-    expect(screen.getByText(/Simular y reproducir/)).toBeDefined();
+  /** Deja el hash en una vista antes de montar. */
+  function enVista(hash) {
+    window.location.hash = hash;
+  }
+
+  /** Monta la app y espera a que llegue la primera traza. */
+  async function montarYEsperar() {
+    const vista = render(<App />);
+    // El cliente corre en el mismo hilo cuando no hay Worker (jsdom).
+    await screen.findByLabelText('Saltar a un instante');
+    return vista;
+  }
+
+  /** Lleva la reproducción al final, donde se ven los totales. */
+  function alFinal() {
+    const barra = screen.getByLabelText('Saltar a un instante');
+    fireEvent.change(barra, { target: { value: barra.max } });
+  }
+
+  /** Los atendidos del primer sentido, que dependen de la traza. */
+  function atendidosDelPrimerSentido() {
+    alFinal();
+    const sentido = screen.getAllByRole('heading', { level: 3 })
+      .map((h) => h.parentElement)
+      .find((e) => e?.className?.includes?.('hud__sentido'));
+    return sentido.textContent;
+  }
+
+  beforeEach(() => {
+    enVista('#/simulacion');
   });
 
-  it('se puede cambiar de pestaña', () => {
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Por lotes' }));
+  // Sustituye a «arranca en tiempo real, con los supuestos y las tres
+  // pestañas»: ya no hay pestañas ni botón de simular, y la escena arranca sola.
+  it('arranca en la simulación, con las tres vistas en la barra', async () => {
+    await montarYEsperar();
+    expect(screen.getByText('Peaje Los Acacios')).toBeDefined();
+    for (const vista of ['Simulación 3D', 'Estudio por lotes', 'Configuración avanzada']) {
+      expect(screen.getByRole('link', { name: vista }), vista).toBeDefined();
+    }
+    expect(screen.getByRole('link', { name: 'Simulación 3D' }).getAttribute('aria-current')).toBe('page');
+  });
+
+  // Nueva: lo que antes exigía pulsar un botón ahora pasa solo (DEC-054).
+  it('al montar se pide una traza sin pulsar nada', async () => {
+    await montarYEsperar();
+    expect(screen.getByText(/▶ Iniciar/)).toBeDefined();
+    expect(screen.getByText(/⏮ Reinicio/)).toBeDefined();
+    expect(screen.getByText(/t = 00:00/)).toBeDefined();
+    // Y no hay ningún botón de «simular»: ya no hace falta.
+    expect(screen.queryByText(/Simular y reproducir/)).toBeNull();
+  });
+
+  // Sustituye a «se puede cambiar de pestaña»: ahora es el hash.
+  it('el hash elige la vista, y la barra navega', async () => {
+    await montarYEsperar();
+
+    enVista('#/lotes');
+    fireEvent(window, new Event('hashchange'));
     expect(screen.getByText('Corrida por lotes')).toBeDefined();
-    fireEvent.click(screen.getByRole('button', { name: 'Configuración' }));
+
+    enVista('#/configuracion');
+    fireEvent(window, new Event('hashchange'));
     expect(screen.getByText(/Partir de un escenario del catálogo/)).toBeDefined();
   });
 
-  it('simular una traza deja los controles de reproducción listos', async () => {
-    render(<App />);
-    fireEvent.click(screen.getByText(/Simular y reproducir/));
-    // El cliente corre en el mismo hilo cuando no hay Worker (jsdom).
-    await screen.findByText(/▶ Iniciar/);
-    expect(screen.getByText(/⏮ Reinicio/)).toBeDefined();
+  it('un hash desconocido abre la simulación', async () => {
+    enVista('#/lo-que-sea');
+    await montarYEsperar();
     expect(screen.getByLabelText('Saltar a un instante')).toBeDefined();
-    expect(screen.getByText(/t = 00:00/)).toBeDefined();
   });
 
-  it('saltar en la barra adelanta el estado en vivo', async () => {
-    render(<App />);
-    fireEvent.click(screen.getByText(/Simular y reproducir/));
-    const barra = await screen.findByLabelText('Saltar a un instante');
-    fireEvent.change(barra, { target: { value: '1800' } });
+  // Sustituye a «saltar en la barra adelanta el estado en vivo»: los mismos
+  // datos, ahora en el HUD sobre la escena.
+  it('saltar en la barra adelanta el HUD', async () => {
+    await montarYEsperar();
+    fireEvent.change(screen.getByLabelText('Saltar a un instante'), { target: { value: '1800' } });
     expect(screen.getByText(/t = 30:00/)).toBeDefined();
     // La hora del conteo del festivo arranca a las 16:25.
     expect(screen.getByText(/16:55:00/)).toBeDefined();
   });
 
-  it('al llegar al final aparece la tabla de medidas', async () => {
-    render(<App />);
-    fireEvent.click(screen.getByText(/Simular y reproducir/));
-    const barra = await screen.findByLabelText('Saltar a un instante');
-    fireEvent.change(barra, { target: { value: barra.max } });
+  // Sustituye a «al llegar al final aparece la tabla de medidas»: la tabla vive
+  // ahora en el cajón, que hay que abrir.
+  // En jsdom no hay WebGL, así que el cajón es el contenido principal y ya
+  // está abierto: es justo el comportamiento que pide la etapa.
+  it('la tabla de medidas aparece en el cajón al llegar al final', async () => {
+    await montarYEsperar();
+    expect(screen.getByRole('heading', { name: 'Gráficos y medidas' })).toBeDefined();
+    alFinal();
     expect(screen.getByText(/Resultado de la réplica/)).toBeDefined();
     expect(screen.getByText('Wq de la hora (min)')).toBeDefined();
   });
 
-  it('recuerda la configuración en localStorage', () => {
-    const { unmount } = render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Configuración' }));
-    fireEvent.change(screen.getByLabelText(/Casetas del pozo/), { target: { value: '8' } });
-    unmount();
+  // Sustituye a «recuerda la configuración en localStorage»: lo que se guarda
+  // es el escenario APLICADO, así que hay que aplicar para que se recuerde.
+  it('localStorage guarda el escenario aplicado, no el borrador', async () => {
+    const { unmount } = await montarYEsperar();
+    enVista('#/configuracion');
+    fireEvent(window, new Event('hashchange'));
 
+    fireEvent.change(screen.getByLabelText(/Casetas del pozo/), { target: { value: '8' } });
+    // Sin aplicar, lo guardado sigue siendo lo de antes.
+    expect(JSON.parse(localStorage.getItem('peaje-los-acacios:escenario')).pozo.total).toBe(6);
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Aplicar y recalcular' })[0]);
+    await waitFor(() =>
+      expect(JSON.parse(localStorage.getItem('peaje-los-acacios:escenario')).pozo.total).toBe(8),
+    );
+
+    unmount();
+    enVista('#/configuracion');
     render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: 'Configuración' }));
     expect(screen.getByLabelText(/Casetas del pozo/).value).toBe('8');
   });
 
+  // Igual que antes, con la vista nueva.
   it('si localStorage falla, arranca igual en el escenario base', () => {
     const original = Object.getOwnPropertyDescriptor(window, 'localStorage');
     Object.defineProperty(window, 'localStorage', {
@@ -314,12 +387,192 @@ describe('la aplicación entera monta', () => {
       },
     });
     try {
+      enVista('#/configuracion');
       render(<App />);
       expect(screen.getByText('Peaje Los Acacios')).toBeDefined();
-      fireEvent.click(screen.getByRole('button', { name: 'Configuración' }));
       expect(screen.getByLabelText(/Casetas del pozo/).value).toBe('6');
     } finally {
       if (original) Object.defineProperty(window, 'localStorage', original);
     }
+  });
+});
+
+describe('borrador y recalcular explícito', () => {
+  async function montarYEsperar() {
+    const vista = render(<App />);
+    await screen.findByLabelText('Saltar a un instante');
+    return vista;
+  }
+
+  /** El λ que el panel muestra para el primer sentido. */
+  const lambdaDelPanel = () => screen.getAllByText(/vehículos por hora/)[0].textContent;
+
+  /** El texto del HUD del primer sentido, que depende de la traza. */
+  function hudDelPrimerSentido() {
+    const barra = screen.getByLabelText('Saltar a un instante');
+    fireEvent.change(barra, { target: { value: barra.max } });
+    return document.querySelector('.hud__sentido').textContent;
+  }
+
+  beforeEach(() => {
+    window.location.hash = '#/simulacion';
+  });
+
+  it('editar en el panel marca «Cambios sin aplicar» y NO cambia la traza', async () => {
+    await montarYEsperar();
+    const antes = hudDelPrimerSentido();
+    expect(screen.queryByText('Cambios sin aplicar')).toBeNull();
+
+    // El factor de demanda del primer sentido, que está en el panel.
+    const factor = screen.getByLabelText(/Factor de demanda · P→C/);
+    fireEvent.change(factor, { target: { value: '2' } });
+
+    expect(screen.getAllByText('Cambios sin aplicar').length).toBeGreaterThan(0);
+    // El panel ya muestra el λ nuevo…
+    expect(lambdaDelPanel()).toMatch(/2128/);
+    // …pero lo que se ve sigue siendo la traza de antes.
+    expect(hudDelPrimerSentido()).toBe(antes);
+  });
+
+  it('aplicar pide una traza nueva con el borrador', async () => {
+    await montarYEsperar();
+    const antes = hudDelPrimerSentido();
+
+    fireEvent.change(screen.getByLabelText(/Factor de demanda · P→C/), { target: { value: '2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar y recalcular' }));
+
+    await waitFor(() => expect(hudDelPrimerSentido()).not.toBe(antes));
+    // Ya no quedan cambios pendientes.
+    expect(screen.queryByText('Cambios sin aplicar')).toBeNull();
+  });
+
+  it('con la traza nueva el reloj vuelve a 0 y en pausa', async () => {
+    await montarYEsperar();
+    fireEvent.change(screen.getByLabelText('Saltar a un instante'), { target: { value: '1800' } });
+    expect(screen.getByText(/t = 30:00/)).toBeDefined();
+
+    fireEvent.change(screen.getByLabelText(/Factor de demanda · P→C/), { target: { value: '1.2' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar y recalcular' }));
+
+    await waitFor(() => expect(screen.getByText(/t = 00:00/)).toBeDefined());
+    expect(screen.getByText(/▶ Iniciar/)).toBeDefined();
+  });
+
+  it('con problemas de validación el botón de aplicar queda deshabilitado', async () => {
+    await montarYEsperar();
+    fireEvent.change(screen.getByLabelText(/Factor de demanda · P→C/), { target: { value: '-5' } });
+
+    const boton = screen.getByRole('button', { name: /Aplicar y recalcular/ });
+    expect(boton.disabled).toBe(true);
+    const avisos = screen.getAllByRole('alert').map((e) => e.textContent).join(' ');
+    expect(avisos).toMatch(/que corregir/);
+  });
+
+  it('descartar devuelve el borrador al aplicado', async () => {
+    await montarYEsperar();
+    const factor = screen.getByLabelText(/Factor de demanda · P→C/);
+    fireEvent.change(factor, { target: { value: '2' } });
+    expect(screen.getAllByText('Cambios sin aplicar').length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Descartar cambios' }));
+
+    expect(screen.queryByText('Cambios sin aplicar')).toBeNull();
+    expect(screen.getByLabelText(/Factor de demanda · P→C/).value).toBe('1');
+  });
+
+  it('el panel y la configuración avanzada editan el mismo borrador', async () => {
+    await montarYEsperar();
+    fireEvent.change(screen.getByLabelText(/Factor de demanda · P→C/), { target: { value: '1.5' } });
+
+    window.location.hash = '#/configuracion';
+    fireEvent(window, new Event('hashchange'));
+    // El formulario completo ve el mismo cambio.
+    expect(screen.getByLabelText(/Factor de demanda · P→C/).value).toBe('1.5');
+
+    // Y al revés: lo que se cambia aquí lo ve el panel.
+    fireEvent.change(screen.getByLabelText(/Demora de apertura/), { target: { value: '0' } });
+    window.location.hash = '#/simulacion';
+    fireEvent(window, new Event('hashchange'));
+    expect(screen.getByLabelText(/Demora de apertura/).value).toBe('0');
+  });
+
+  it('el botón de lotes se bloquea con cambios sin aplicar y navega sin ellos', async () => {
+    await montarYEsperar();
+    const boton = screen.getByRole('button', { name: /Correr 30 réplicas/ });
+    expect(boton.disabled).toBe(false);
+
+    fireEvent.change(screen.getByLabelText(/Factor de demanda · P→C/), { target: { value: '2' } });
+    expect(screen.getByRole('button', { name: /Correr 30 réplicas/ }).disabled).toBe(true);
+    expect(screen.getByRole('button', { name: /Correr 30 réplicas/ }).title).toMatch(
+      /Aplica los cambios primero/,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Aplicar y recalcular' }));
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /Correr 30 réplicas/ }).disabled).toBe(false),
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /Correr 30 réplicas/ }));
+    fireEvent(window, new Event('hashchange'));
+    expect(screen.getByText('Corrida por lotes')).toBeDefined();
+  });
+
+  it('la semilla está en «Avanzado» y también pasa por aplicar', async () => {
+    await montarYEsperar();
+    const semilla = screen.getByLabelText(/Semilla del azar/);
+    fireEvent.change(semilla, { target: { value: '7' } });
+    expect(screen.getAllByText('Cambios sin aplicar').length).toBeGreaterThan(0);
+  });
+
+  it('la situación se elige de la lista y marca cambios sin aplicar', async () => {
+    await montarYEsperar();
+    const selector = screen.getByLabelText('Situación');
+    expect(selector.value).toBe('festivo');
+
+    fireEvent.change(selector, { target: { value: 'domingo' } });
+    expect(screen.getAllByText('Cambios sin aplicar').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/horas distintas/).length).toBeGreaterThan(0);
+  });
+});
+
+describe('cancelar un recálculo', () => {
+  beforeEach(() => {
+    window.location.hash = '#/simulacion';
+  });
+
+  it('conserva la traza anterior y el borrador como estaba', async () => {
+    render(<App />);
+    const barra = await screen.findByLabelText('Saltar a un instante');
+    fireEvent.change(barra, { target: { value: barra.max } });
+    const antes = document.querySelector('.hud__sentido').textContent;
+
+    // Se descarta lo pendiente directamente en el cliente, que es lo que hace
+    // el botón «Cancelar»: una traza no se puede cortar a mitad, así que lo que
+    // se corta es su respuesta (DEC-054).
+    const cliente = crearClienteSimulacion();
+    const pedido = cliente.pedir({ tipo: 'traza', escenario: construirEscenario(), semilla: 1 });
+    cliente.descartarPendientes();
+    await expect(pedido).rejects.toThrow(/descartó/);
+
+    // La traza que se veía sigue ahí.
+    const despues = screen.getByLabelText('Saltar a un instante');
+    fireEvent.change(despues, { target: { value: despues.max } });
+    expect(document.querySelector('.hud__sentido').textContent).toBe(antes);
+  });
+
+  it('un pedido descartado se distingue de un error de verdad', async () => {
+    const cliente = crearClienteSimulacion();
+    const pedido = cliente.pedir({ tipo: 'traza', escenario: construirEscenario(), semilla: 1 });
+    cliente.descartarPendientes();
+    try {
+      await pedido;
+      throw new Error('tenía que haber fallado');
+    } catch (e) {
+      expect(fueDescartado(e)).toBe(true);
+      expect(e.name).toBe('PedidoDescartado');
+    }
+    // Un trabajo que no existe sí es un error.
+    const otro = crearClienteSimulacion();
+    await expect(otro.pedir({ tipo: 'inventado' })).rejects.toThrow(/desconocido/);
   });
 });

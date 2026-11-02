@@ -19,14 +19,19 @@ en [`mejora-frontend.md`](mejora-frontend.md)**; aquí solo el estado.
 | Etapa | Qué es | Estado |
 |---|---|---|
 | 1 | Capa pura: subconjunto del catálogo para el panel, promedio de atención derivado, situaciones predefinidas | ✅ **cerrada** (02/11, DEC-050 a DEC-052) |
-| 2 | Estructura nueva por `#hash` y flujo de «aplicar y recalcular» | pendiente |
+| 2 | Estructura nueva por `#hash` y flujo de «aplicar y recalcular» | ✅ **cerrada** (02/11, DEC-053 a DEC-055) |
 | 3 | Lenguaje de usuario: fuera la numeración interna de la interfaz | pendiente |
 | 4 | Diseño visual y solo modo claro | pendiente |
 | 5 | Cierre: `ui.md`, `vista3d.md` y capturas | pendiente |
 
-La etapa 1 no tocó `src/motor/`, ni componentes `.jsx`, ni estilos, y los
+La etapa 1 no tocó `src/motor/`, ni componentes `.jsx`, ni estilos. La etapa 2
+rehízo la estructura de la interfaz —la **simulación 3D a pantalla completa** es
+ahora la vista principal, con el estudio por lotes y la configuración avanzada
+como vistas hermanas por `#hash`— y el panel pasa a editar un **borrador** que
+solo se aplica cuando se pulsa. Ninguna de las dos tocó `src/motor/`, y los
 informes de las fases 2 a 4 se regeneraron con **cero diferencias numéricas**.
-Pruebas: **457** (eran 406).
+
+Pruebas: **488** (eran 406 antes de empezar la mejora).
 
 ## Corrección de base del 30/10/2026 (DEC-042) ✅
 

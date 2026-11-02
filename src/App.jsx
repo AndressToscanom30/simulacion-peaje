@@ -1,17 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  construirEscenario,
-  problemasDelEscenario,
-  escenarioAJson,
-} from './config/escenario.js';
-import { cambiarCampo, restablecerCampo } from './ui/modeloFormulario.js';
-import { crearClienteSimulacion } from './ui/worker/cliente.js';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { construirEscenario, problemasDelEscenario } from './config/escenario.js';
+import { aplicarSituacion } from './config/situaciones.js';
+import { cambiarCampo, restablecerCampo, sonIguales } from './ui/modeloFormulario.js';
+import { crearClienteSimulacion, fueDescartado } from './ui/worker/cliente.js';
 import { guardarEscenario, leerEscenario } from './ui/almacen.js';
-import { mediaGeneradaSegundos } from './config/escenario.js';
-import { num } from './ui/formato.js';
-import Formulario from './ui/componentes/Formulario.jsx';
+import { VISTA, hashDeVista, vistaDeHash } from './ui/rutas.js';
+import BarraSuperior from './ui/componentes/BarraSuperior.jsx';
+import VistaSimulacion from './ui/componentes/VistaSimulacion.jsx';
 import PanelSupuestos from './ui/componentes/PanelSupuestos.jsx';
-import TiempoReal from './ui/componentes/TiempoReal.jsx';
+import Formulario from './ui/componentes/Formulario.jsx';
 import ModoLotes from './ui/componentes/ModoLotes.jsx';
 
 /** Escenario de arranque: el guardado si sirve, y si no el base. */
@@ -26,13 +23,35 @@ function escenarioInicial() {
   }
 }
 
+/** Vista que dice el hash, ahora mismo. */
+function vistaActual() {
+  try {
+    return vistaDeHash(window.location.hash);
+  } catch {
+    return VISTA.SIMULACION;
+  }
+}
+
 export default function App() {
-  const [escenario, setEscenario] = useState(escenarioInicial);
-  const [pestana, setPestana] = useState('tiempoReal');
+  /**
+   * Dos escenarios, y esta es la idea central de la etapa (DEC-054):
+   *
+   * - `aplicado` es el que generó la traza que se está viendo.
+   * - `borrador` es lo que el panel y la configuración avanzada editan.
+   *
+   * Editar no cambia lo que se ve; solo «Aplicar y recalcular» lo hace.
+   */
+  const [aplicado, setAplicado] = useState(escenarioInicial);
+  const [borrador, setBorrador] = useState(aplicado);
+
+  const [vista, setVista] = useState(vistaActual);
   const [semilla, setSemilla] = useState(1);
+  const [semillaAplicada, setSemillaAplicada] = useState(1);
   const [traza, setTraza] = useState(null);
+  const [recalculando, setRecalculando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState(null);
+  const [verSupuestos, setVerSupuestos] = useState(false);
 
   const clienteRef = useRef(null);
   if (!clienteRef.current) clienteRef.current = crearClienteSimulacion();
@@ -40,118 +59,201 @@ export default function App() {
 
   useEffect(() => () => cliente.terminar(), [cliente]);
 
-  // Recordar la última configuración. Si no se puede, da igual (almacen.js).
+  // El hash manda: atrás y adelante del navegador funcionan solos (DEC-053).
   useEffect(() => {
-    guardarEscenario(escenario);
-  }, [escenario]);
+    const alCambiarHash = () => setVista(vistaActual());
+    window.addEventListener('hashchange', alCambiarHash);
+    return () => window.removeEventListener('hashchange', alCambiarHash);
+  }, []);
 
-  const listaProblemas = useMemo(() => problemasDelEscenario(escenario), [escenario]);
-  const configuracionValida = listaProblemas.length === 0;
-
-  const simularTraza = async () => {
-    setError(null);
-    setOcupado(true);
-    try {
-      const respuesta = await cliente.pedir({ tipo: 'traza', escenario, semilla });
-      setTraza(respuesta.traza);
-    } catch (e) {
-      setError(e.message);
-      setTraza(null);
-    } finally {
-      setOcupado(false);
-    }
-  };
-
-  // Una configuración nueva invalida la traza: no se reproduce algo que ya no
-  // corresponde a lo que el formulario muestra.
+  /**
+   * Se recuerda el escenario **aplicado**, que es el que corresponde a lo que
+   * se vio. Si `localStorage` falla, da igual (almacen.js).
+   */
   useEffect(() => {
-    setTraza(null);
-  }, [escenario]);
+    guardarEscenario(aplicado);
+  }, [aplicado]);
+
+  const problemasBorrador = useMemo(() => problemasDelEscenario(borrador), [borrador]);
+
+  /**
+   * ¿El borrador difiere de lo aplicado? Se compara con `sonIguales`, que es la
+   * comparación que ya usaba el formulario; no se escribe otra.
+   */
+  const hayCambiosSinAplicar = useMemo(
+    () => !sonIguales(borrador, aplicado) || semilla !== semillaAplicada,
+    [borrador, aplicado, semilla, semillaAplicada],
+  );
+
+  /** Pide la traza de un escenario y la pone en pantalla. */
+  const pedirTraza = useCallback(
+    async (escenario, suSemilla) => {
+      setError(null);
+      setRecalculando(true);
+      try {
+        const respuesta = await cliente.pedir({ tipo: 'traza', escenario, semilla: suSemilla });
+        setTraza(respuesta.traza);
+      } catch (e) {
+        // Un pedido descartado no es un fallo: alguien canceló o pidió otra
+        // cosa. Se conserva la traza anterior (DEC-054).
+        if (!fueDescartado(e)) {
+          setError(e.message);
+          setTraza(null);
+        }
+      } finally {
+        setRecalculando(false);
+      }
+    },
+    [cliente],
+  );
+
+/**
+   * Al abrir se simula lo aplicado, sin pulsar nada (DEC-054).
+   *
+   * El guardado se **deshace al limpiar**, y eso no es un adorno: en modo de
+   * desarrollo React monta, desmonta y vuelve a montar, y al desmontar se
+   * termina el worker con el pedido en vuelo. Si el guardado sobreviviera al
+   * remontaje —los `useRef` sobreviven—, el segundo montaje no volvería a
+   * pedir y la pantalla se quedaría en «Preparando la simulación…» para
+   * siempre. Deshaciéndolo, el segundo montaje pide de nuevo con un worker
+   * nuevo. En producción solo hay un montaje y se pide una vez.
+   */
+  const arrancado = useRef(false);
+  useEffect(() => {
+    if (arrancado.current) return undefined;
+    arrancado.current = true;
+    if (problemasDelEscenario(aplicado).length === 0) pedirTraza(aplicado, semillaAplicada);
+    return () => {
+      arrancado.current = false;
+    };
+  }, [aplicado, semillaAplicada, pedirTraza]);
+
+  const aplicarYRecalcular = useCallback(() => {
+    if (problemasBorrador.length > 0) return;
+    // Lo que esté pidiéndose ya no vale.
+    cliente.descartarPendientes();
+    setAplicado(borrador);
+    setSemillaAplicada(semilla);
+    pedirTraza(borrador, semilla);
+  }, [borrador, semilla, problemasBorrador, cliente, pedirTraza]);
+
+  const cancelarRecalculo = useCallback(() => {
+    // Descartar deja la traza anterior en pantalla y el borrador como estaba.
+    cliente.descartarPendientes();
+    setRecalculando(false);
+  }, [cliente]);
+
+  const descartarCambios = useCallback(() => {
+    setBorrador(aplicado);
+    setSemilla(semillaAplicada);
+  }, [aplicado, semillaAplicada]);
+
+  const irALotes = useCallback(() => {
+    window.location.hash = hashDeVista(VISTA.LOTES);
+  }, []);
+
+  const cambiarEnBorrador = useCallback(
+    (ruta, valor) => setBorrador((previo) => cambiarCampo(previo, ruta, valor)),
+    [],
+  );
+  const restablecerEnBorrador = useCallback(
+    (ruta) => setBorrador((previo) => restablecerCampo(previo, ruta)),
+    [],
+  );
+  const cambiarSituacion = useCallback((clave) => {
+    if (!clave) return;
+    setBorrador((previo) => aplicarSituacion(previo, clave));
+  }, []);
 
   return (
-    <main>
-      <header>
-        <h1>Peaje Los Acacios</h1>
-        <p className="nota">
-          Simulación de eventos discretos con cola única FIFO por sentido y{' '}
-          {escenario.pozo.total} casetas de efectivo compartidas (entre{' '}
-          {escenario.pozo.minimoPorSentido} y {escenario.pozo.maximoPorSentido} por sentido).
-          Servicio gamma de media {num(mediaGeneradaSegundos(escenario.servicio), 2)} s. La
-          visualización 3D es la fase 6.
-        </p>
-      </header>
+    <div className="aplicacion">
+      <BarraSuperior vista={vista} hayCambiosSinAplicar={hayCambiosSinAplicar} />
 
-      <PanelSupuestos />
-
-      <nav className="pestanas">
-        {[
-          ['tiempoReal', 'Tiempo real'],
-          ['lotes', 'Por lotes'],
-          ['configuracion', 'Configuración'],
-        ].map(([clave, titulo]) => (
-          <button
-            key={clave}
-            type="button"
-            className={pestana === clave ? 'activo' : undefined}
-            onClick={() => setPestana(clave)}
-          >
-            {titulo}
+      {verSupuestos && (
+        <div className="hoja-supuestos" role="dialog" aria-label="Supuestos y limitaciones">
+          <button type="button" className="hoja-supuestos__cerrar" onClick={() => setVerSupuestos(false)}>
+            Cerrar
           </button>
-        ))}
-      </nav>
-
-      {!configuracionValida && (
-        <div className="problemas" role="alert">
-          <strong>La configuración tiene {listaProblemas.length} problema(s).</strong> Corrígelos en
-          la pestaña Configuración antes de simular.
+          <PanelSupuestos />
         </div>
       )}
 
-      <div className="contenido">
-        {pestana === 'tiempoReal' && (
-          <TiempoReal
-            traza={configuracionValida ? traza : null}
-            escenario={escenario}
+      <main className={`vista vista--${vista}`}>
+        {vista === VISTA.SIMULACION && (
+          <VistaSimulacion
+            traza={traza}
+            escenarioAplicado={aplicado}
+            borrador={borrador}
+            alCambiar={cambiarEnBorrador}
+            alRestablecer={restablecerEnBorrador}
+            alAplicarSituacion={cambiarSituacion}
+            alAplicar={aplicarYRecalcular}
+            alDescartar={descartarCambios}
+            hayCambiosSinAplicar={hayCambiosSinAplicar}
+            problemas={problemasBorrador}
+            recalculando={recalculando}
+            alCancelar={cancelarRecalculo}
+            error={error}
             semilla={semilla}
             alCambiarSemilla={setSemilla}
-            alSimular={simularTraza}
-            ocupado={ocupado}
-            error={configuracionValida ? error : 'Arregla la configuración para poder simular.'}
+            alCorrerLotes={irALotes}
+            alVerSupuestos={() => setVerSupuestos(true)}
           />
         )}
 
-        {pestana === 'lotes' && (
-          <ModoLotes
-            escenario={escenario}
-            cliente={cliente}
-            ocupado={ocupado}
-            setOcupado={setOcupado}
-          />
+        {vista === VISTA.LOTES && (
+          <section className="vista-lotes">
+            <ModoLotes
+              escenario={aplicado}
+              cliente={cliente}
+              ocupado={ocupado}
+              setOcupado={setOcupado}
+            />
+          </section>
         )}
 
-        {pestana === 'configuracion' && (
-          <Formulario
-            escenario={escenario}
-            alCambiar={(ruta, valor) => setEscenario((previo) => cambiarCampo(previo, ruta, valor))}
-            alRestablecer={(ruta) => setEscenario((previo) => restablecerCampo(previo, ruta))}
-            alReemplazar={setEscenario}
-          />
-        )}
-      </div>
+        {vista === VISTA.CONFIGURACION && (
+          <section className="vista-configuracion">
+            <div className="vista-configuracion__acciones">
+              {problemasBorrador.length > 0 && (
+                <div className="problemas" role="alert">
+                  <strong>
+                    Hay {problemasBorrador.length} cosa
+                    {problemasBorrador.length === 1 ? '' : 's'} que corregir antes de aplicar.
+                  </strong>
+                </div>
+              )}
+              {hayCambiosSinAplicar && problemasBorrador.length === 0 && (
+                <p className="panel-sin-aplicar" role="status">
+                  Cambios sin aplicar
+                </p>
+              )}
+              <button
+                type="button"
+                className="boton-principal"
+                onClick={aplicarYRecalcular}
+                disabled={problemasBorrador.length > 0 || !hayCambiosSinAplicar || recalculando}
+              >
+                {recalculando ? 'Recalculando…' : 'Aplicar y recalcular'}
+              </button>
+              <button
+                type="button"
+                onClick={descartarCambios}
+                disabled={!hayCambiosSinAplicar || recalculando}
+              >
+                Descartar cambios
+              </button>
+            </div>
 
-      <footer>
-        <p className="nota">
-          Escenario: <code>{escenario.nombre}</code> · {escenario.corridas.replicas} réplicas desde
-          la semilla {escenario.corridas.primeraSemilla} ·{' '}
-          {cliente.enWorker ? 'el motor corre en un Web Worker' : 'el motor corre en este hilo'}.
-          El catálogo completo de parámetros está en <code>docs/parametros.md</code> y el formato de
-          la traza en <code>docs/traza.md</code>.
-        </p>
-        <details>
-          <summary>Ver el escenario en JSON</summary>
-          <pre>{escenarioAJson(escenario)}</pre>
-        </details>
-      </footer>
-    </main>
+            <Formulario
+              escenario={borrador}
+              alCambiar={cambiarEnBorrador}
+              alRestablecer={restablecerEnBorrador}
+              alReemplazar={setBorrador}
+            />
+          </section>
+        )}
+      </main>
+    </div>
   );
 }
