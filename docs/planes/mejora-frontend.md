@@ -133,24 +133,66 @@ botón de cancelar es una red de seguridad, no un control de uso frecuente.
 aplicación, pero sigue en el repositorio porque `vista3d.test.jsx` lo monta y
 esta etapa no podía tocar ese archivo. Retirarlo es de la etapa 5 (PEN-024).
 
-## Etapa 3 — Lenguaje de usuario
+## Etapa 3 — Lenguaje de usuario ✅
 
-- [ ] Fuera del texto visible toda numeración DEC-/PEN-. Los comentarios del
+Se hizo en dos sesiones: una primera que dejó el catálogo y parte de los textos
+(commit `4a1853b`), y una segunda que cerró lo que faltaba.
+
+- [x] Fuera del texto visible toda numeración DEC-/PEN-. Los comentarios del
       código y los documentos la conservan
-- [ ] El `origen` del catálogo se queda (genera `docs/parametros.md`) pero no
-      se muestra; en su lugar, una etiqueta corta: *Medido en campo*,
-      *Supuesto*, *Sensibilidad* o *Configuración*
-- [ ] Panel «Cómo leer estos resultados» y franja fija «sirven para comparar
-      escenarios entre sí, no para predecir minutos». Contenido que no se
-      pierde: el modelo subestima la congestión del pico; el contraflujo del
-      festivo no se midió; el servicio lento es hipótesis; la cola de campo y
-      la simulada se comparan de frente; lo que se ve en 3D es animación del
-      modelo, no una medida
-- [ ] La prueba que exige «DEC-» en el formulario se invierte: una prueba nueva
-      falla si el texto renderizado contiene `DEC-\d` o `PEN-\d`
-- [ ] Decisión: lenguaje de usuario en la interfaz
+- [x] El `origen` del catálogo se queda (genera `docs/parametros.md`) pero ya no
+      se muestra; en su lugar `tipoOrigen`, escrito por parámetro y no deducido
+      del texto de `origen`. La tabla de las 34 asignaciones está en la DEC-056
+- [x] Franja fija «sirven para comparar escenarios entre sí, no para predecir
+      minutos de espera» y panel «Cómo leer los resultados», en la simulación y
+      en los lotes, con las cuatro advertencias que no se pierden
+- [x] **La prueba invertida** (`lenguajeUsuario.test.jsx`): monta las tres
+      vistas, despliega lo plegable y falla si el texto o los atributos `title`,
+      `aria-label`, `placeholder` y `alt` traen la numeración o una clave de
+      conteo; lo mismo con el panel 3D montado solo
+- [x] **DEC-056** registrada (la sesión anterior la citaba en el código sin que
+      existiera en el registro)
 
-## Etapa 4 — Diseño visual y solo modo claro
+**Lo que cerró la segunda sesión:** los seis textos de `PanelVista3D`, el panel
+de supuestos y sus claves `PEN-`, que `Campo` dibujara `tipoOrigen` en vez de
+`origen`, las claves de conteo de los dos selectores, los grupos `E1`…`E5`, la
+prueba invertida y la DEC-056.
+
+**Tres fugas que encontró la prueba** y que la revisión a ojo no había visto: los
+nombres «Sustituto domingoPC/domingoCP» de los lotes, el selector de conteo base
+y el selector de escenarios del catálogo.
+
+## Etapa 4a — Simplificación ✅
+
+La interfaz muestra el programa y sus funciones, no la documentación del modelo
+(DEC-057). En pantalla se queda lo que se usa y los avisos funcionales de una
+línea.
+
+- [x] **De cada campo** se fueron el significado como párrafo, el rango, el valor
+      por defecto en texto y el `origen`. Se quedan nombre con unidad, control,
+      marca de modificado con su botón y errores de validación. El significado
+      pasa a `title`
+- [x] **De `tipoOrigen` solo se pintan «Supuesto» y «Sensibilidad»**, que son las
+      que advierten algo; «Medido en campo» y «Configuración» no se pintan
+- [x] **De la vista 3D** se fueron los párrafos de lo cosmético, del modelo del
+      carro y de la cámara libre, y el indicador de ms por fotograma. Se quedan
+      selector de cámara, de calidad, aviso sin WebGL y **leyenda compacta** con
+      muestra, texto y figura de los cuatro estados. **La DEC-039 no se toca**
+- [x] Lo que se dibuja queda como indicador corto: «Vehículos: modelo 3D» o
+      «Vehículos: cajas»
+- [x] **Fuera las notas explicativas** de lotes, formulario y tableros. Se queda
+      una leyenda de una línea por gráfico («Puntos huecos: cola medida en
+      campo») y el veredicto
+- [x] **Fuera el panel de supuestos**, sustituido por la franja fija y el panel
+      «Cómo leer los resultados», de cuatro frases, plegable y visible la
+      primera vez
+- [x] El pie de página y el visor de JSON de `App.jsx` ya se habían ido en la
+      etapa 2; importar y exportar siguen en la configuración avanzada
+- [x] **DEC-057** registrada: supera **el punto 3 de la DEC-038** (la nota fija
+      de la escena) y nada más. Se comprobó que la **DEC-030 no entra**: no fija
+      qué muestra el formulario
+
+## Etapa 4b — Diseño visual y solo modo claro
 
 - [ ] Dirección visual con la skill de frontend design; tokens de color,
       tipografía y espaciado en `estilos.css`

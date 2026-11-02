@@ -70,7 +70,7 @@ export default function Formulario({ escenario, alCambiar, alRestablecer, alReem
                   .filter((c) => c.grupo === grupo)
                   .map((c) => (
                     <option key={`${c.codigo}|${c.regimen}`} value={`${c.codigo}|${c.regimen}`}>
-                      {c.nombre} · {c.regimen}
+                      {c.nombreUsuario ?? c.nombre} · {c.regimen}
                     </option>
                   ))}
               </optgroup>
@@ -99,9 +99,7 @@ export default function Formulario({ escenario, alCambiar, alRestablecer, alReem
 
       {escenario.servicio.regimen !== 'base' && (
         <p className="etiqueta-sensibilidad">
-          Servicio de <strong>prueba</strong> ({escenario.servicio.regimen}): es una hipótesis,
-          no algo que se haya medido. Mira siempre su resultado al lado del caso normal, no
-          en su lugar.
+          Servicio de prueba ({escenario.servicio.regimen}): es una hipótesis, no una medición.
         </p>
       )}
 

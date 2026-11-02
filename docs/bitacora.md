@@ -2,6 +2,136 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-02 — Mejora del frontend: etapa 3 cerrada y etapa 4a (simplificar)
+
+Dos cosas en una sesión: terminar la etapa 3, que se había quedado a medias en
+el commit `4a1853b`, y la **etapa 4a**, que es simplificar lo que la interfaz
+muestra. Sin diseño visual: la paleta y la tipografía son la 4b.
+
+### Etapa 3 — lo que faltaba
+
+La sesión anterior dejó el catálogo con `tipoOrigen`, `cambiaUsuario` y siete
+textos reescritos, pero **citaba una DEC-056 que no estaba en el registro** y
+quedaban por hacer los seis textos de `PanelVista3D`, el panel de supuestos con
+sus claves `PEN-` pintadas, que `Campo` dibujara `tipoOrigen` en vez de
+`origen`, los identificadores de código visibles y la prueba.
+
+- **DEC-056** registrada, ajustada a lo que de verdad se implementó, con la
+  tabla de las 34 asignaciones de `tipoOrigen` y las **tres asignaciones
+  discutibles** declaradas como tales: el conteo es «Medido en campo» (que el
+  contraflujo del festivo sea un sustituto lo dice el aviso de la situación, no
+  la etiqueta), el factor de demanda es «Configuración» y las series en `null`
+  son «Medido en campo».
+- **La prueba invertida**, `lenguajeUsuario.test.jsx`: monta la aplicación en
+  las tres vistas, despliega lo plegable y falla si el texto renderizado o los
+  atributos `title`, `aria-label`, `placeholder` y `alt` traen `DEC-n`, `PEN-n` o
+  una clave de conteo; y lo mismo con el panel 3D montado solo.
+
+**La prueba encontró tres fugas que la revisión a ojo no vio:** los nombres
+«Sustituto domingoPC» y «Sustituto domingoCP» en los lotes, el selector de
+conteo base (que componía `festivoPC — 1064 veh/h`) y el selector de escenarios
+del catálogo en el formulario. Y una cuarta la cazó el navegador y no jsdom: la
+configuración avanzada seguía mostrando `domingoPC` en el selector de conteo,
+porque la primera versión de la prueba solo comprobaba las claves en dos de las
+tres vistas. Está corregida y ahora comprueba las tres.
+
+**Un error que corregí sobre la marcha, y es el que más importa.** Para quitar
+las claves de conteo cambié el `nombre` de esos dos escenarios a «Contraflujo
+del domingo, …». Al regenerar, `fase4-escenarios.md` **cambió en siete líneas**:
+el `nombre` sale en el informe, igual que `cambia`. Lo revertí y añadí
+`nombreUsuario` aparte, con el mismo criterio que ya se había usado para
+`cambiaUsuario`. Ahora los informes se regeneran **sin ninguna diferencia**. La
+lección: en este repositorio, cualquier texto de `escenarios.js` que un script
+imprima es parte de un informe, y para la pantalla hace falta un campo propio.
+
+### Etapa 4a — simplificar
+
+**DEC-057.** En pantalla se queda lo que se usa y los avisos funcionales de una
+línea; la explicación del modelo vive en `docs/`.
+
+- **De cada campo** se fueron el significado como párrafo, el rango, el valor por
+  defecto en texto y el `origen`. El significado pasa a `title` del nombre:
+  sigue a mano, sin ocupar cuatro líneas. De `tipoOrigen` solo se pintan
+  **«Supuesto» y «Sensibilidad»**, que advierten algo; las otras dos no.
+- **De la vista 3D** se fueron tres párrafos (lo cosmético, el modelo del carro,
+  la cámara libre) y el indicador de ms por fotograma. Se quedan los dos
+  selectores, el aviso sin WebGL y una **leyenda compacta**. Lo que se dibuja
+  quedó en «Vehículos: modelo 3D» o «Vehículos: cajas».
+- **Fuera las notas explicativas** de lotes, formulario y tableros, incluida la
+  referencia a `docs/resultados/` del pie de la tabla. Se queda una leyenda de
+  una línea por gráfico y el veredicto.
+- **Fuera el panel de supuestos.** Lo sustituyen una **franja fija de una línea**
+  («Los resultados sirven para comparar escenarios entre sí, no para predecir
+  minutos de espera») y un botón **«Cómo leer los resultados»** con cuatro
+  frases: el modelo se queda corto en el pico y las casetas que sugiere son un
+  mínimo; el contraflujo del festivo es un supuesto; el servicio lento es una
+  hipótesis; los vehículos en 3D son una animación. Plegable, visible la primera
+  vez, y lo recuerda en `localStorage` con try/catch.
+
+**Qué decisiones toca, comprobado una por una:**
+
+- **Supera el punto 3 de la DEC-038**, que exigía que la escena dijera «con una
+  nota fija» que los desplazamientos son cosméticos. Lo que la DEC-038 decide
+  sigue intacto; lo que cambia es que no se explica en pantalla, y la
+  advertencia de que el 3D es una animación se conserva en «Cómo leer».
+- **La DEC-039 NO se toca.** La leyenda compacta mantiene, para cada uno de los
+  cuatro estados, su muestra, su texto y su figura, con una prueba que lo
+  comprueba estado por estado.
+- **La DEC-030 no entra.** La revisé: fija la configurabilidad y que el catálogo
+  genere `docs/parametros.md`, pero **no dice nada de qué muestra el
+  formulario**. La única mención a «unidad, rango, significado» está en el
+  *motivo* de la DEC-050, explicando por qué el panel filtra el catálogo, y eso
+  sigue siendo verdad.
+
+### Pruebas y cierre
+
+**508 en verde** (eran 488). Ninguna se borró sin sustituto; las que
+comprobaban textos que se fueron se reescribieron para comprobar lo que queda,
+cada una con su motivo en comentario:
+
+- «muestra unidad, valor por defecto, rango y origen de cada campo» → ahora
+  comprueba que se vea el nombre con su unidad, que el significado esté en
+  `title`, y que **no** aparezcan el rango, el valor por defecto ni la
+  numeración.
+- «los supuestos del panel fijo» y «panel de supuestos» → ahora comprueban las
+  cuatro advertencias, la franja y que el panel se pliegue.
+- «se puede configurar un pozo de 8 y de 10» → el aviso de extrapolados pasó a
+  «Por encima de 5 casetas los valores son estimados».
+- «muestra cada caseta con su dueño y su estado» → comprueba el dato que queda,
+  «Libres en el pozo».
+
+Nuevas: la prueba invertida en las tres vistas y en el panel 3D; `tipoOrigen`
+válido en los 34 parámetros y los cuatro valores usados; que solo se etiqueten
+Supuesto y Sensibilidad; que la franja esté en simulación y lotes y no en la
+configuración; que «Cómo leer» traiga las cuatro advertencias; y que la leyenda
+compacta conserve figura y texto de los cuatro estados.
+
+`vista3d.test.jsx`, `modeloEscena`, `geometria` y `modeloCarro`, en verde **sin
+tocarlos**. `npm run build` limpio, `git status src/motor/` vacío,
+`modeloEscena.js` y `geometria.js` sin cambios, y los informes de las fases 2 a
+4 **sin ninguna diferencia**.
+
+`docs/parametros.md` sigue generándose con `origen`. Cambió en **dos líneas**
+además de la fecha, y es inevitable: los `significado` de «Tope por sentido» y
+«Ofrecer el pozo libre por ρ» citaban decisiones, y ese campo es a la vez texto
+visible en el formulario y columna del documento.
+
+**Comprobado en el navegador** las tres vistas: ninguna muestra numeración ni
+claves de conteo, el lienzo 3D se dibuja, la franja está, la leyenda tiene sus
+cuatro estados y en el panel solo aparece la etiqueta «Supuesto», que es la de
+la demora de apertura.
+
+**Qué quedó a medias:** nada de la etapa 3 ni de la 4a.
+
+**Qué sigue abierto:**
+
+- La **etapa 4b** (paleta, tipografía, solo modo claro) y la **5** (`ui.md`,
+  `vista3d.md` y capturas).
+- **PEN-024**: `TiempoReal.jsx` sigue siendo código muerto en producción pero
+  vivo en `vista3d.test.jsx`.
+- De las fases: **PEN-013**, **PEN-010** y **PEN-008**, que son mediciones de
+  campo.
+
 ## 2026-11-02 — Mejora del frontend, etapa 2: la estructura nueva
 
 Segunda de las cinco etapas de `docs/planes/mejora-frontend.md`. Sin diseño

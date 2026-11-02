@@ -14,7 +14,8 @@ import {
   rutasModificadas,
   serieDelCampo,
   sonIguales,
-  SUPUESTOS,
+  ADVERTENCIAS,
+  FRANJA,
   problemas,
   valorDelCampo,
 } from '../modeloFormulario.js';
@@ -23,6 +24,7 @@ import {
   GRUPOS,
   CONTROLES,
   RUTAS_DEL_PANEL,
+  TIPOS_ORIGEN,
 } from '../../config/catalogoParametros.js';
 import {
   RUTA_PROMEDIO_ATENCION,
@@ -289,12 +291,58 @@ describe('rótulo de sensibilidad', () => {
   });
 });
 
-describe('los supuestos del panel fijo', () => {
-  it('son los tres no medidos, con su pendiente', () => {
-    expect(SUPUESTOS.map((s) => s.clave)).toEqual(['PEN-010', 'PEN-013', 'PEN-008']);
-    for (const supuesto of SUPUESTOS) {
-      expect(supuesto.titulo).toBeTruthy();
-      expect(supuesto.texto.length).toBeGreaterThan(40);
+/**
+ * **Reescrita en la etapa 4a (DEC-057).** Antes comprobaba que `SUPUESTOS`
+ * trajera las claves `PEN-010`, `PEN-013` y `PEN-008`, que además se pintaban
+ * en pantalla. Ahora las advertencias no llevan numeración, así que lo que se
+ * comprueba es que estén las cuatro y que ninguna cite nada interno.
+ */
+describe('las advertencias del estudio', () => {
+  it('son cuatro, en lenguaje de usuario y sin numeración interna', () => {
+    expect(ADVERTENCIAS).toHaveLength(4);
+    for (const texto of ADVERTENCIAS) {
+      expect(texto.length).toBeGreaterThan(40);
+      expect(texto).not.toMatch(/\b(DEC|PEN)-\d/);
+    }
+  });
+
+  it('cubren las cuatro cosas que no se pueden perder', () => {
+    const todo = ADVERTENCIAS.join(' ').toLowerCase();
+    // El modelo se queda corto en el pico y las casetas son un mínimo.
+    expect(todo).toMatch(/mínimo/);
+    // El contraflujo del festivo no se midió.
+    expect(todo).toMatch(/supuesto/);
+    // El servicio lento es una hipótesis.
+    expect(todo).toMatch(/hipótesis/);
+    // Lo que se ve en 3D es una animación, no una medida.
+    expect(todo).toMatch(/animación/);
+  });
+
+  it('la franja dice para qué sirven los resultados, en una línea', () => {
+    expect(FRANJA).toMatch(/comparar escenarios/);
+    expect(FRANJA).not.toMatch(/\b(DEC|PEN)-\d/);
+    expect(FRANJA.split('\n')).toHaveLength(1);
+  });
+});
+
+describe('de dónde sale cada parámetro', () => {
+  it('todos tienen un tipoOrigen de los cuatro válidos', () => {
+    const validos = Object.values(TIPOS_ORIGEN);
+    for (const parametro of CATALOGO_PARAMETROS) {
+      expect(validos, parametro.ruta).toContain(parametro.tipoOrigen);
+    }
+  });
+
+  it('los cuatro valores se usan al menos una vez', () => {
+    const usados = new Set(CATALOGO_PARAMETROS.map((p) => p.tipoOrigen));
+    for (const valor of Object.values(TIPOS_ORIGEN)) {
+      expect(usados, valor).toContain(valor);
+    }
+  });
+
+  it('`origen` se queda en el catálogo: genera docs/parametros.md', () => {
+    for (const parametro of CATALOGO_PARAMETROS) {
+      expect(parametro.origen, parametro.ruta).toBeTruthy();
     }
   });
 });

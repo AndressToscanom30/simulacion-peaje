@@ -32,7 +32,6 @@ export default function VistaSimulacion({
   semilla,
   alCambiarSemilla,
   alCorrerLotes,
-  alVerSupuestos,
 }) {
   const [velocidad, setVelocidad] = useState(VELOCIDADES[1]);
   const [instante, setInstante] = useState(0);
@@ -109,7 +108,6 @@ export default function VistaSimulacion({
       semilla={semilla}
       alCambiarSemilla={alCambiarSemilla}
       alCorrerLotes={alCorrerLotes}
-      alVerSupuestos={alVerSupuestos}
     />
   );
 

@@ -35,6 +35,24 @@ export const REGIMENES_SERVICIO = {
 export const COLA_INICIAL = { viernes: 0, domingoCP: 0, domingoPC: 0, festivoPC: 23 };
 
 /**
+ * Nombre corto y legible de cada conteo, para la interfaz (DEC-056).
+ *
+ * Las claves (`domingoPC`, `festivoPC`…) son identificadores de código: dicen
+ * el día y el sentido pegados, en inglés abreviado. La `etiqueta` de `datos.js`
+ * es correcta pero demasiado larga para una casilla, así que aquí está la
+ * versión corta. No es un dato nuevo: es la misma información, dicha para leer.
+ */
+export const NOMBRE_CORTO_CONTEO = {
+  viernes: 'viernes, Cúcuta→Pamplona',
+  domingoCP: 'domingo, Cúcuta→Pamplona',
+  domingoPC: 'domingo, Pamplona→Cúcuta',
+  festivoPC: 'festivo, Pamplona→Cúcuta',
+};
+
+/** Nombre corto de un conteo, o su clave si no estuviera. */
+export const nombreCortoDeConteo = (clave) => NOMBRE_CORTO_CONTEO[clave] ?? clave;
+
+/**
  * Perfil de **rampa** para el estudio de arranque en frío (DEC-047): los mismos
  * intervalos medidos, reordenados de menor a mayor.
  *
@@ -369,8 +387,22 @@ function e3DemandaAlta(factores = [1.1, 1.13, 1.2]) {
 /** E4 — Sensibilidades sobre E2a (regla sin reasignación, factor 1,0). */
 function e4Sensibilidades() {
   const casos = [];
-  const anadir = (codigo, nombre, cambia, sobreescrituras) =>
-    casos.push({ grupo: 'E4', codigo, nombre, cambia, sobreescrituras: { nombre: codigo, ...sobreescrituras } });
+  const anadir = (codigo, nombre, cambia, sobreescrituras, paraElUsuario = {}) =>
+    casos.push({
+      grupo: 'E4',
+      codigo,
+      nombre,
+      cambia,
+      /**
+       * `nombre` y `cambia` **no se tocan**: los dos salen en
+       * `fase4-escenarios.md`, y cambiarlos movería el informe. Cuando alguno
+       * lleva algo que no se puede leer en pantalla —la clave de un conteo—, se
+       * añade aquí su versión para el usuario (DEC-056).
+       */
+      ...(paraElUsuario.nombre ? { nombreUsuario: paraElUsuario.nombre } : {}),
+      ...(paraElUsuario.cambia ? { cambiaUsuario: paraElUsuario.cambia } : {}),
+      sobreescrituras: { nombre: codigo, ...sobreescrituras },
+    });
 
   // Demora de apertura (contexto, sección 7).
   for (const minutos of [0, 5, 10]) {
@@ -435,11 +467,16 @@ function e4Sensibilidades() {
   // Sustitutos alternativos de C→P (PEN-013).
   for (const conteoAlterno of ['domingoPC', 'domingoCP']) {
     const total = conteos[conteoAlterno].llegadas.reduce((a, b) => a + b, 0);
+    const legible = nombreCortoDeConteo(conteoAlterno);
     anadir(
       `E4-sustituto-${conteoAlterno}`,
       `Sustituto ${conteoAlterno}`,
       `C→P pasa a ser ${conteoAlterno} (${total} veh/h) en vez de viernes`,
       { sentidos: [{}, { conteo: conteoAlterno, etiqueta: `C→P (${conteoAlterno})` }] },
+      {
+        nombre: `Contraflujo del ${legible}`,
+        cambia: `el sentido contrario pasa a tener el tráfico del ${legible}: ${total} veh/h`,
+      },
     );
   }
 
@@ -544,6 +581,8 @@ export function catalogoFase4() {
          * traen el suyo escrito.
          */
         cambiaUsuario: plantilla.cambiaUsuario ?? plantilla.cambia,
+        /** Lo mismo para el nombre, por el mismo motivo. */
+        nombreUsuario: plantilla.nombreUsuario ?? plantilla.nombre,
         barrido: plantilla.barrido ?? null,
         regimen: clave,
         escenario,

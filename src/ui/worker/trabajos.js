@@ -63,7 +63,7 @@ export function trabajoLote({ escenarios, replicas }, { alProgresar, cancelado }
 
     resultados.push({
       codigo: entrada.codigo ?? escenario.nombre,
-      nombre: entrada.nombre ?? escenario.nombre,
+      nombre: entrada.nombreUsuario ?? entrada.nombre ?? escenario.nombre,
       cambia: entrada.cambia ?? '',
       /** El mismo texto en lenguaje de usuario, que es el que se muestra. */
       cambiaUsuario: entrada.cambiaUsuario ?? entrada.cambia ?? '',

@@ -1549,3 +1549,133 @@ tomaron durante el desarrollo.
 - **Descarta:** ordenar los sentidos por demanda (en el domingo eso pondría C→P
   primero, con 451 veh/h contra 195); reordenar los sentidos al cambiar de
   situación; y cambiar el orden de `diaNormal` para que las tres coincidan.
+
+## DEC-056 — La interfaz habla en lenguaje de usuario: fuera la numeración interna del texto visible
+
+- **Fecha:** 02/11/2026
+- **No supera a ninguna decisión.** La numeración interna nunca se decidió para
+  la pantalla: se fue colando en los textos porque era cómoda al escribirlos.
+- **Decisión:** ningún texto que el usuario vea puede contener `DEC-n` ni
+  `PEN-n`, ni identificadores de código. **Los comentarios del código, los
+  documentos de `docs/` y los informes generados conservan la numeración**, que
+  es donde sirve: ahí es la forma de encontrar por qué algo es como es.
+- **Qué se quitó de los textos visibles:** las citas de decisión de
+  `CajonMedidas`, `Campo` (dos), `EsquemaCasetas`, `Formulario`, `ModoLotes`,
+  `TablaMedidas` y `PanelVista3D` (seis), más dos `significado` del catálogo y
+  el texto de los supuestos. Las claves `PEN-010` y compañía que el panel de
+  supuestos **pintaba** desaparecen con él (DEC-057).
+- **Criterio al reescribir:** no cambia lo que el texto afirma. Si la cita era
+  lo único que la frase añadía, se quita la frase; si la frase decía algo, se
+  dice igual sin el número.
+- **De dónde sale cada parámetro: `origen` se queda, `tipoOrigen` se muestra.**
+  `origen` cita secciones del contexto y decisiones, y **sigue en el catálogo**
+  porque genera `docs/parametros.md`. Para la pantalla, cada parámetro lleva un
+  **`tipoOrigen` escrito**, no deducido del texto de `origen`, con uno de cuatro
+  valores. Reparto de los 34:
+
+  | `tipoOrigen` | Cuántos | Cuáles |
+  |---|---|---|
+  | **Medido en campo** | 11 | conteo, cola inicial, casetas iniciales, llegadas y casetas fijas por intervalo, promedio de atención, `k`, `θ`, nominal, duración del intervalo, intervalos del horizonte |
+  | **Supuesto** | 1 | demora de apertura |
+  | **Sensibilidad** | 5 | disparador por tasa y su tabla, factor de umbrales, reasignación activada, ofrecer el pozo libre por ρ |
+  | **Configuración** | 17 | factor de demanda, modo, nombre del régimen, pozo, mínimo y tope, umbrales de abrir y cerrar, ventana de cierre, ρ, ventana de ρ, espera del desempate, meta, máximo tolerable, fracción aceptada, réplicas, primera semilla |
+
+- **Tres asignaciones son discutibles y se eligieron así, a propósito:**
+  1. **`sentidos[i].conteo` → Medido en campo.** Es el conteo que da las
+     llegadas, y los conteos son dato de campo. Que el contraflujo del festivo
+     sea un **sustituto** no se pierde: lo dice el aviso de la situación y lo
+     marca `esSensibilidad` cuando el conteo de C→P no es el de por defecto.
+     Etiquetarlo «Supuesto» habría llamado supuesto al conteo del festivo, que
+     es la medición principal del estudio.
+  2. **`sentidos[i].factorDemanda` → Configuración.** Su valor por defecto, 1,
+     reproduce la demanda contada, pero el factor en sí es una perilla. Llamarlo
+     «Medido en campo» sugeriría que alguien midió un factor.
+  3. **`llegadas` y `casetasFijas` → Medido en campo.** En `null` son las del
+     conteo, que es su estado normal; escritas a mano pasan a ser configuración,
+     y eso ya lo dice el propio campo («Escrita a mano · volver al conteo»).
+- **Identificadores de código fuera de la pantalla:** las claves de conteo
+  (`festivoPC`, `domingoCP`, `domingoPC`, `viernes`) se sustituyen por el día y
+  el sentido, con `NOMBRE_CORTO_CONTEO` en `escenarios.js`; los grupos `E1`…`E5`
+  de los lotes, por nombres descriptivos (`GRUPOS_LOTES`). Los códigos siguen
+  siendo la clave interna y la que usan los informes.
+- **Lo que el informe usa no se toca.** `nombre` y `cambia` de los escenarios de
+  la fase 4 salen en `fase4-escenarios.md`, así que se quedan tal cual y la
+  interfaz usa `nombreUsuario` y `cambiaUsuario`, que solo se escriben donde
+  hacía falta. Comprobado: los informes de las fases 2 a 4 se regeneran **sin
+  ninguna diferencia**.
+- **Con prueba, y encontró fugas.** `lenguajeUsuario.test.jsx` monta la
+  aplicación en las tres vistas, despliega lo plegable y falla si el texto
+  renderizado o los atributos `title`, `aria-label`, `placeholder` o `alt`
+  contienen la numeración o una clave de conteo; y hace lo mismo con el panel 3D
+  montado solo. Al escribirla aparecieron tres fugas que la revisión a ojo no
+  había visto: los nombres «Sustituto domingoPC/domingoCP» en los lotes, el
+  selector de conteo base, y el selector de escenarios del catálogo.
+- **Descarta:** citar decisiones o pendientes en la pantalla; mostrar `origen`
+  en la interfaz; deducir `tipoOrigen` parseando el texto de `origen`; y
+  reescribir `nombre` o `cambia` de los escenarios de la fase 4.
+
+## DEC-057 — La interfaz muestra el programa y sus funciones, no la documentación del modelo
+
+- **Fecha:** 02/11/2026
+- **Decisión de la usuaria.** En pantalla se queda **lo que se usa** —controles,
+  escena, HUD, reproducción, gráficos, tablas de resultados, importar y
+  exportar— y los **avisos funcionales de una línea**. Se va la explicación de
+  cómo está hecho el modelo: eso vive en `docs/` y en el documento del estudio.
+- **Supera, y solo en esta parte:**
+  - **de la DEC-038, el punto 3**, que exigía que la escena dijera «con una nota
+    fija» que los desplazamientos son cosméticos. La nota se va de la pantalla.
+    **Lo que la DEC-038 decide sigue intacto**: la escena dibuja el modelo y no
+    una foto del peaje, un embudo por sentido, casetas reversibles, una sola
+    clase de vehículo. Lo que cambia es que no se explica en pantalla; se
+    explica en `docs/vista3d.md`, y la advertencia de que el 3D es una animación
+    y no una medida se conserva en el panel «Cómo leer los resultados».
+- **La DEC-039 NO se toca.** El color sigue sin ser la única señal: la leyenda
+  compacta mantiene, para cada uno de los cuatro estados de caseta, su muestra,
+  su **texto** y su **figura**, y hay una prueba que lo comprueba estado por
+  estado.
+- **La DEC-030 no entra aquí.** Se revisó: fija que todo valor del modelo sea
+  configurable y que el catálogo genere `docs/parametros.md`; **no dice nada de
+  qué muestra el formulario**. La única mención a «unidad, rango, significado»
+  está en el *motivo* de la DEC-050, explicando por qué el panel filtra el
+  catálogo en vez de escribir campos a mano, y eso sigue siendo verdad: los
+  campos se siguen generando del catálogo.
+- **Qué se fue, en concreto:**
+  - **De cada campo:** el significado como párrafo, el rango, el valor por
+    defecto en texto y el `origen`. Se queda el nombre con su unidad, el control,
+    la marca de modificado con su botón de restablecer y los errores de
+    validación. El significado pasa a `title` del nombre: ayuda al pasar el
+    cursor y no ocupa sitio.
+  - **De `tipoOrigen`, solo lo que advierte:** se pintan «Supuesto» y
+    «Sensibilidad». «Medido en campo» y «Configuración» no se pintan, porque
+    saberlo no cambia nada al usar el programa.
+  - **De la vista 3D:** los párrafos de lo cosmético, del modelo del carro y de
+    la cámara libre, y el indicador de ms por fotograma. Se quedan el selector
+    de cámara, el de calidad, el aviso sin WebGL y la leyenda compacta. Lo que
+    se está dibujando queda como indicador corto: «Vehículos: modelo 3D» o
+    «Vehículos: cajas».
+  - **De los lotes, el formulario y los tableros:** las notas explicativas (las
+    semillas comunes, la suma de colas máximas, la caseta marcada, la referencia
+    a `docs/resultados/`). Se quedan los títulos, los ejes, el veredicto y una
+    leyenda de una línea por gráfico: «Puntos huecos: cola medida en campo».
+  - **El panel de supuestos** entero, y con él las claves que pintaba.
+- **Qué se queda como aviso funcional de una línea:** el de cada situación (el
+  contraflujo no medido, las horas distintas, el día construido), «Cambios sin
+  aplicar», los errores de validación y «Por encima de 5 casetas los valores son
+  estimados», que además solo aparece cuando de verdad hay valores extrapolados.
+- **Y lo que no se pierde:** una **franja fija de una línea** en la simulación y
+  en los lotes —«Los resultados sirven para comparar escenarios entre sí, no
+  para predecir minutos de espera»— y detrás un botón **«Cómo leer los
+  resultados»** con cuatro frases: el modelo se queda corto en el pico y las
+  casetas que sugiere son un mínimo; el contraflujo del festivo es un supuesto;
+  el servicio lento es una hipótesis; los vehículos en 3D son una animación. Se
+  puede plegar, arranca visible la primera vez y lo recuerda en `localStorage`
+  con try/catch. Las cuatro viven en `ADVERTENCIAS`, en datos, y hay prueba de
+  que están las cuatro y de que ninguna cita nada interno.
+- **Motivo:** la pantalla había acabado siendo el documento del estudio con
+  controles intercalados. Un campo ocupaba cuatro líneas de las cuales tres eran
+  explicación, y la vista 3D terminaba en tres párrafos sobre cómo se dibuja.
+  Quien usa el programa quiere mover un parámetro y ver qué pasa; quien quiere
+  saber por qué el modelo es así tiene `docs/`.
+- **Descarta:** explicar el modelo en la interfaz; mostrar el rango, el valor por
+  defecto y el origen en cada campo; etiquetar los parámetros que no advierten
+  nada; y quitar la leyenda de la escena o dejarla solo con el color.

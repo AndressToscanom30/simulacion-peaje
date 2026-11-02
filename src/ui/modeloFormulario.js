@@ -19,6 +19,7 @@ import {
   RUTAS_DEL_PANEL,
 } from '../config/catalogoParametros.js';
 import { conteos } from '../config/datos.js';
+import { nombreCortoDeConteo } from '../config/escenarios.js';
 import {
   esDerivado,
   leerDerivado,
@@ -297,9 +298,11 @@ export function interpretarValor(campo, crudo) {
 /** Opciones de los campos de selección. */
 export function opcionesDe(campo) {
   if (campo.control === CONTROLES.CONTEO) {
+    // La etiqueta es el día y el sentido, no la clave del conteo, que es un
+    // identificador de código (DEC-056).
     return Object.entries(conteos).map(([clave, conteo]) => ({
       valor: clave,
-      etiqueta: `${clave} — ${conteo.llegadas.reduce((a, b) => a + b, 0)} veh/h`,
+      etiqueta: `${nombreCortoDeConteo(clave)} — ${conteo.llegadas.reduce((a, b) => a + b, 0)} veh/h`,
       titulo: conteo.etiqueta,
     }));
   }
@@ -354,23 +357,22 @@ export function esSensibilidad(campo, escenario) {
  * Los tres supuestos no medidos de los que depende todo, para el panel fijo de
  * la interfaz. Son los mismos que declara el informe de la fase 4.
  */
-export const SUPUESTOS = [
-  {
-    clave: 'PEN-010',
-    titulo: 'El servicio del pico no se midió en el pico',
-    texto:
-      'Los 50 tiempos de atención son de otro sentido y otro día. El régimen de servicio lento (15,5 s) es una hipótesis de sensibilidad, no una medición.',
-  },
-  {
-    clave: 'PEN-013',
-    titulo: 'La demanda de Cúcuta→Pamplona en el festivo no se midió',
-    texto:
-      'Por defecto se usa el conteo del viernes, que sí se tomó en ese sentido, por un factor configurable. Es la sensibilidad que más mueve el resultado.',
-  },
-  {
-    clave: 'PEN-008',
-    titulo: 'El modelo subestima la congestión del pico',
-    texto:
-      'La cola de campo es el total de vehículos esperando por sentido (DEC-042), la misma variable que simula el modelo, así que las dos se comparan de frente. En el festivo la simulada queda por debajo en los 12 intervalos, así que las casetas que salgan de aquí son una cota inferior.',
-  },
+export const FRANJA =
+  'Los resultados sirven para comparar escenarios entre sí, no para predecir minutos de espera.';
+
+/**
+ * Las advertencias del estudio, en lenguaje de usuario (DEC-056, DEC-057).
+ *
+ * Cuatro frases, sin numeración interna y sin citar documentos. Sustituyen a
+ * los tres supuestos del panel viejo, que además pintaban su clave («PEN-010»)
+ * en pantalla. Lo que afirman no cambia; cambia cómo se dice.
+ *
+ * Están aquí, en datos, para que la prueba las compruebe una por una sin
+ * depender de cómo las dibuje el componente.
+ */
+export const ADVERTENCIAS = [
+  'El modelo se queda corto en las horas punta, así que las casetas que sugiere son un mínimo: en la realidad harían falta al menos esas.',
+  'En el festivo solo se midió el sentido de retorno. El tráfico del sentido contrario es un supuesto, y es lo que más mueve el resultado.',
+  'El servicio lento de 15,5 segundos es una hipótesis para probar qué pasaría, no algo que se haya medido.',
+  'Los vehículos que se ven en 3D son una animación de lo que calcula el modelo, no una medida de nada.',
 ];

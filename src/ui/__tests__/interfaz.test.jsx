@@ -10,11 +10,11 @@ import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/re
 
 import App from '../../App.jsx';
 import Formulario from '../componentes/Formulario.jsx';
-import PanelSupuestos from '../componentes/PanelSupuestos.jsx';
+import Advertencias from '../componentes/Advertencias.jsx';
 import EsquemaCasetas from '../componentes/EsquemaCasetas.jsx';
 import TablaMedidas from '../componentes/TablaMedidas.jsx';
 import { construirEscenario } from '../../config/escenario.js';
-import { cambiarCampo, restablecerCampo, SUPUESTOS } from '../modeloFormulario.js';
+import { cambiarCampo, restablecerCampo, ADVERTENCIAS, FRANJA } from '../modeloFormulario.js';
 import { simularTraza } from '../../corridas.js';
 import { crearClienteSimulacion, fueDescartado } from '../worker/cliente.js';
 import { reconstruirDesdeTraza } from '../../motor/traza.js';
@@ -30,23 +30,37 @@ beforeEach(() => {
   }
 });
 
-describe('panel de supuestos', () => {
-  it('muestra los tres supuestos no medidos con su pendiente', () => {
-    render(<PanelSupuestos />);
-    for (const supuesto of SUPUESTOS) {
-      expect(screen.getByText(supuesto.clave)).toBeDefined();
-      expect(screen.getByText(supuesto.titulo)).toBeDefined();
+/**
+ * **Reescrito en la etapa 4a (DEC-057).** El panel de supuestos ocupaba la
+ * cabecera con tres párrafos y pintaba su clave interna. Lo sustituye la franja
+ * de una línea más un panel corto; lo que se comprueba es que las advertencias
+ * sigan ahí y que se puedan plegar.
+ */
+describe('franja y panel de advertencias', () => {
+  it('la franja dice para qué sirven los resultados', () => {
+    render(<Advertencias />);
+    expect(screen.getByText(FRANJA)).toBeDefined();
+  });
+
+  it('arranca con el panel abierto y trae las cuatro advertencias', () => {
+    render(<Advertencias />);
+    for (const texto of ADVERTENCIAS) {
+      expect(screen.getByText(texto), texto.slice(0, 30)).toBeDefined();
     }
   });
 
-  it('dice que la cola de campo es el total por sentido y es comparable (DEC-042)', () => {
-    render(<PanelSupuestos />);
-    expect(
-      screen.getAllByText(/total de vehículos esperando\s+por sentido/).length,
-    ).toBeGreaterThan(0);
-    // Lo que decía antes era lo contrario de lo cierto (DEC-024, superada).
-    expect(screen.queryByText(/fila más larga de una caseta/)).toBeNull();
-    expect(screen.queryByText(/no son comparables de frente/)).toBeNull();
+  it('se puede plegar y volver a abrir con el botón', () => {
+    render(<Advertencias />);
+    const boton = screen.getByRole('button', { name: 'Cómo leer los resultados' });
+    fireEvent.click(boton);
+    expect(screen.queryByText(ADVERTENCIAS[0])).toBeNull();
+    fireEvent.click(boton);
+    expect(screen.getByText(ADVERTENCIAS[0])).toBeDefined();
+  });
+
+  it('no muestra numeración interna', () => {
+    const { container } = render(<Advertencias />);
+    expect(container.textContent).not.toMatch(/\b(DEC|PEN)-\d/);
   });
 });
 
@@ -124,14 +138,41 @@ describe('formulario generado', () => {
     expect(estado.escenario.pozo.total).toBe(6);
   });
 
-  it('muestra unidad, valor por defecto, rango y origen de cada campo', () => {
+  /**
+   * **Reescrita en la etapa 4a (DEC-057).** Antes exigía que cada campo
+   * mostrara el valor por defecto, el rango y el `origen` —con su «DEC-»—.
+   * Eso es documentación: ahora vive en `docs/parametros.md`. En pantalla se
+   * queda el nombre con su unidad, y el significado como ayuda al pasar el
+   * cursor.
+   */
+  it('cada campo muestra nombre y unidad, y el significado como ayuda', () => {
     montar();
     expect(screen.getAllByText(/\(casetas\)/).length).toBeGreaterThan(0);
-    const metas = document.querySelectorAll('.campo__meta');
-    expect(metas.length).toBeGreaterThan(5);
-    expect([...metas].some((m) => m.textContent.includes('Por defecto'))).toBe(true);
-    expect([...metas].some((m) => m.textContent.includes('Rango:'))).toBe(true);
-    expect([...metas].some((m) => m.textContent.includes('DEC-'))).toBe(true);
+
+    const etiqueta = screen.getByText(/Casetas del pozo/).closest('label');
+    expect(etiqueta.getAttribute('title')).toBeTruthy();
+
+    // Y ya no se pinta ni el rango, ni el valor por defecto, ni el origen.
+    const cuerpo = document.body.textContent;
+    expect(cuerpo).not.toMatch(/Rango:/);
+    expect(cuerpo).not.toMatch(/Por defecto/);
+    expect(cuerpo).not.toMatch(/\b(DEC|PEN)-\d/);
+  });
+
+  /**
+   * **Nueva en la etapa 4a.** De `tipoOrigen` solo se pintan las etiquetas que
+   * advierten algo.
+   */
+  it('solo se etiquetan los parámetros Supuesto y Sensibilidad', () => {
+    montar();
+    const avisos = [...document.querySelectorAll('.campo__aviso')].map((e) => e.textContent);
+    // La demora de apertura es un supuesto, y está en el formulario.
+    expect(avisos).toContain('Supuesto');
+    // Hay al menos un parámetro de sensibilidad.
+    expect(avisos).toContain('Sensibilidad');
+    // Y ninguna etiqueta de los dos que no advierten nada.
+    expect(avisos).not.toContain('Medido en campo');
+    expect(avisos).not.toContain('Configuración');
   });
 
   it('un valor absurdo muestra todos los problemas juntos', () => {
@@ -179,7 +220,8 @@ describe('formulario generado', () => {
       // Los umbrales se regeneraron para el tope nuevo y no hay problemas.
       expect(Object.keys(estado.escenario.regla.abrirSiColaMayorQue)).toHaveLength(tope);
       expect(screen.queryByRole('alert')).toBeNull();
-      expect(screen.getAllByText(/extrapolados/).length).toBeGreaterThan(0);
+      // El aviso pasó a una línea en la etapa 4a (DEC-057).
+      expect(screen.getAllByText(/valores son estimados/).length).toBeGreaterThan(0);
     }
   });
 
@@ -226,7 +268,9 @@ describe('esquema de casetas', () => {
     render(<EsquemaCasetas pozo={estado.pozo} etiquetas={['P→C', 'C→P']} />);
     expect(screen.getByText(/Casetas del pozo \(6\)/)).toBeDefined();
     expect(document.querySelectorAll('.caseta')).toHaveLength(6);
-    expect(screen.getByText(/no se interrumpe ningún cobro a medias/)).toBeDefined();
+    // La etapa 4a quitó la explicación de la caseta marcada: se queda el dato
+    // que sirve para mirar el pozo (DEC-057).
+    expect(screen.getByText(/Libres en el pozo/)).toBeDefined();
   });
 });
 

@@ -51,7 +51,6 @@ export default function PanelControles({
   semilla,
   alCambiarSemilla,
   alCorrerLotes,
-  alVerSupuestos,
 }) {
   const campos = useMemo(() => camposDelPanel(borrador), [borrador]);
   const modificadas = useMemo(() => rutasModificadas(borrador), [borrador]);
@@ -176,9 +175,6 @@ export default function PanelControles({
             Con la misma semilla la simulación sale igual. Cambiarla también hace falta
             aplicar.
           </p>
-          <button type="button" className="boton-texto" onClick={alVerSupuestos}>
-            Ver supuestos y limitaciones
-          </button>
         </details>
       </div>
 

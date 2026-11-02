@@ -20,8 +20,9 @@ en [`mejora-frontend.md`](mejora-frontend.md)**; aquí solo el estado.
 |---|---|---|
 | 1 | Capa pura: subconjunto del catálogo para el panel, promedio de atención derivado, situaciones predefinidas | ✅ **cerrada** (02/11, DEC-050 a DEC-052) |
 | 2 | Estructura nueva por `#hash` y flujo de «aplicar y recalcular» | ✅ **cerrada** (02/11, DEC-053 a DEC-055) |
-| 3 | Lenguaje de usuario: fuera la numeración interna de la interfaz | pendiente |
-| 4 | Diseño visual y solo modo claro | pendiente |
+| 3 | Lenguaje de usuario: fuera la numeración interna de la interfaz | ✅ **cerrada** (02/11, DEC-056) |
+| 4a | Simplificación: la interfaz muestra el programa, no la documentación | ✅ **cerrada** (02/11, DEC-057) |
+| 4b | Diseño visual y solo modo claro | pendiente |
 | 5 | Cierre: `ui.md`, `vista3d.md` y capturas | pendiente |
 
 La etapa 1 no tocó `src/motor/`, ni componentes `.jsx`, ni estilos. La etapa 2

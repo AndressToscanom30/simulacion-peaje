@@ -1,5 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ESCENA_3D, ESTADOS_CASETA, FASES_VEHICULO } from '../../config/escena3d.js';
+import { ESCENA_3D, ESTADOS_CASETA } from '../../config/escena3d.js';
 import { crearModeloEscena } from './modeloEscena.js';
 import { PREAJUSTES_CAMARA } from './geometria.js';
 import { horaDelConteo, num, relojSimulado } from '../formato.js';
@@ -162,11 +162,6 @@ export default function PanelVista3D({
                 ))}
               </select>
             </label>
-            {msPorFotograma !== null && (
-              <span className="nota" title="Media de los últimos 30 fotogramas">
-                {num(msPorFotograma, 1)} ms/fotograma
-              </span>
-            )}
           </>
         )}
       </div>
@@ -212,34 +207,10 @@ export default function PanelVista3D({
             calidad={calidad}
           />
 
-          <Leyenda />
-
-          <p className="nota">
-            <strong>La vista es libre:</strong> arrastra para orbitar el peaje desde cualquier
-            ángulo, la rueda acerca y aleja, y con el botón derecho o la rueda pulsada se
-            desplaza. Por debajo de la calzada se sigue viendo todo: el asfalto se vuelve
-            translúcido visto desde abajo. Los botones de cámara llevan a un encuadre y{' '}
-            <strong>sirven para recentrar</strong> cuando te hayas perdido. El punto al que
-            mira la cámara no sale del peaje, así que el modelo no se puede perder de vista
-            (DEC-041).
-          </p>
-
-          <EstadoDelCarro estado={estadoCarro} calidad={calidad} />
-
-          <p className="etiqueta-sensibilidad">
-            <strong>Escena esquemática:</strong> el tránsito entre cola y caseta es cosmético.
-            El modelo no tiene distancias ni velocidades, así que la entrada desde el borde y
-            el avance a la caseta son interpolación visual y <strong>no afectan a ninguna
-            medida</strong> (DEC-038). La cola se dibuja como <strong>un solo embudo por
-            sentido</strong> porque el modelo es de cola única, no de una fila por caseta
-            (DEC-001).
-            {reducirMovimiento && (
-              <>
-                {' '}El sistema pide menos movimiento: se ha reducido lo decorativo, no la
-                simulación.
-              </>
-            )}
-          </p>
+          <div className="vista3d__pie">
+            <Leyenda />
+            <EstadoDelCarro estado={estadoCarro} calidad={calidad} />
+          </div>
         </>
       )}
     </section>
@@ -247,43 +218,30 @@ export default function PanelVista3D({
 }
 
 /**
- * Qué se está dibujando como vehículo: el modelo de `public/models/carro.glb`,
- * cajas mientras llega, o cajas porque no se pudo cargar (DEC-040).
+ * Indicador corto de qué se está dibujando como vehículo (DEC-057).
+ *
+ * Antes era un párrafo con la ruta del archivo y el recuento de triángulos. Eso
+ * describe cómo está hecho el programa, no ayuda a usarlo: vive en
+ * `docs/vista3d.md`. Lo que sí importa mientras se mira la escena es si lo que
+ * se ve son cajas o el modelo, y por qué.
  */
 function EstadoDelCarro({ estado, calidad }) {
-  if (!calidad.carro) {
-    return (
-      <p className="nota">
-        <strong>Calidad {calidad.etiqueta}:</strong> los vehículos se dibujan como cajas. El
-        modelo 3D del carro se usa en las calidades media y alta.
-      </p>
-    );
-  }
+  if (!calidad.carro) return <span className="vista3d__estado">Vehículos: cajas</span>;
   if (estado.error) {
     return (
-      <p className="nota" role="status">
-        <strong>No se pudo cargar el modelo del carro</strong> ({ESCENA_3D.carro.ruta}), así que
-        los vehículos se dibujan como cajas. Todo lo demás —la simulación, los tableros y las
-        medidas— no depende del modelo.
-      </p>
+      <span className="vista3d__estado" role="status">
+        Vehículos: cajas (el modelo no cargó)
+      </span>
     );
   }
   if (estado.cargando || !estado.carro) {
     return (
-      <p className="nota" role="status">
-        Cargando el modelo 3D del carro… hasta que llegue, los vehículos son cajas.
-      </p>
+      <span className="vista3d__estado" role="status">
+        Cargando el modelo…
+      </span>
     );
   }
-  return (
-    <p className="nota">
-      <strong>Vehículos:</strong> el modelo de <code>{ESCENA_3D.carro.ruta}</code>, simplificado
-      de {num(estado.carro.triangulosDelArchivo, 0)} a {num(estado.carro.triangulos, 0)}{' '}
-      triángulos en {estado.carro.piezas.length} grupo(s) de material para poder dibujar
-      cientos de copias (DEC-040). El color de la carrocería varía con el identificador del
-      vehículo, solo para poder seguir uno con la vista.
-    </p>
-  );
+  return <span className="vista3d__estado">Vehículos: modelo 3D</span>;
 }
 
 /** Contadores y registro de eventos recientes, en texto. */
@@ -379,47 +337,26 @@ function textoDeAviso(aviso, etiquetas) {
   return `lectura de cola de ${sentido}: ${aviso.cola} veh`;
 }
 
-/** Leyenda: los estados de caseta y las fases de vehículo. */
-function Leyenda() {
+/**
+ * Leyenda **compacta** de los estados de caseta (DEC-057).
+ *
+ * Cada estado trae su muestra de color, su **figura** y su **texto**: el color
+ * no es la única señal, que es lo que exige la DEC-039 y que esta
+ * simplificación **no toca**. Fuera quedan las fases de vehículo y los dos
+ * párrafos que explicaban cómo está hecha la escena.
+ */
+export function Leyenda() {
   return (
     <details className="leyenda-3d">
       <summary>Leyenda</summary>
-      <div className="leyenda-3d__columnas">
-        <div>
-          <h4>Casetas</h4>
-          <ul>
-            {Object.values(ESTADOS_CASETA).map((estado) => (
-              <li key={estado.clave}>
-                <span className="muestra" style={{ background: estado.color }} aria-hidden="true" />
-                <code>{estado.texto}</code> — {estado.etiqueta} (figura: {estado.figura})
-              </li>
-            ))}
-          </ul>
-          <p className="nota">
-            El letrero lleva el número de caseta, la flecha del sentido al que sirve y el
-            estado en texto. El color <strong>no es la única señal</strong>: la figura y la
-            altura del indicador también lo distinguen (DEC-039).
-          </p>
-        </div>
-        <div>
-          <h4>Vehículos</h4>
-          <ul>
-            {Object.values(FASES_VEHICULO).map((fase) => (
-              <li key={fase.clave}>
-                <code>{fase.clave}</code> — {fase.etiqueta}
-                {fase.cuentaComo === 'cola' && ' · el motor lo cuenta en la cola'}
-                {fase.cuentaComo === 'enServicio' && ' · el motor lo cuenta en servicio'}
-              </li>
-            ))}
-          </ul>
-          <p className="nota">
-            Todos usan el mismo modelo 3D (DEC-040); el color de la carrocería y el largo
-            varían con el identificador del vehículo, solo para poder seguir uno con la
-            vista. Todos son de la misma clase: la categoría no entra al modelo (DEC-003),
-            así que el coche que se ve no dice nada del vehículo simulado.
-          </p>
-        </div>
-      </div>
+      <ul className="leyenda-3d__lista">
+        {Object.values(ESTADOS_CASETA).map((estado) => (
+          <li key={estado.clave}>
+            <span className="muestra" style={{ background: estado.color }} aria-hidden="true" />
+            <code>{estado.texto}</code> {estado.etiqueta} · {estado.figura}
+          </li>
+        ))}
+      </ul>
     </details>
   );
 }

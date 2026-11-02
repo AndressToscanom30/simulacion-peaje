@@ -1,4 +1,4 @@
-import { CONTROLES } from '../../config/catalogoParametros.js';
+import { CONTROLES, TIPOS_ORIGEN } from '../../config/catalogoParametros.js';
 import {
   interpretarValor,
   leerRuta,
@@ -23,10 +23,22 @@ export default function Campo({ campo, escenario, valorBase, modificado, alCambi
   const sensibilidad = esSensibilidad(campo, escenario);
   const idCampo = `campo-${campo.ruta}`;
 
+  /** Solo las etiquetas que advierten algo; las otras dos no se pintan. */
+  const etiqueta =
+    sensibilidad || campo.tipoOrigen === TIPOS_ORIGEN.SENSIBILIDAD
+      ? TIPOS_ORIGEN.SENSIBILIDAD
+      : campo.tipoOrigen === TIPOS_ORIGEN.SUPUESTO
+        ? TIPOS_ORIGEN.SUPUESTO
+        : null;
+
   return (
     <div className={`campo${modificado ? ' campo--modificado' : ''}`}>
       <div className="campo__cabecera">
-        <label htmlFor={idCampo}>
+        {/*
+          El significado va como `title`: ayuda al pasar el cursor sin ocupar
+          sitio (DEC-057). La explicación larga vive en `docs/parametros.md`.
+        */}
+        <label htmlFor={idCampo} title={campo.significado}>
           {campo.nombreCompleto}
           {campo.unidad !== '—' && <span className="campo__unidad"> ({campo.unidad})</span>}
         </label>
@@ -42,18 +54,17 @@ export default function Campo({ campo, escenario, valorBase, modificado, alCambi
         )}
       </div>
 
-      {sensibilidad && (
-        <p className="etiqueta-sensibilidad">
-          Sensibilidad: no es una medición. Repórtalo siempre junto al caso base.
-        </p>
-      )}
-
       <Control campo={campo} escenario={escenario} valor={valor} idCampo={idCampo} alCambiar={alCambiar} />
 
-      <p className="campo__ayuda">{campo.significado}</p>
-      <p className="campo__meta">
-        Por defecto <code>{valorLegible(valorBase)}</code> · Rango: {campo.rango} · {campo.origen}
-      </p>
+      {/*
+        De `tipoOrigen` solo se pintan las dos etiquetas que **advierten** algo
+        (DEC-057): «Supuesto» y «Sensibilidad». «Medido en campo» y
+        «Configuración» no añaden nada al usar el programa, así que no se
+        muestran. `esSensibilidad` marca además los casos que lo son por el
+        escenario y no por el parámetro (un conteo sustituto, el servicio de
+        prueba).
+      */}
+      {etiqueta && <p className="campo__aviso">{etiqueta}</p>}
     </div>
   );
 }
@@ -142,18 +153,14 @@ function SerieIntervalos({ campo, escenario, valor, alCambiar }) {
           </label>
         ))}
       </div>
-      <p className="campo__meta">
-        {propia ? (
-          <>
-            Escrita a mano.{' '}
-            <button type="button" className="campo__restablecer" onClick={() => alCambiar(campo.ruta, null)}>
-              volver al conteo
-            </button>
-          </>
-        ) : (
-          <>Tomada del conteo. Al editar cualquier valor pasa a ser propia de este escenario.</>
-        )}
-      </p>
+      {propia && (
+        <p className="campo__meta">
+          Escrita a mano.{' '}
+          <button type="button" className="campo__restablecer" onClick={() => alCambiar(campo.ruta, null)}>
+            volver al conteo
+          </button>
+        </p>
+      )}
     </div>
   );
 }
@@ -161,6 +168,8 @@ function SerieIntervalos({ campo, escenario, valor, alCambiar }) {
 /** Tabla de umbrales: un valor por número de casetas abiertas. */
 function TablaUmbrales({ campo, valor, alCambiar }) {
   const entradas = Object.entries(valor ?? {});
+  /** Los umbrales de más de 5 casetas no se midieron: se extrapolan (DEC-031). */
+  const hayExtrapolados = entradas.some(([clave]) => Number(clave) > 5);
 
   const cambiarUno = (clave, crudo) => {
     const numero = Number.parseInt(crudo, 10);
@@ -187,11 +196,10 @@ function TablaUmbrales({ campo, valor, alCambiar }) {
           </label>
         ))}
       </div>
-      <p className="campo__meta">
-        Los valores de 1 a 5 casetas son los del estudio. Por encima de 5 son{' '}
-        <strong>extrapolados</strong>: se calculan siguiendo la misma pauta, pero nadie los
-        midió.
-      </p>
+      {/* Aviso funcional, y solo cuando de verdad hay valores extrapolados. */}
+      {hayExtrapolados && (
+        <p className="campo__aviso">Por encima de 5 casetas los valores son estimados.</p>
+      )}
     </div>
   );
 }

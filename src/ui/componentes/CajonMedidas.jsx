@@ -68,13 +68,7 @@ export default function CajonMedidas({
       </div>
 
       {hayObservada && (
-        <p className="etiqueta-sensibilidad">
-          Los puntos huecos del gráfico de cola son las lecturas de campo: el{' '}
-          <strong>total de vehículos esperando en el sentido</strong>, que es la misma
-          variable que dibuja la curva simulada, así que las dos se{' '}
-          <strong>comparan de frente</strong>. Son lecturas puntuales, una por
-          intervalo de 5 min.
-        </p>
+        <p className="nota">Puntos huecos: cola medida en campo.</p>
       )}
 
       {instante >= duracion ? (

@@ -46,9 +46,7 @@ export default function EsquemaCasetas({ pozo, etiquetas }) {
         })}
       </div>
       <p className="nota">
-        Libres en el pozo: <strong>{num(pozo.libres, 0)}</strong>. Una caseta marcada para
-        cerrar sigue atendiendo al vehículo que tenga: no se interrumpe ningún cobro a
-        medias.
+        Libres en el pozo: <strong>{num(pozo.libres, 0)}</strong>
       </p>
     </div>
   );

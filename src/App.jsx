@@ -7,7 +7,7 @@ import { guardarEscenario, leerEscenario } from './ui/almacen.js';
 import { VISTA, hashDeVista, vistaDeHash } from './ui/rutas.js';
 import BarraSuperior from './ui/componentes/BarraSuperior.jsx';
 import VistaSimulacion from './ui/componentes/VistaSimulacion.jsx';
-import PanelSupuestos from './ui/componentes/PanelSupuestos.jsx';
+import Advertencias from './ui/componentes/Advertencias.jsx';
 import Formulario from './ui/componentes/Formulario.jsx';
 import ModoLotes from './ui/componentes/ModoLotes.jsx';
 
@@ -51,7 +51,6 @@ export default function App() {
   const [recalculando, setRecalculando] = useState(false);
   const [ocupado, setOcupado] = useState(false);
   const [error, setError] = useState(null);
-  const [verSupuestos, setVerSupuestos] = useState(false);
 
   const clienteRef = useRef(null);
   if (!clienteRef.current) clienteRef.current = crearClienteSimulacion();
@@ -169,18 +168,11 @@ export default function App() {
     <div className="aplicacion">
       <BarraSuperior vista={vista} hayCambiosSinAplicar={hayCambiosSinAplicar} />
 
-      {verSupuestos && (
-        <div className="hoja-supuestos" role="dialog" aria-label="Supuestos y limitaciones">
-          <button type="button" className="hoja-supuestos__cerrar" onClick={() => setVerSupuestos(false)}>
-            Cerrar
-          </button>
-          <PanelSupuestos />
-        </div>
-      )}
-
       <main className={`vista vista--${vista}`}>
         {vista === VISTA.SIMULACION && (
-          <VistaSimulacion
+          <>
+            <Advertencias />
+            <VistaSimulacion
             traza={traza}
             escenarioAplicado={aplicado}
             borrador={borrador}
@@ -196,13 +188,14 @@ export default function App() {
             error={error}
             semilla={semilla}
             alCambiarSemilla={setSemilla}
-            alCorrerLotes={irALotes}
-            alVerSupuestos={() => setVerSupuestos(true)}
-          />
+              alCorrerLotes={irALotes}
+            />
+          </>
         )}
 
         {vista === VISTA.LOTES && (
           <section className="vista-lotes">
+            <Advertencias />
             <ModoLotes
               escenario={aplicado}
               cliente={cliente}

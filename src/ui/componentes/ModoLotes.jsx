@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { catalogoFase4, etiquetaRegimen } from '../../config/escenarios.js';
+import { catalogoFase4, etiquetaRegimen, GRUPOS_LOTES } from '../../config/escenarios.js';
 import { num, enMinutos, porcentaje, aCsv } from '../formato.js';
 
 /** Columnas de la tabla de resultados, las mismas de `docs/resultados/`. */
@@ -130,10 +130,6 @@ export default function ModoLotes({ escenario, cliente, ocupado, setOcupado }) {
   return (
     <section>
       <h2>Corrida por lotes</h2>
-      <p className="nota">
-        Las semillas son 1…N y <strong>las mismas para todos los escenarios</strong>, así que
-        las diferencias que se vean entre ellos no son casualidad del azar.
-      </p>
 
       <div className="barra">
         <label>
@@ -173,11 +169,11 @@ export default function ModoLotes({ escenario, cliente, ocupado, setOcupado }) {
       <details open>
         <summary>Escenarios del catálogo ({seleccionados.length} elegidos)</summary>
         <div className="lista-escenarios">
-          {['E1', 'E2', 'E3', 'E4', 'E5'].map((grupo) => (
-            <fieldset key={grupo}>
-              <legend>{grupo}</legend>
+          {GRUPOS_LOTES.map((grupo) => (
+            <fieldset key={grupo.codigo}>
+              <legend title={grupo.descripcion}>{grupo.titulo}</legend>
               {codigos
-                .filter((caso) => caso.grupo === grupo)
+                .filter((caso) => caso.grupo === grupo.codigo)
                 .map((caso) => (
                   <label key={caso.codigo}>
                     <input
@@ -191,7 +187,7 @@ export default function ModoLotes({ escenario, cliente, ocupado, setOcupado }) {
                         )
                       }
                     />
-                    {caso.nombre}
+                    <span title={caso.cambiaUsuario}>{caso.nombreUsuario ?? caso.nombre}</span>
                   </label>
                 ))}
             </fieldset>
@@ -259,10 +255,7 @@ export default function ModoLotes({ escenario, cliente, ocupado, setOcupado }) {
 
           <div className="tabla-envoltorio">
             <table>
-              <caption>
-                Medias entre réplicas con intervalo de confianza al 95 %, como en{' '}
-                <code>docs/resultados/</code>.
-              </caption>
+              <caption>Medias entre réplicas, con intervalo de confianza al 95 %</caption>
               <thead>
                 <tr>
                   {COLUMNAS.map((columna) => (

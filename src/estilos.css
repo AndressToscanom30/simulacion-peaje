@@ -665,20 +665,6 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   padding: 0.8rem;
 }
 
-/* ---------------------------------------------------- hoja de supuestos --- */
-
-.hoja-supuestos {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  overflow-y: auto;
-  padding: 1.5rem;
-  background: var(--fondo);
-}
-
-.hoja-supuestos__cerrar {
-  float: right;
-}
 
 /* ------------------------------------------------------------- estrecho --- */
 
@@ -703,4 +689,89 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   .vista-simulacion__escena {
     min-height: 60vh;
   }
+}
+
+/* ==========================================================================
+   Etapa 4a — simplificación (DEC-057). Solo estructura: la paleta y la
+   tipografía son la etapa 4b.
+   ========================================================================== */
+
+/* Aviso de una línea dentro de un campo (Supuesto / Sensibilidad / estimados). */
+.campo__aviso {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+/* Franja fija con lo que hay que leer siempre, y su panel corto detrás. */
+.advertencias {
+  border-bottom: 1px solid var(--borde);
+  background: var(--fondo-suave);
+}
+
+.advertencias__franja {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0.8rem;
+}
+
+.advertencias__franja p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.advertencias__lista {
+  margin: 0;
+  padding: 0.2rem 0.8rem 0.6rem 2rem;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.advertencias__lista li {
+  margin-bottom: 0.25rem;
+}
+
+/* Pie de la escena: leyenda compacta e indicador de lo que se dibuja. */
+.vista3d__pie {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.3rem 0.5rem;
+}
+
+.vista3d__estado {
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+}
+
+.leyenda-3d__lista {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin: 0.3rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+}
+
+.leyenda-3d__lista li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Con la franja encima, la vista de simulación deja sitio para ella. */
+.vista--simulacion {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.vista--simulacion .vista-simulacion {
+  flex: 1;
+  height: auto;
+  min-height: 0;
 }
