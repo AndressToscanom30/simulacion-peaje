@@ -99,8 +99,9 @@ export default function Formulario({ escenario, alCambiar, alRestablecer, alReem
 
       {escenario.servicio.regimen !== 'base' && (
         <p className="etiqueta-sensibilidad">
-          Régimen de <strong>sensibilidad</strong> ({escenario.servicio.regimen}): es una hipótesis,
-          no una medición (DEC-025, PEN-010). Repórtalo siempre junto al caso base.
+          Servicio de <strong>prueba</strong> ({escenario.servicio.regimen}): es una hipótesis,
+          no algo que se haya medido. Mira siempre su resultado al lado del caso normal, no
+          en su lugar.
         </p>
       )}
 

@@ -52,7 +52,7 @@ validarEscenario(miEscenario);
 |---|---|---|---|---|---|---|
 | **Casetas del pozo** | `pozo.total` | Casetas de efectivo que los dos sentidos se reparten. De aquí sale que c1 + c2 nunca pase de este número. | casetas | `6` | Contexto, sección 2; DEC-002. Configurable por DEC-030 | entero ≥ 2 × mínimo por sentido |
 | **Mínimo por sentido** | `pozo.minimoPorSentido` | Casetas que un sentido nunca baja de tener abiertas. | casetas | `1` | Contexto, sección 2; DEC-002 | entero ≥ 1 y ≤ tope por sentido |
-| **Tope por sentido** | `pozo.maximoPorSentido` | Casetas que un sentido nunca pasa de tener abiertas. Por encima de 5 los umbrales son extrapolados (DEC-031). | casetas | `5` | Contexto, sección 2; DEC-002. Configurable por DEC-030 | entero entre el mínimo y el tamaño del pozo |
+| **Tope por sentido** | `pozo.maximoPorSentido` | Casetas que un sentido nunca pasa de tener abiertas. Por encima de 5, los umbrales de apertura y cierre dejan de ser los medidos y se calculan por extrapolación. | casetas | `5` | Contexto, sección 2; DEC-002. Configurable por DEC-030 | entero entre el mínimo y el tamaño del pozo |
 
 ## Regla de apertura y cierre
 
@@ -73,7 +73,7 @@ validarEscenario(miEscenario);
 | **ρ de reasignación** | `regla.rhoReasignacion` | Una caseta liberada pasa al otro sentido si su ρ supera este valor y le caben casetas. | adimensional | `0,6` | Contexto, sección 4; DEC-008 | ≥ 0 |
 | **Ventana móvil de ρ** | `regla.ventanaRhoSegundos` | Cuánto hacia atrás se cuentan las llegadas para calcular ρ. | segundos | `300` (5 min) | Contexto, sección 4 ("últimos 5 min") | > 0 |
 | **Reasignación activada** | `regla.reasignacionActiva` | Si una caseta liberada puede pasar al otro sentido por ρ. Apagada, el pozo es solo almacén. | sí/no | `false` | DEC-008. El valor por defecto apagado, por PEN-015 | true | false |
-| **Ofrecer el pozo libre por ρ** | `regla.ofrecerPozoPorRho` | Si una caseta que ya estaba libre se ofrece por ρ sin esperar a que otra se libere. La DEC-008 literal es false. | sí/no | `false` | DEC-027 punto 11 (solo sensibilidad) | true | false |
+| **Ofrecer el pozo libre por ρ** | `regla.ofrecerPozoPorRho` | Si una caseta que ya estaba libre se ofrece al otro sentido sin esperar a que se libere otra. Apagado es lo que dice la regla del estudio; encenderlo es una alternativa para probar. | sí/no | `false` | DEC-027 punto 11 (solo sensibilidad) | true | false |
 | **Espera del desempate** | `regla.esperaDesempateSegundos` | Cuando los dos sentidos piden caseta, gana el que supere esta espera estimada, empezando por el peor. | segundos | `150` (2,5 min) | Contexto, sección 4; DEC-008 y DEC-027 punto 9 | > 0 |
 
 ## Criterio de desempeño

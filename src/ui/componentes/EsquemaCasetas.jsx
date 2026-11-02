@@ -46,8 +46,9 @@ export default function EsquemaCasetas({ pozo, etiquetas }) {
         })}
       </div>
       <p className="nota">
-        Libres en el pozo: <strong>{num(pozo.libres, 0)}</strong>. Una caseta marcada sigue
-        atendiendo su vehículo: no se interrumpe ningún servicio (DEC-007).
+        Libres en el pozo: <strong>{num(pozo.libres, 0)}</strong>. Una caseta marcada para
+        cerrar sigue atendiendo al vehículo que tenga: no se interrumpe ningún cobro a
+        medias.
       </p>
     </div>
   );

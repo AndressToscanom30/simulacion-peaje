@@ -55,8 +55,8 @@ export default function TablaMedidas({ medidas, desempeno }) {
       </table>
       <p className="nota">
         Minutos con el pozo agotado: <strong>{enMinutos(medidas.pozo.segundosAgotado, 1)}</strong>.
-        Las colas máximas del peaje son la <strong>suma</strong> de los máximos de cada sentido:
-        no tienen que darse en el mismo instante (DEC-027).
+        Las colas máximas del peaje son la <strong>suma</strong> de los máximos de cada
+        sentido, y cada máximo pudo darse en un momento distinto.
       </p>
     </div>
   );

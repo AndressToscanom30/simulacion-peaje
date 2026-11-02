@@ -293,6 +293,8 @@ const E2 = [
     codigo: 'E2b',
     nombre: 'Regla con reasignación',
     cambia: 'se activa el traspaso por ρ > 0,60 al liberarse una caseta (DEC-008)',
+    cambiaUsuario:
+      'cuando un sentido libera una caseta, el otro se la puede quedar si va apurado',
     sobreescrituras: {
       nombre: 'E2b regla con reasignación',
       regla: { reasignacionActiva: true },
@@ -303,6 +305,8 @@ const E2 = [
     codigo: 'E2c',
     nombre: 'Regla + disparador por tasa',
     cambia: 'se añade el disparador anticipativo por tasa de llegadas (DEC-046)',
+    cambiaUsuario:
+      'la regla abre también cuando sube el tráfico, sin esperar a que se forme la cola',
     sobreescrituras: {
       nombre: 'E2c regla + disparador por tasa',
       regla: { disparadorPorTasa: true },
@@ -351,6 +355,8 @@ function e3DemandaAlta(factores = [1.1, 1.13, 1.2]) {
     codigo: 'E3-1,13-reasig',
     nombre: 'Demanda ×1,13, regla con reasignación',
     cambia: 'factor 1,13 y reasignación activada, para ver si sigue inerte (PEN-015)',
+    cambiaUsuario:
+      'un 13 % más de tráfico, dejando que los sentidos se pasen casetas',
     sobreescrituras: {
       nombre: 'E3 demanda ×1,13 con reasignación',
       ...demandaEnAmbos(1.13),
@@ -529,6 +535,15 @@ export function catalogoFase4() {
         codigo: plantilla.codigo,
         nombre: plantilla.nombre,
         cambia: plantilla.cambia,
+        /**
+         * Lo mismo que `cambia`, pero en lenguaje de usuario (DEC-056). Es lo
+         * que muestra la interfaz; `cambia` se queda tal cual porque lo usa
+         * `scripts/fase4.js` y reescribirlo movería `fase4-escenarios.md`.
+         *
+         * Casi todos los `cambia` ya valen; los tres que citaban decisiones
+         * traen el suyo escrito.
+         */
+        cambiaUsuario: plantilla.cambiaUsuario ?? plantilla.cambia,
         barrido: plantilla.barrido ?? null,
         regimen: clave,
         escenario,
@@ -537,3 +552,16 @@ export function catalogoFase4() {
   }
   return casos;
 }
+
+/**
+ * Nombre de cada grupo del catálogo de la fase 4, en lenguaje de usuario
+ * (DEC-056). Los códigos `E1`…`E5` siguen siendo la clave interna y la que usan
+ * los informes; esto es solo lo que se lee en pantalla.
+ */
+export const GRUPOS_LOTES = [
+  { codigo: 'E1', titulo: 'La operación real', descripcion: 'Lo que hizo el operador, tal como se midió' },
+  { codigo: 'E2', titulo: 'La regla propuesta', descripcion: 'La regla de apertura y cierre, con sus variantes' },
+  { codigo: 'E3', titulo: 'Más tráfico', descripcion: 'La misma hora con más demanda' },
+  { codigo: 'E4', titulo: 'Qué pasa si cambio una cosa', descripcion: 'Una variación cada vez, para ver qué pesa' },
+  { codigo: 'E5', titulo: 'Hasta dónde aguanta', descripcion: 'Subiendo la demanda hasta que deja de cumplir' },
+];

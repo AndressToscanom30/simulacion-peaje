@@ -226,7 +226,7 @@ describe('esquema de casetas', () => {
     render(<EsquemaCasetas pozo={estado.pozo} etiquetas={['P→C', 'C→P']} />);
     expect(screen.getByText(/Casetas del pozo \(6\)/)).toBeDefined();
     expect(document.querySelectorAll('.caseta')).toHaveLength(6);
-    expect(screen.getByText(/no se interrumpe ningún servicio/)).toBeDefined();
+    expect(screen.getByText(/no se interrumpe ningún cobro a medias/)).toBeDefined();
   });
 });
 

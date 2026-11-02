@@ -41,6 +41,27 @@ export const CONTROLES = {
 };
 
 /**
+ * De dónde sale el valor de un parámetro, en lenguaje de usuario (DEC-056).
+ *
+ * Es lo que la interfaz muestra en lugar de `origen`, que sigue en el catálogo
+ * porque genera `docs/parametros.md` pero cita decisiones y secciones del
+ * contexto, que no le dicen nada a quien usa el programa.
+ *
+ * Cada parámetro lleva el suyo **escrito**, no deducido del texto de `origen`:
+ * así no depende de cómo esté redactado y se puede comprobar con una prueba.
+ */
+export const TIPOS_ORIGEN = {
+  /** Sale de los conteos o de los 50 tiempos, incluido lo estimado de ellos. */
+  MEDIDO: 'Medido en campo',
+  /** Sustituye algo que no se midió, y se usa por defecto. */
+  SUPUESTO: 'Supuesto',
+  /** Existe solo para probar alternativas; no es el caso base. */
+  SENSIBILIDAD: 'Sensibilidad',
+  /** Política y corrida: lo que se decide, no lo que se midió. */
+  CONFIGURACION: 'Configuración',
+};
+
+/**
  * Un parámetro por entrada. `rango` es texto: describe qué se acepta, no una
  * validación (la validación está en `validarEscenario`).
  */
@@ -50,6 +71,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'demanda',
     control: CONTROLES.CONTEO,
     ruta: 'sentidos[i].conteo',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Conteo base',
     significado:
       'Qué conteo de campo da las llegadas del sentido, intervalo por intervalo.',
@@ -63,6 +85,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.05,
     minimo: 0.05,
     ruta: 'sentidos[i].factorDemanda',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Factor de demanda',
     significado:
       'Multiplica la tasa de llegadas de todos los intervalos del sentido. 1 = la demanda contada.',
@@ -75,6 +98,7 @@ export const CATALOGO_PARAMETROS = [
     control: CONTROLES.ENTERO,
     minimo: 0,
     ruta: 'sentidos[i].colaInicial',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Cola inicial',
     significado:
       'Vehículos ya esperando en t = 0. Su espera cuenta desde 0 y no entran en la ventana de ρ.',
@@ -87,6 +111,7 @@ export const CATALOGO_PARAMETROS = [
     control: CONTROLES.ENTERO,
     minimo: 1,
     ruta: 'sentidos[i].casetasIniciales',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Casetas iniciales',
     significado: 'Casetas abiertas en t = 0 en ese sentido.',
     unidad: 'casetas',
@@ -97,6 +122,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'demanda',
     control: CONTROLES.MODO,
     ruta: 'sentidos[i].modo',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Modo de control de c(t)',
     significado:
       '"programado" copia las casetas del conteo (o las fijas); "regla" las decide con la regla por cola.',
@@ -108,6 +134,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'demanda',
     control: CONTROLES.SERIE_INTERVALOS,
     ruta: 'sentidos[i].llegadas',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Llegadas por intervalo',
     significado:
       'Demanda escrita a mano, un valor por intervalo. null = las del conteo. El factor se aplica igual sobre estas.',
@@ -119,6 +146,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'demanda',
     control: CONTROLES.SERIE_INTERVALOS,
     ruta: 'sentidos[i].casetasFijas',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Casetas fijas por intervalo',
     significado:
       'En modo programado, sustituye las casetas observadas por un arreglo propio. null = las observadas.',
@@ -135,6 +163,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.01,
     minimo: 0.01,
     ruta: RUTA_PROMEDIO_ATENCION,
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Promedio de atención',
     /**
      * **Derivado** (DEC-051): no se guarda en el escenario. Se lee del nominal
@@ -154,6 +183,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.01,
     minimo: 0.01,
     ruta: 'servicio.gammaForma',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Forma de la gamma (k)',
     significado:
       'Parámetro de forma del tiempo de atención. Fija el coeficiente de variación: CV = 1/√k.',
@@ -167,6 +197,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.01,
     minimo: 0.01,
     ruta: 'servicio.gammaEscalaSegundos',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Escala de la gamma (θ)',
     significado:
       'Parámetro de escala del tiempo de atención. La media que se genera es k × θ.',
@@ -180,6 +211,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.01,
     minimo: 0.01,
     ruta: 'servicio.mediaNominalSegundos',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Tiempo de atención nominal',
     significado:
       'El que la regla usa para ρ y para la espera estimada. Es el que el operador conoce, así que NO cambia en el escenario de servicio lento.',
@@ -191,6 +223,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'servicio',
     control: CONTROLES.TEXTO,
     ruta: 'servicio.regimen',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Nombre del régimen',
     significado: 'Etiqueta del régimen de servicio, solo para los informes.',
     unidad: '—',
@@ -205,6 +238,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 2,
     maximo: 10,
     ruta: 'pozo.total',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Casetas del pozo',
     significado:
       'Casetas de efectivo que los dos sentidos se reparten. De aquí sale que c1 + c2 nunca pase de este número.',
@@ -218,6 +252,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     maximo: 10,
     ruta: 'pozo.minimoPorSentido',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Mínimo por sentido',
     significado: 'Casetas que un sentido nunca baja de tener abiertas.',
     unidad: 'casetas',
@@ -230,9 +265,10 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     maximo: 10,
     ruta: 'pozo.maximoPorSentido',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Tope por sentido',
     significado:
-      'Casetas que un sentido nunca pasa de tener abiertas. Por encima de 5 los umbrales son extrapolados (DEC-031).',
+      'Casetas que un sentido nunca pasa de tener abiertas. Por encima de 5, los umbrales de apertura y cierre dejan de ser los medidos y se calculan por extrapolación.',
     unidad: 'casetas',
     origen: 'Contexto, sección 2; DEC-002. Configurable por DEC-030',
     rango: 'entero entre el mínimo y el tamaño del pozo',
@@ -243,6 +279,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'regla',
     control: CONTROLES.TABLA_UMBRALES,
     ruta: 'regla.abrirSiColaMayorQue',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Umbrales de apertura',
     significado:
       'Con c casetas abiertas, se abre otra si la cola supera este valor. null en el tope. Si se deja en null entero, se generan con la fórmula 5c − 1.',
@@ -254,6 +291,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'regla',
     control: CONTROLES.TABLA_UMBRALES,
     ruta: 'regla.cerrarSiColaMenorQue',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Umbrales de cierre',
     significado:
       'Con c casetas abiertas, se cierra una si la cola baja de este valor. null en el mínimo. Si se deja en null, se generan con ⌊abrir(c − 1)/2⌋.',
@@ -265,6 +303,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'regla',
     control: CONTROLES.BOOLEANO,
     ruta: 'regla.disparadorPorTasa',
+    tipoOrigen: TIPOS_ORIGEN.SENSIBILIDAD,
     nombre: 'Disparador anticipativo por tasa',
     significado:
       'Si la regla abre también cuando las llegadas de los últimos 5 min cruzan su umbral, sin esperar a que la cola cruce el suyo. Se dispara lo que ocurra primero. Apagado por defecto: el escenario base es la regla por cola del contexto.',
@@ -276,6 +315,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'regla',
     control: CONTROLES.TABLA_UMBRALES,
     ruta: 'regla.abrirSiTasaMayorQue',
+    tipoOrigen: TIPOS_ORIGEN.SENSIBILIDAD,
     nombre: 'Umbrales de apertura por tasa',
     significado:
       'Con c casetas abiertas, se abre otra si las llegadas de los últimos 5 min superan este valor. Solo se usa con el disparador por tasa encendido. Si se deja en null, se generan con la fórmula redondear(c × capacidad nominal − 4), que reproduce los 21 / 46 / 70 / 95 del contexto.',
@@ -289,6 +329,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.1,
     minimo: 0.1,
     ruta: 'regla.factorUmbrales',
+    tipoOrigen: TIPOS_ORIGEN.SENSIBILIDAD,
     nombre: 'Factor de los umbrales',
     significado:
       'Multiplica los dos umbrales generados, para sensibilidad. Se redondea al entero, porque la cola son vehículos.',
@@ -302,6 +343,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 0,
     paso: 60,
     ruta: 'regla.demoraAperturaSegundos',
+    tipoOrigen: TIPOS_ORIGEN.SUPUESTO,
     nombre: 'Demora de apertura',
     significado:
       'Tiempo entre ordenar la apertura y tener la caseta operando. La caseta queda reservada desde que se ordena.',
@@ -315,6 +357,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 0,
     paso: 60,
     ruta: 'regla.ventanaCierreSegundos',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Ventana de cierre',
     significado:
       'La cola tiene que estar bajo el umbral este tiempo seguido para cerrar una caseta. Se reinicia si sube o si cambia c.',
@@ -328,6 +371,7 @@ export const CATALOGO_PARAMETROS = [
     paso: 0.05,
     minimo: 0,
     ruta: 'regla.rhoReasignacion',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'ρ de reasignación',
     significado:
       'Una caseta liberada pasa al otro sentido si su ρ supera este valor y le caben casetas.',
@@ -341,6 +385,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     paso: 60,
     ruta: 'regla.ventanaRhoSegundos',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Ventana móvil de ρ',
     significado: 'Cuánto hacia atrás se cuentan las llegadas para calcular ρ.',
     unidad: 'segundos',
@@ -351,6 +396,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'reparto',
     control: CONTROLES.BOOLEANO,
     ruta: 'regla.reasignacionActiva',
+    tipoOrigen: TIPOS_ORIGEN.SENSIBILIDAD,
     nombre: 'Reasignación activada',
     significado:
       'Si una caseta liberada puede pasar al otro sentido por ρ. Apagada, el pozo es solo almacén.',
@@ -363,9 +409,10 @@ export const CATALOGO_PARAMETROS = [
     control: CONTROLES.BOOLEANO,
     sensibilidad: true,
     ruta: 'regla.ofrecerPozoPorRho',
+    tipoOrigen: TIPOS_ORIGEN.SENSIBILIDAD,
     nombre: 'Ofrecer el pozo libre por ρ',
     significado:
-      'Si una caseta que ya estaba libre se ofrece por ρ sin esperar a que otra se libere. La DEC-008 literal es false.',
+      'Si una caseta que ya estaba libre se ofrece al otro sentido sin esperar a que se libere otra. Apagado es lo que dice la regla del estudio; encenderlo es una alternativa para probar.',
     unidad: 'sí/no',
     origen: 'DEC-027 punto 11 (solo sensibilidad)',
     rango: 'true | false',
@@ -376,6 +423,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     paso: 30,
     ruta: 'regla.esperaDesempateSegundos',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Espera del desempate',
     significado:
       'Cuando los dos sentidos piden caseta, gana el que supere esta espera estimada, empezando por el peor.',
@@ -391,6 +439,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     paso: 60,
     ruta: 'tiempo.duracionIntervaloSegundos',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Duración del intervalo',
     significado:
       'Cada tramo de conteo. Fija la tasa de llegadas por tramo y la unidad de los carriles-intervalo.',
@@ -403,6 +452,7 @@ export const CATALOGO_PARAMETROS = [
     control: CONTROLES.ENTERO,
     minimo: 1,
     ruta: 'tiempo.intervalos',
+    tipoOrigen: TIPOS_ORIGEN.MEDIDO,
     nombre: 'Intervalos del horizonte',
     significado:
       'Tramos que dura una réplica. El horizonte es intervalos × duración; con 12 × 300 s es la hora observada.',
@@ -418,6 +468,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     paso: 15,
     ruta: 'desempeno.metaWqSegundos',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Meta de espera',
     significado:
       'Espera media en cola que se busca. Se evalúa en cada sentido. Solo afecta al veredicto, no a la regla.',
@@ -431,6 +482,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     paso: 15,
     ruta: 'desempeno.maximoTolerableWqSegundos',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Máximo tolerable',
     significado:
       'Espera por encima de la cual un intervalo cuenta como incumplido. Sí entra en el motor, que cuenta esos intervalos.',
@@ -445,6 +497,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 0,
     maximo: 1,
     ruta: 'desempeno.fraccionIntervalosSobreMaximoAceptada',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Fracción de intervalos aceptada',
     significado: 'Proporción de intervalos que se acepta por encima del máximo tolerable.',
     unidad: 'fracción',
@@ -459,6 +512,7 @@ export const CATALOGO_PARAMETROS = [
     minimo: 1,
     maximo: 200,
     ruta: 'corridas.replicas',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Réplicas',
     significado: 'Corridas independientes del escenario, para promediar.',
     unidad: 'réplicas',
@@ -469,6 +523,7 @@ export const CATALOGO_PARAMETROS = [
     grupo: 'corrida',
     control: CONTROLES.ENTERO,
     ruta: 'corridas.primeraSemilla',
+    tipoOrigen: TIPOS_ORIGEN.CONFIGURACION,
     nombre: 'Primera semilla',
     significado:
       'Semilla de la primera réplica; las demás son consecutivas. Las mismas semillas en todos los escenarios dan números aleatorios comunes.',

@@ -131,8 +131,8 @@ export default function ModoLotes({ escenario, cliente, ocupado, setOcupado }) {
     <section>
       <h2>Corrida por lotes</h2>
       <p className="nota">
-        Las semillas son 1…N y <strong>las mismas para todos los escenarios</strong> (DEC-010), así
-        que las comparaciones usan números aleatorios comunes.
+        Las semillas son 1…N y <strong>las mismas para todos los escenarios</strong>, así que
+        las diferencias que se vean entre ellos no son casualidad del azar.
       </p>
 
       <div className="barra">

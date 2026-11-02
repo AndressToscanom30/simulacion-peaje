@@ -151,7 +151,7 @@ function SerieIntervalos({ campo, escenario, valor, alCambiar }) {
             </button>
           </>
         ) : (
-          <>Tomada del conteo. Al editar cualquier valor pasa a ser propia del escenario (DEC-035).</>
+          <>Tomada del conteo. Al editar cualquier valor pasa a ser propia de este escenario.</>
         )}
       </p>
     </div>
@@ -188,8 +188,9 @@ function TablaUmbrales({ campo, valor, alCambiar }) {
         ))}
       </div>
       <p className="campo__meta">
-        Los valores de c = 1 a 5 son los del contexto. Por encima de 5 son <strong>extrapolados</strong>{' '}
-        con las fórmulas de DEC-031.
+        Los valores de 1 a 5 casetas son los del estudio. Por encima de 5 son{' '}
+        <strong>extrapolados</strong>: se calculan siguiendo la misma pauta, pero nadie los
+        midió.
       </p>
     </div>
   );

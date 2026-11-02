@@ -41,7 +41,7 @@ export function trabajoTraza({ escenario, semilla = 1 }) {
  * comparaciones usan números aleatorios comunes.
  *
  * @param {object} args
- * @param {object[]} args.escenarios `[{codigo, nombre, cambia, regimen, escenario}]`
+ * @param {object[]} args.escenarios `[{codigo, nombre, cambia, cambiaUsuario, regimen, escenario}]`
  * @param {number} [args.replicas] sobrescribe las réplicas de cada escenario
  * @param {object} [opciones]
  * @param {(progreso: object) => void} [opciones.alProgresar]
@@ -65,6 +65,8 @@ export function trabajoLote({ escenarios, replicas }, { alProgresar, cancelado }
       codigo: entrada.codigo ?? escenario.nombre,
       nombre: entrada.nombre ?? escenario.nombre,
       cambia: entrada.cambia ?? '',
+      /** El mismo texto en lenguaje de usuario, que es el que se muestra. */
+      cambiaUsuario: entrada.cambiaUsuario ?? entrada.cambia ?? '',
       regimen: entrada.regimen ?? escenario.servicio.regimen,
       nombreEscenario: escenario.nombre,
       semillas: semillasDe(escenario),
