@@ -2,6 +2,117 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-02 — Mejora del frontend: etapa 4b (diseño visual y solo modo claro)
+
+La interfaz tenía estructura (etapa 2), hablaba en lenguaje de usuario (etapa 3)
+y ya no era la documentación del modelo (etapa 4a), pero seguía pintada con los
+colores por defecto. Esta sesión le da un aspecto propio.
+
+### De dónde sale el aspecto
+
+**DEC-058.** El asunto del programa es un peaje, así que el lenguaje visual sale
+de la **infraestructura vial**: hormigón y asfalto en las superficies, y tres
+colores que significan cada uno una cosa —el **verde de las señales de guía**
+para lo activo y lo que cumple, el **amarillo de la demarcación** para lo
+cambiado y lo que avisa, el **rojo de señal** para el error—. Tipografía
+**Barlow** y **Barlow Condensed**, un grotesco dibujado desde el vernáculo de la
+señalización; el condensado en títulos, cabeceras de tabla y rótulos.
+
+**Dónde se gasta la audacia: el HUD es un pórtico de señalización.** Un travesaño
+de asfalto cruza la calzada con el reloj, y de él cuelga un **panel verde de
+señal de guía por sentido**, con el filete blanco por dentro que llevan las de
+verdad. Es lo único llamativo de la interfaz y el único sitio con mayúsculas,
+que es donde la señalización las usa. Lo demás es hormigón callado: controles de
+3 px de radio, bordes grises, ni una sombra de tarjeta.
+
+La fuente es **la única dependencia externa**, cargada en `index.html`. Eso
+**extiende la DEC-034** en vez de contradecirla: no entra ningún paquete, no se
+ejecuta código de terceros y, sin red, la pila del sistema la sustituye.
+
+### Solo modo claro
+
+Fuera el bloque `prefers-color-scheme: dark` y `color-scheme: light` declarado.
+En la escena 3D se fueron también `cieloOscuro`, las intensidades `oscuro` de
+las tres luces y la consulta `prefers-color-scheme` de `PanelVista3D`: la escena
+ya no se oscurece con el sistema. El motivo es sencillo: el modo oscuro era una
+paleta a ciegas, nunca revisada a ojo, y sostener dos significa comprobar cada
+contraste dos veces.
+
+La escena comparte la paleta de la pantalla, porque son los mismos materiales:
+el letrero va en el asfalto oscuro del pórtico, el aviso en el rojo de señal, y
+los vehículos se apagan a propósito para que lo que destaque sea el estado de
+las casetas. **La DEC-039 no se toca:** cada estado conserva figura, altura de
+indicador y texto; solo cambia el tono.
+
+### Accesibilidad medida, no supuesta
+
+**Diecisiete pares de color calculados**, todos por encima de 4,5:1. El más
+justo era `--texto-suave` sobre el hormigón más oscuro de la hoja: daba **4,47**,
+así que el token se oscureció a `#555e65` (4,9:1). Foco visible siempre, con 2 px
+en el verde de guía, comprobado en el navegador. Bloque
+`prefers-reduced-motion` global que apaga transiciones y desplazamientos suaves,
+pero **no** la animación de la escena, que la gobierna la barra de reproducción
+y es una acción del usuario.
+
+Y en la interfaz ningún color va solo: lo modificado lleva franja gruesa a la
+izquierda además del amarillo, la vista activa lleva subrayado además del verde,
+el error lleva su franja roja con el texto y el sentido del pórtico, su flecha.
+
+### Tres defectos de maquetación que venían de antes
+
+Mirarlo en el navegador es lo que los sacó; ninguno lo introdujo esta sesión,
+pero el rediseño los dejó a la vista.
+
+1. **Había dos HUD superpuestos en la misma esquina.** La etapa 2 añadió el suyo
+   sobre la escena sin quitar el que `PanelVista3D` dibuja por su cuenta, y los
+   dos iban en posición absoluta en el mismo sitio. Como ambos eran cajas grises
+   parecidas, nadie lo notó; al volverse uno un panel verde y el otro perder sus
+   reglas, saltó a la vista. El panel recibe ahora `conHud`, en `false` desde la
+   vista de simulación. Lo comprobé contando los `.hud` del DOM: eran dos, con el
+   mismo `top`.
+2. **El pórtico tapaba los controles de cámara y calidad**, que vivían en una
+   barra encima de la escena. Bajan a la barra de instrumentos del pie, con la
+   leyenda y el indicador de lo que se dibuja. Se mueven **en el marcado**, no
+   con `order`, para que el orden de tabulación siga al visual. Queda anotado en
+   **PEN-025**, porque mover controles es estructura y el encargo era visual.
+3. **La aplicación crecía más que la ventana.** Con `min-height: 100vh` el alto
+   del panel de controles empujaba la barra de reproducción fuera de la pantalla:
+   medido, 1547 px de documento en una ventana de 860. Ahora ocupa la ventana
+   justa y lo que no cabe scrollea dentro de su vista.
+
+### Cómo se hizo, y un susto
+
+La hoja se reescribió en cuatro pasadas: los tokens, la capa base, la estructura
+de la etapa 2 y las vistas de documento. **El primer script que escribí habría
+borrado medio archivo**: iba a sustituir todo el tramo entre `:root` y el primer
+`@media`, y ahí dentro seguían vivas las reglas de `.barra`, `.campo*`,
+`.serie*`, `.formulario` y `.reloj`. Lo vi al listar el tramo antes de
+reemplazarlo. Lo que sí se fue, comprobado uno por uno con `grep`, fue lo muerto:
+`.supuestos` (el panel se borró en la 4a), `.pestanas` (las pestañas se fueron en
+la 2), `.campo__ayuda`, `.leyenda-3d__columnas`, `.boton-texto` y `footer`.
+
+### Pruebas y cierre
+
+**508 en verde**, las mismas de antes: ninguna prueba hizo falta tocar, porque
+el diseño no cambia lo que la interfaz dice. `npm run build` limpio.
+`git status src/motor/` vacío, y `modeloEscena.js` y `geometria.js` sin cambios
+(DEC-036). Los informes de las fases 2 a 4 y `docs/parametros.md` se regeneraron
+**sin una sola línea de diferencia**, ni siquiera la fecha.
+
+**Comprobado en el navegador** las tres vistas: el pórtico con sus dos paneles
+verdes sobre la escena, los controles en la barra del pie, la franja de
+advertencias en amarillo cruzando la ventana, las tablas y los campos de lotes y
+configuración, y el foco en verde al tabular.
+
+**Qué queda abierto:**
+
+- La **etapa 5**: `docs/ui.md`, `docs/vista3d.md` y capturas.
+- **PEN-025** (dónde van los mandos de la escena cuando el panel se monta
+  suelto) y **PEN-024** (`TiempoReal.jsx`, código muerto en producción y vivo en
+  las pruebas), que la etapa 5 puede cerrar juntos.
+- De las fases: **PEN-013**, **PEN-010** y **PEN-008**, que son mediciones de
+  campo.
+
 ## 2026-11-02 — Mejora del frontend: etapa 3 cerrada y etapa 4a (simplificar)
 
 Dos cosas en una sesión: terminar la etapa 3, que se había quedado a medias en

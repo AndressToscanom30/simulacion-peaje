@@ -4,6 +4,21 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Peaje Los Acacios — simulación</title>
+
+    <!--
+      Barlow: un grotesco dibujado desde el vernáculo de la señalización vial,
+      que es de donde sale la dirección visual (DEC-058). Dos anchos de la misma
+      familia: el condensado para los rótulos del pórtico y los títulos.
+
+      Es la única dependencia externa de la interfaz. Si no carga —sin red—, la
+      pila del sistema que declara `estilos.css` la sustituye y nada se rompe.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

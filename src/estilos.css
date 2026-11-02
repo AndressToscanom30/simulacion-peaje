@@ -1,325 +1,427 @@
-:root {
-  --fondo: #fbfbf9;
-  --fondo-panel: #ffffff;
-  --fondo-suave: #f2f2ee;
-  --texto: #1d1d1b;
-  --texto-suave: #5a5a55;
-  --borde: #d6d6cf;
-  --acento: #1f5673;
-  --modificado: #fff4cc;
-  --modificado-borde: #d9a400;
-  --alerta: #8c1c13;
-  --alerta-fondo: #fdecea;
-  --si: #1b5e20;
-  --no: #8c1c13;
-  --serie-1: #1f5673;
-  --serie-2: #b5651d;
-  --rejilla: #e6e6e0;
+/* ==========================================================================
+   Peaje Los Acacios — dirección visual (DEC-058).
 
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  line-height: 1.5;
+   De dónde sale: la infraestructura vial. Hormigón y asfalto para las
+   superficies; el verde de las señales de guía, el amarillo de la demarcación y
+   el rojo de señal para lo que significa algo. El color nunca es la única
+   señal: siempre va acompañado de texto (DEC-039).
+
+   Solo modo claro.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- superficies: del asfalto a la caseta --- */
+  --asfalto: #262b30;
+  --asfalto-claro: #3a4248;
+  --concreto: #e6e9eb;
+  --concreto-hundido: #dadee1;
+  --caseta: #ffffff;
+
+  /* --- texto --- */
+  --texto: #262b30;
+  --texto-suave: #555e65;  /* 4,9:1 sobre el hormigón más oscuro de la hoja */
+  --texto-inverso: #f4f6f7;
+
+  /* --- líneas --- */
+  --borde: #c7cdd1;
+  --borde-fuerte: #9aa4ab;
+  --rejilla: #dfe3e6;
+
+  /* --- señales: cada color significa una cosa --- */
+  --guia: #0a6b41;          /* verde de guía: activo, cumple, acción principal */
+  --guia-oscuro: #085733;
+  --guia-suave: #e4f0e9;
+  --demarcacion: #e8a302;   /* amarillo de demarcación: cambiado, aviso */
+  --demarcacion-suave: #fdf3da;
+  --senal: #a8201a;         /* rojo de señal: error, no cumple */
+  --senal-suave: #fbeceb;
+
+  --fondo: var(--concreto);
+
+  /* Series de los gráficos. Son las únicas variables que se leen desde el JSX,
+     al dibujar los SVG. Se distinguen por tono y por claridad, y además el
+     dato de campo va con punto hueco y el simulado con punto lleno: el color no
+     es la única señal (DEC-039). */
+  --serie-1: #0a6b41;
+  --serie-2: #8c4a12;
+
+  /* --- tipografía --- */
+  --letra: 'Barlow', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --letra-rotulo: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+  --letra-cifra: ui-monospace, 'Cascadia Mono', Menlo, monospace;
+
+  /* Escala de tamaños, razón ~1,15. */
+  --t-xs: 0.72rem;
+  --t-s: 0.82rem;
+  --t-base: 0.94rem;
+  --t-m: 1.06rem;
+  --t-l: 1.3rem;
+  --t-xl: 1.7rem;
+
+  /* --- espaciado, en pasos de 4 px --- */
+  --e-1: 0.25rem;
+  --e-2: 0.5rem;
+  --e-3: 0.75rem;
+  --e-4: 1rem;
+  --e-6: 1.5rem;
+
+  /* --- radios: por papel, no uno para todo --- */
+  --r-control: 3px;
+  --r-bloque: 6px;
+
+  font-family: var(--letra);
+  line-height: 1.45;
   color: var(--texto);
   background: var(--fondo);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --fondo: #16171a;
-    --fondo-panel: #1e2024;
-    --fondo-suave: #24262b;
-    --texto: #e9e9e6;
-    --texto-suave: #a7a7a1;
-    --borde: #3a3d44;
-    --acento: #7fb6d6;
-    --modificado: #403718;
-    --modificado-borde: #d9a400;
-    --alerta: #ff9f95;
-    --alerta-fondo: #3a1f1c;
-    --si: #8fd694;
-    --no: #ff9f95;
-    --serie-1: #7fb6d6;
-    --serie-2: #e0a060;
-    --rejilla: #2e3137;
-  }
-}
-
 * { box-sizing: border-box; }
 
-body { margin: 0; padding: 1.5rem 1rem; background: var(--fondo); }
+/* La aplicación ocupa la ventana: el relleno lo pone cada vista (etapa 2). */
+body { margin: 0; font-size: var(--t-base); background: var(--fondo); }
 
-main { max-width: 78rem; margin: 0 auto; }
+h1, h2, h3, h4 {
+  font-family: var(--letra-rotulo);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.005em;
+}
+h1 { font-size: var(--t-xl); margin: 0 0 var(--e-1); }
+h2 { font-size: var(--t-l); margin: 0 0 var(--e-3); }
+h3 { font-size: var(--t-m); margin: 0 0 var(--e-2); }
+h4 { font-size: var(--t-base); margin: 0 0 var(--e-1); }
 
-h1 { font-size: 1.6rem; margin: 0 0 0.3rem; }
-h2 { font-size: 1.2rem; margin: 1.5rem 0 0.6rem; }
-h3 { font-size: 1rem; margin: 1rem 0 0.4rem; }
+p { margin: 0 0 var(--e-2); max-width: 74ch; }
 
-code { background: var(--fondo-suave); padding: 0.05em 0.3em; border-radius: 3px; font-size: 0.9em; }
-pre { background: var(--fondo-suave); padding: 0.8rem; overflow: auto; max-height: 24rem; font-size: 0.78rem; }
-
-.nota { color: var(--texto-suave); font-size: 0.86rem; margin: 0.3rem 0; }
-
-/* --- supuestos --- */
-.supuestos {
-  background: var(--fondo-panel);
+code {
+  font-family: var(--letra-cifra);
+  font-size: 0.9em;
+  background: var(--concreto-hundido);
+  padding: 0.05em 0.3em;
+  border-radius: var(--r-control);
+}
+pre {
+  font-family: var(--letra-cifra);
+  font-size: var(--t-xs);
+  background: var(--concreto-hundido);
   border: 1px solid var(--borde);
-  border-left: 4px solid var(--modificado-borde);
-  padding: 0.8rem 1rem;
-  margin: 1rem 0;
+  padding: var(--e-3);
+  overflow: auto;
+  max-height: 24rem;
 }
-.supuestos h2 { margin-top: 0; font-size: 1rem; }
-.supuestos ul { margin: 0.5rem 0; padding-left: 1.2rem; font-size: 0.86rem; }
-.supuestos li { margin-bottom: 0.5rem; }
 
+.nota { color: var(--texto-suave); font-size: var(--t-s); margin: var(--e-1) 0; }
+
+/* El foco se ve siempre, y en el verde de guía. */
+:focus-visible { outline: 2px solid var(--guia); outline-offset: 2px; }
+
+/* --- señales de texto ---------------------------------------------------- */
+
+/* Advertir y fallar se dibujan igual: una franja de color a la izquierda, que
+   acompaña al texto y no lo sustituye (DEC-039). */
 .etiqueta-sensibilidad {
-  background: var(--modificado);
-  border-left: 3px solid var(--modificado-borde);
-  padding: 0.4rem 0.6rem;
-  font-size: 0.84rem;
-  margin: 0.4rem 0;
+  border-left: 3px solid var(--demarcacion);
+  background: var(--demarcacion-suave);
+  padding: var(--e-1) var(--e-2);
+  font-size: var(--t-s);
+  margin: var(--e-1) 0;
 }
-
-/* --- pestañas --- */
-.pestanas { display: flex; gap: 0.3rem; border-bottom: 1px solid var(--borde); margin: 1rem 0; }
-.pestanas button {
-  background: none; border: 1px solid transparent; border-bottom: none;
-  padding: 0.5rem 1rem; cursor: pointer; color: var(--texto); font-size: 0.95rem;
-}
-.pestanas button.activo {
-  background: var(--fondo-panel); border-color: var(--borde);
-  font-weight: 600; margin-bottom: -1px; border-radius: 4px 4px 0 0;
-}
-
-/* --- controles --- */
-.barra { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; margin: 0.6rem 0; }
-.barra label { display: inline-flex; gap: 0.35rem; align-items: center; font-size: 0.88rem; }
-
-button {
-  font: inherit; font-size: 0.88rem; padding: 0.35rem 0.7rem; cursor: pointer;
-  background: var(--fondo-panel); color: var(--texto);
-  border: 1px solid var(--borde); border-radius: 4px;
-}
-button:hover:not(:disabled) { border-color: var(--acento); }
-button:disabled { opacity: 0.5; cursor: default; }
-button.activo { background: var(--acento); color: var(--fondo-panel); border-color: var(--acento); }
-
-input, select, textarea {
-  font: inherit; font-size: 0.88rem; padding: 0.25rem 0.4rem;
-  background: var(--fondo-panel); color: var(--texto);
-  border: 1px solid var(--borde); border-radius: 3px;
-}
-input[type="number"] { width: 6rem; }
-input[type="checkbox"] { width: auto; }
-input[type="range"] { flex: 1; min-width: 12rem; }
-textarea { width: 100%; font-family: ui-monospace, monospace; font-size: 0.78rem; }
-
-.controles { background: var(--fondo-panel); border: 1px solid var(--borde); padding: 0.6rem; }
-.grupo-velocidad { display: inline-flex; gap: 0.25rem; align-items: center; font-size: 0.88rem; }
-.grupo-velocidad input[type="number"] { width: 4.5rem; }
-
-.reloj { background: var(--fondo-suave); padding: 0.5rem 0.6rem; }
-.reloj__tiempo { font-family: ui-monospace, monospace; font-size: 1.05rem; min-width: 11rem; }
-
-/* --- formulario --- */
-.formulario details { border: 1px solid var(--borde); background: var(--fondo-panel); margin-bottom: 0.4rem; }
-.formulario summary { padding: 0.5rem 0.8rem; cursor: pointer; font-weight: 600; font-size: 0.95rem; }
-.punto-modificado {
-  display: inline-block; width: 0.55rem; height: 0.55rem; margin-left: 0.4rem;
-  border-radius: 50%; background: var(--modificado-borde);
-}
-
-.campos { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); padding: 0.8rem; }
-.campo { border: 1px solid var(--borde); padding: 0.6rem; border-radius: 4px; background: var(--fondo); }
-.campo--modificado { background: var(--modificado); border-color: var(--modificado-borde); }
-.campo__cabecera { display: flex; justify-content: space-between; gap: 0.5rem; align-items: baseline; }
-.campo__cabecera label { font-weight: 600; font-size: 0.88rem; }
-.campo__unidad { font-weight: 400; color: var(--texto-suave); }
-.campo__restablecer {
-  font-size: 0.75rem; padding: 0.1rem 0.4rem; background: none;
-  border: 1px solid var(--borde); color: var(--texto-suave);
-}
-.campo__ayuda { font-size: 0.8rem; color: var(--texto-suave); margin: 0.35rem 0 0.15rem; }
-.campo__meta { font-size: 0.74rem; color: var(--texto-suave); margin: 0; }
-
-.serie__valores { display: flex; flex-wrap: wrap; gap: 0.25rem; margin: 0.3rem 0; }
-.serie__celda { display: flex; flex-direction: column; align-items: center; font-size: 0.68rem; color: var(--texto-suave); }
-.serie__celda input { width: 3.1rem; padding: 0.15rem 0.2rem; font-size: 0.78rem; text-align: center; }
 
 .problemas {
-  background: var(--alerta-fondo); border-left: 3px solid var(--alerta);
-  color: var(--alerta); padding: 0.6rem 0.8rem; margin: 0.6rem 0; font-size: 0.86rem;
+  border-left: 3px solid var(--senal);
+  background: var(--senal-suave);
+  color: var(--texto);
+  padding: var(--e-2) var(--e-3);
+  margin: var(--e-2) 0;
+  font-size: var(--t-s);
 }
-.problemas ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+.problemas ul { margin: var(--e-1) 0 0; padding-left: var(--e-4); }
 
-.lista-escenarios { display: grid; gap: 0.5rem; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); padding: 0.6rem; }
-.lista-escenarios fieldset { border: 1px solid var(--borde); padding: 0.4rem 0.6rem; }
-.lista-escenarios label { display: block; font-size: 0.8rem; }
-.json { padding: 0.8rem; }
+/* --- controles ----------------------------------------------------------- */
 
-/* --- estado en vivo --- */
-.estado-vivo { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin: 0.8rem 0; }
-.estado-vivo__sentido { border: 1px solid var(--borde); background: var(--fondo-panel); padding: 0.6rem 0.8rem; }
-.estado-vivo__sentido h3 { margin-top: 0; }
-.estado-vivo dl { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem 0.6rem; margin: 0; font-size: 0.86rem; }
+.barra { display: flex; flex-wrap: wrap; gap: var(--e-2); align-items: center; margin: var(--e-2) 0; }
+.barra label { display: inline-flex; gap: var(--e-1); align-items: center; font-size: var(--t-s); }
+
+button {
+  font: inherit; font-size: var(--t-s);
+  padding: var(--e-1) var(--e-3);
+  cursor: pointer;
+  background: var(--caseta);
+  color: var(--texto);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--r-control);
+}
+button:hover:not(:disabled) { border-color: var(--asfalto-claro); background: var(--concreto); }
+button:disabled {
+  cursor: not-allowed;
+  color: var(--texto-suave);
+  background: var(--concreto-hundido);
+  border-color: var(--borde);
+}
+/* Seleccionado: verde de guía, y el estado va ademas en el texto del boton. */
+button.activo {
+  background: var(--guia);
+  border-color: var(--guia);
+  color: var(--texto-inverso);
+}
+
+input, select, textarea {
+  font: inherit; font-size: var(--t-s);
+  padding: var(--e-1) var(--e-2);
+  background: var(--caseta);
+  color: var(--texto);
+  border: 1px solid var(--borde-fuerte);
+  border-radius: var(--r-control);
+}
+input:disabled, select:disabled { background: var(--concreto-hundido); color: var(--texto-suave); }
+input[type="number"] { width: 6rem; font-variant-numeric: tabular-nums; }
+input[type="checkbox"] { width: auto; accent-color: var(--guia); }
+input[type="range"] { flex: 1; min-width: 12rem; accent-color: var(--guia); padding: 0; border: 0; background: none; }
+textarea { width: 100%; font-family: var(--letra-cifra); font-size: var(--t-xs); }
+
+.controles { background: var(--caseta); border: 1px solid var(--borde); padding: var(--e-3); }
+.grupo-velocidad { display: inline-flex; gap: var(--e-1); align-items: center; font-size: var(--t-s); }
+.grupo-velocidad input[type="number"] { width: 4.5rem; }
+
+.reloj { background: var(--concreto-hundido); padding: var(--e-2) var(--e-3); }
+.reloj__tiempo { font-family: var(--letra-cifra); font-size: var(--t-m); min-width: 11rem; }
+
+/* --- formulario ---------------------------------------------------------- */
+
+.formulario details {
+  border: 1px solid var(--borde);
+  background: var(--caseta);
+  margin-bottom: var(--e-1);
+}
+.formulario summary {
+  padding: var(--e-2) var(--e-3);
+  cursor: pointer;
+  font-family: var(--letra-rotulo);
+  font-weight: 600;
+  font-size: var(--t-m);
+}
+.formulario summary:hover { background: var(--concreto); }
+.punto-modificado {
+  display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: var(--e-1);
+  border-radius: 50%; background: var(--demarcacion);
+}
+
+.campos { display: grid; gap: var(--e-3); grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr)); padding: var(--e-3); }
+.campo {
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde);
+  padding: var(--e-2) var(--e-3);
+  background: var(--caseta);
+}
+/* Modificado: amarillo de demarcación, y la franja gruesa a la izquierda para
+   que el color no sea la única señal (DEC-039). */
+.campo--modificado {
+  background: var(--demarcacion-suave);
+  border-color: var(--borde);
+  border-left-color: var(--demarcacion);
+}
+.campo__cabecera { display: flex; justify-content: space-between; gap: var(--e-2); align-items: baseline; }
+.campo__cabecera label { font-weight: 600; font-size: var(--t-s); }
+.campo__unidad { font-weight: 400; color: var(--texto-suave); }
+.campo__restablecer {
+  font-size: var(--t-xs); padding: 0 var(--e-1);
+  background: none; border-color: var(--borde); color: var(--texto-suave);
+}
+.campo__meta { font-size: var(--t-xs); color: var(--texto-suave); margin: 0; }
+
+.serie__valores { display: flex; flex-wrap: wrap; gap: var(--e-1); margin: var(--e-1) 0; }
+.serie__celda { display: flex; flex-direction: column; align-items: center; font-size: var(--t-xs); color: var(--texto-suave); }
+.serie__celda input { width: 3.1rem; padding: 0.1rem 0.2rem; font-size: var(--t-xs); text-align: center; }
+
+.lista-escenarios { display: grid; gap: var(--e-2); grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); padding: var(--e-2); }
+.lista-escenarios fieldset { border: 1px solid var(--borde); border-radius: var(--r-control); padding: var(--e-1) var(--e-2); }
+.lista-escenarios legend { font-family: var(--letra-rotulo); font-weight: 600; }
+.lista-escenarios label { display: block; font-size: var(--t-s); }
+.json { padding: var(--e-3); }
+
+/* --- estado en vivo ------------------------------------------------------ */
+
+.estado-vivo { display: grid; gap: var(--e-3); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin: var(--e-3) 0; }
+.estado-vivo__sentido { border: 1px solid var(--borde); background: var(--caseta); padding: var(--e-2) var(--e-3); }
+.estado-vivo dl { display: grid; grid-template-columns: 1fr auto; gap: 0.15rem var(--e-2); margin: 0; font-size: var(--t-s); }
 .estado-vivo dt { color: var(--texto-suave); }
 .estado-vivo dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.estado-vivo dd.grande { font-size: 1.2rem; font-weight: 600; }
+.estado-vivo dd.grande { font-size: var(--t-l); font-weight: 600; }
 
-/* --- esquema de casetas --- */
-.esquema { margin: 0.8rem 0; }
-.esquema__casetas { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+/* --- esquema de casetas -------------------------------------------------- */
+
+.esquema { margin: var(--e-3) 0; }
+.esquema__casetas { display: flex; flex-wrap: wrap; gap: var(--e-1); }
+/* Cada caseta se dibuja como una cabina: fondo claro y techo de color según el
+   estado. El estado va además escrito debajo del número (DEC-039). */
 .caseta {
   display: flex; flex-direction: column; gap: 0.1rem;
-  min-width: 6.5rem; padding: 0.4rem 0.5rem;
-  border: 2px solid var(--borde); border-radius: 4px; font-size: 0.74rem;
+  min-width: 6.5rem; padding: var(--e-1) var(--e-2);
+  background: var(--caseta);
+  border: 1px solid var(--borde);
+  border-top: 4px solid var(--borde-fuerte);
+  border-radius: 0 0 var(--r-control) var(--r-control);
+  font-size: var(--t-xs);
 }
-.caseta__id { font-weight: 700; font-size: 0.86rem; }
+.caseta__id { font-family: var(--letra-rotulo); font-weight: 700; font-size: var(--t-m); }
 .caseta__dueno { font-weight: 600; }
 .caseta__estado { color: var(--texto-suave); }
-.caseta--cerrada { opacity: 0.55; border-style: dashed; }
-.caseta--reservada { border-color: var(--modificado-borde); background: var(--modificado); }
-.caseta--abierta { border-color: var(--si); }
-.caseta--marcada { border-color: var(--serie-2); border-style: dotted; }
+.caseta--cerrada { background: var(--concreto-hundido); border-top-style: dashed; color: var(--texto-suave); }
+.caseta--reservada { border-top-color: var(--demarcacion); background: var(--demarcacion-suave); }
+.caseta--abierta { border-top-color: var(--guia); }
+.caseta--marcada { border-top-color: var(--serie-2); border-top-style: dotted; }
 
-/* --- gráficos --- */
-.graficos { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr)); }
-.grafico { margin: 0; border: 1px solid var(--borde); background: var(--fondo-panel); padding: 0.5rem; }
-.grafico figcaption { font-size: 0.86rem; font-weight: 600; margin-bottom: 0.3rem; }
+/* --- gráficos ------------------------------------------------------------ */
+
+.graficos { display: grid; gap: var(--e-4); grid-template-columns: repeat(auto-fit, minmax(27rem, 1fr)); }
+.grafico { margin: 0; border: 1px solid var(--borde); background: var(--caseta); padding: var(--e-2) var(--e-3) var(--e-3); }
+.grafico figcaption {
+  font-family: var(--letra-rotulo);
+  font-size: var(--t-m); font-weight: 600;
+  margin-bottom: var(--e-1);
+  padding-bottom: var(--e-1);
+  border-bottom: 1px solid var(--borde);
+}
 .grafico svg { width: 100%; height: auto; }
-.leyenda { font-weight: 400; font-size: 0.76rem; margin-left: 0.5rem; }
-.leyenda span { margin-right: 0.5rem; }
+.leyenda { font-family: var(--letra); font-weight: 400; font-size: var(--t-xs); margin-left: var(--e-2); color: var(--texto-suave); }
+.leyenda span { margin-right: var(--e-2); }
 .rejilla { stroke: var(--rejilla); stroke-width: 1; }
 .eje { fill: var(--texto-suave); font-size: 9px; }
-.observado { fill: none; stroke-width: 1.4; stroke-dasharray: 2 1.5; }
-line.ref-meta { stroke: var(--si); stroke-width: 1.2; stroke-dasharray: 5 3; }
-line.ref-max { stroke: var(--no); stroke-width: 1.2; stroke-dasharray: 5 3; }
-span.ref-meta { color: var(--si); }
-span.ref-max { color: var(--no); }
 
-/* --- tablas --- */
-.tabla-envoltorio { overflow-x: auto; margin: 0.8rem 0; }
-table { border-collapse: collapse; width: 100%; font-size: 0.82rem; background: var(--fondo-panel); }
-caption { caption-side: top; text-align: left; font-size: 0.82rem; color: var(--texto-suave); padding-bottom: 0.35rem; }
-th, td { border: 1px solid var(--borde); padding: 0.3rem 0.5rem; text-align: right; font-variant-numeric: tabular-nums; }
-thead th, tbody th { text-align: left; background: var(--fondo-suave); font-weight: 600; }
-tr.destacada td, tr.destacada th { font-weight: 700; }
-td.si { color: var(--si); font-weight: 600; }
-td.no { color: var(--no); font-weight: 700; }
+/* --- tablas -------------------------------------------------------------- */
 
-.progreso { display: flex; gap: 0.6rem; align-items: center; font-size: 0.86rem; margin: 0.5rem 0; }
-.progreso progress { flex: 1; }
+.tabla-envoltorio { overflow-x: auto; margin: var(--e-3) 0; }
+table { border-collapse: collapse; width: 100%; font-size: var(--t-s); background: var(--caseta); }
+caption {
+  caption-side: top; text-align: left;
+  font-size: var(--t-s); color: var(--texto-suave);
+  padding-bottom: var(--e-1);
+}
+th, td {
+  border: 1px solid var(--borde);
+  padding: var(--e-1) var(--e-2);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+/* La cabecera es el rótulo de la tabla: condensada y sobre hormigón. */
+thead th, tbody th {
+  text-align: left;
+  background: var(--concreto-hundido);
+  font-family: var(--letra-rotulo);
+  font-weight: 600;
+  font-size: var(--t-base);
+}
+tr.destacada td, tr.destacada th { font-weight: 700; background: var(--guia-suave); }
+td.si { color: var(--guia); font-weight: 600; }
+td.no { color: var(--senal); font-weight: 700; }
 
-footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8rem; }
+.progreso { display: flex; gap: var(--e-2); align-items: center; font-size: var(--t-s); margin: var(--e-2) 0; }
+.progreso progress { flex: 1; accent-color: var(--guia); }
 
 @media (max-width: 40rem) {
-  body { padding: 1rem 0.6rem; }
   .campos, .graficos, .estado-vivo { grid-template-columns: 1fr; }
 }
 
-/* --- vista 3D --- */
-.vista3d { margin: 1rem 0; border: 1px solid var(--borde); background: var(--fondo-panel); padding: 0.6rem; }
+/* --- vista 3D ------------------------------------------------------------ */
+
+/* La escena no lleva marco: empieza donde acaba la barra. El fondo es el
+   mismo cielo de hormigón que pinta el motor 3D, para que no haya un salto de
+   color mientras carga. */
+.vista3d { margin: 0; border: 0; background: var(--concreto); padding: 0; }
 .vista3d h3 { margin: 0; }
 .vista3d__lienzo {
   height: min(60vh, 32rem); min-height: 18rem;
-  border: 1px solid var(--borde); border-radius: 4px; overflow: hidden;
-  background: var(--fondo-suave);
+  overflow: hidden;
+  background: var(--concreto);
 }
 .vista3d__lienzo canvas { display: block; width: 100%; height: 100%; touch-action: none; }
 
-.hud {
-  display: grid; gap: 0.6rem; margin-top: 0.6rem;
-  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
-  font-size: 0.84rem;
+.leyenda-3d { border-top: 1px solid var(--borde); background: var(--caseta); }
+.leyenda-3d summary {
+  padding: var(--e-1) var(--e-2);
+  cursor: pointer;
+  font-size: var(--t-s);
+  font-weight: 600;
 }
-.hud__reloj { grid-column: 1 / -1; font-family: ui-monospace, monospace; font-size: 1rem; }
-.hud__sentido, .hud__pozo, .hud__registro {
-  border: 1px solid var(--borde); padding: 0.4rem 0.6rem; background: var(--fondo);
-}
-.hud h4 { margin: 0 0 0.3rem; font-size: 0.86rem; }
-.hud__flecha { color: var(--acento); }
-.hud dl { display: grid; grid-template-columns: 1fr auto; gap: 0.1rem 0.5rem; margin: 0; }
-.hud dt { color: var(--texto-suave); }
-.hud dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
-.hud dd.grande { font-size: 1.1rem; font-weight: 600; }
-.hud__linea { display: grid; grid-template-columns: 1fr auto; gap: 0.5rem; grid-column: 1 / -1; }
-.hud__registro ul { margin: 0; padding-left: 1rem; font-size: 0.78rem; }
-.hud__registro li { margin-bottom: 0.15rem; }
-.hud__pie { grid-column: 1 / -1; }
-
-.leyenda-3d { margin-top: 0.5rem; border: 1px solid var(--borde); }
-.leyenda-3d summary { padding: 0.4rem 0.6rem; cursor: pointer; font-size: 0.86rem; font-weight: 600; }
-.leyenda-3d__columnas {
-  display: grid; gap: 0.8rem; padding: 0.6rem;
-  grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-}
-.leyenda-3d h4 { margin: 0 0 0.3rem; font-size: 0.84rem; }
-.leyenda-3d ul { margin: 0 0 0.4rem; padding-left: 0; list-style: none; font-size: 0.8rem; }
-.leyenda-3d li { margin-bottom: 0.2rem; }
 .muestra {
-  display: inline-block; width: 0.8rem; height: 0.8rem; margin-right: 0.35rem;
-  border: 1px solid var(--borde); vertical-align: -1px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .vista3d__lienzo { scroll-behavior: auto; }
+  display: inline-block; width: 0.75rem; height: 0.75rem;
+  border: 1px solid var(--borde-fuerte);
+  vertical-align: -1px;
 }
 
 /* ==========================================================================
    Estructura de la etapa 2: la simulación 3D es la página (DEC-053).
 
-   Aquí solo va la estructura: pantalla completa, panel lateral,
-   superposiciones y cajón. La paleta, la tipografía y el modo claro son la
-   etapa 4; estas reglas usan las variables que ya existían.
+   Estructura y, desde la etapa 4b, también su aspecto: pantalla completa,
+   panel lateral, superposiciones y cajón, con los tokens de la dirección
+   visual (DEC-058).
    ========================================================================== */
 
+/* La aplicación ocupa la ventana justa. Lo que no cabe scrollea dentro de su
+   vista: si la página entera pudiera crecer, el alto del panel de controles
+   empujaría la barra de reproducción fuera de la pantalla. */
 .aplicacion {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  min-height: 0;
+  overflow: hidden;
 }
 
 /* ------------------------------------------------------- barra superior --- */
 
 .barra-superior {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  align-items: baseline;
+  gap: var(--e-6);
   flex-wrap: wrap;
-  padding: 0.4rem 0.8rem;
-  border-bottom: 1px solid var(--borde);
-  background: var(--fondo-panel);
+  padding: var(--e-2) var(--e-4);
+  border-bottom: 1px solid var(--borde-fuerte);
+  background: var(--caseta);
 }
 
 .barra-superior__nombre {
-  font-weight: 600;
+  font-family: var(--letra-rotulo);
+  font-weight: 700;
+  font-size: var(--t-m);
+  letter-spacing: 0.01em;
 }
 
 .barra-superior__vistas {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--e-4);
 }
 
+/* Las tres vistas se leen como una fila de destinos. La activa se marca con el
+   verde de guía y con un subrayado grueso: el color no va solo (DEC-039). */
 .barra-superior__vistas a {
-  padding: 0.3rem 0.7rem;
-  border: 1px solid var(--borde);
-  border-radius: 999px;
-  color: var(--texto);
+  padding: var(--e-1) 0;
+  border-bottom: 3px solid transparent;
+  color: var(--texto-suave);
   text-decoration: none;
-  font-size: 0.9rem;
+  font-size: var(--t-s);
+  font-weight: 500;
+}
+
+.barra-superior__vistas a:hover {
+  color: var(--texto);
+  border-bottom-color: var(--borde-fuerte);
 }
 
 .barra-superior__vistas a.activo {
-  background: var(--acento);
-  border-color: var(--acento);
-  color: #fff;
+  color: var(--guia);
+  border-bottom-color: var(--guia);
+  font-weight: 600;
 }
 
 .barra-superior__aviso {
   margin-left: auto;
-  padding: 0.2rem 0.6rem;
-  border: 1px solid var(--modificado-borde);
-  border-radius: 999px;
-  background: var(--modificado);
-  font-size: 0.85rem;
+  padding: var(--e-1) var(--e-2);
+  border-left: 3px solid var(--demarcacion);
+  background: var(--demarcacion-suave);
+  font-size: var(--t-s);
 }
 
 /* --------------------------------------------------------------- vistas --- */
@@ -329,13 +431,46 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   min-height: 0;
 }
 
+/* Lotes y configuración son vistas de documento: una columna de lectura
+   centrada. El relleno lo pone el bloque, no la vista, para que la franja de
+   advertencias siga cruzando la ventana entera. */
 .vista--lotes,
 .vista--configuracion {
-  padding: 1rem;
-  max-width: 1200px;
-  margin: 0 auto;
   width: 100%;
-  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.vista-lotes,
+.vista-configuracion {
+  display: grid;
+}
+
+.vista-lotes > :not(.advertencias),
+.vista-configuracion > * {
+  width: 100%;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: var(--e-6) var(--e-4);
+}
+
+/* Entre dos bloques seguidos el relleno no se suma. */
+.vista-configuracion > * + * {
+  padding-top: 0;
+}
+
+/* Las acciones de la configuración son una barra: el aviso ocupa su propia
+   línea y los dos botones van juntos a continuación. */
+.vista-configuracion__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--e-2);
+  flex-wrap: wrap;
+}
+
+.vista-configuracion__acciones .problemas,
+.vista-configuracion__acciones .panel-sin-aplicar {
+  flex: 1 0 100%;
+  margin: 0;
 }
 
 /* -------------------------------------------------- vista de simulación --- */
@@ -357,18 +492,33 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   display: flex;
   flex-direction: column;
   min-height: 0;
-  border-right: 1px solid var(--borde);
-  background: var(--fondo-panel);
+  border-right: 1px solid var(--borde-fuerte);
+  background: var(--caseta);
   overflow: hidden;
 }
 
-.vista-simulacion__tirador {
+/* Los tiradores del panel y del cajón son la misma pieza: una pestaña de
+   hormigón, alineada a la izquierda y sin radio. */
+.vista-simulacion__tirador,
+.cajon__tirador {
   flex: 0 0 auto;
   border: 0;
-  border-bottom: 1px solid var(--borde);
   border-radius: 0;
   text-align: left;
-  background: var(--fondo-suave);
+  background: var(--concreto-hundido);
+  font-family: var(--letra-rotulo);
+  font-size: var(--t-base);
+  font-weight: 600;
+  padding: var(--e-1) var(--e-3);
+}
+
+.vista-simulacion__tirador:hover,
+.cajon__tirador:hover {
+  background: var(--concreto);
+}
+
+.vista-simulacion__tirador {
+  border-bottom: 1px solid var(--borde);
 }
 
 .vista-simulacion__escena {
@@ -383,7 +533,7 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   position: relative;
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Mientras se recalcula, lo anterior sigue visible pero atenuado (DEC-054). */
@@ -392,6 +542,8 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   pointer-events: none;
 }
 
+/* Mientras se recalcula, el aviso se planta en medio de la escena como una
+   valla de obra: hormigón, borde de demarcación arriba. */
 .vista-simulacion__recalculando {
   position: absolute;
   top: 50%;
@@ -400,18 +552,22 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   z-index: 3;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.6rem 1rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.5rem;
-  background: var(--fondo-panel);
+  gap: var(--e-3);
+  padding: var(--e-3) var(--e-4);
+  border: 1px solid var(--borde-fuerte);
+  border-top: 4px solid var(--demarcacion);
+  border-radius: 0 0 var(--r-bloque) var(--r-bloque);
+  background: var(--caseta);
+  box-shadow: 0 2px 8px rgb(38 43 48 / 25%);
 }
 
 .vista-simulacion__esperando {
   margin: auto;
 }
 
-/* La escena del panel 3D ocupa todo el hueco que le toca. */
+/* La escena del panel 3D ocupa todo el hueco que le toca. El tope de alto que
+   lleva el lienzo es para cuando el panel se monta suelto dentro de un
+   documento; aquí la escena es la página y se estira. */
 .vista-simulacion__lienzo .vista3d {
   height: 100%;
   margin: 0;
@@ -419,92 +575,238 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   flex-direction: column;
 }
 
+.vista-simulacion__lienzo .vista3d__lienzo {
+  flex: 1;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+}
+
+/* En la simulación, encima de la escena solo va el pórtico. Lo único que queda
+   en la barra de arriba del panel 3D es su título, que aquí sobra porque la
+   barra superior ya dice en qué vista se está: se deja para quien navegue con
+   lector de pantalla y se saca de la vista. */
+.vista-simulacion__lienzo .vista3d > .barra {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* La barra de instrumentos de la escena: los controles de cámara y calidad a
+   la izquierda, y a la derecha lo que se está dibujando. */
+.vista3d__pie .grupo-velocidad,
+.vista3d__pie label {
+  font-size: var(--t-s);
+}
+
+.vista3d__pie .leyenda-3d {
+  border: 0;
+  background: none;
+  margin-left: auto;
+}
+
 /* ------------------------------------------------------------------ HUD --- */
+
+/* El HUD es lo único llamativo de la interfaz, y es la pieza que mejor explica
+   de qué va el programa: un **pórtico de señalización** sobre la calzada. El
+   travesaño lleva el reloj y de él cuelga, por sentido, un panel verde de
+   señal de guía. Es el único sitio con mayúsculas, porque es donde la
+   señalización vial las usa. Todo lo demás es hormigón callado. */
 
 .hud {
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: 0;
+  left: 0;
+  right: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  max-width: calc(100% - 1rem);
+  align-items: flex-start;
   pointer-events: none;
 }
 
+/* El travesaño: cruza la calzada de lado a lado. */
 .hud__reloj {
+  align-self: stretch;
   display: flex;
-  gap: 0.6rem;
+  gap: var(--e-3);
   align-items: baseline;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.4rem;
-  background: var(--fondo-panel);
+  padding: var(--e-1) var(--e-4);
+  background: var(--asfalto);
+  border-bottom: 3px solid var(--demarcacion);
+  color: var(--texto-inverso);
+  font-family: var(--letra-cifra);
+  font-size: var(--t-base);
+  font-variant-numeric: tabular-nums;
 }
 
 .hud__hora {
-  color: var(--texto-suave);
-  font-size: 0.9rem;
+  color: #aab4bb;
+  font-size: var(--t-s);
 }
 
 .hud__sentidos {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
+  padding: var(--e-3) var(--e-4) 0;
+  max-width: 100%;
 }
 
+/* Cada sentido, un panel de señal de guía: verde, con el filete blanco por
+   dentro que llevan las de verdad. */
 .hud__sentido {
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 0.4rem;
-  background: var(--fondo-panel);
+  padding: var(--e-2) var(--e-3);
+  background: var(--guia);
+  border: 2px solid var(--guia-oscuro);
+  border-radius: var(--r-bloque);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 70%), 0 2px 6px rgb(38 43 48 / 30%);
+  color: #fff;
 }
 
 .hud__sentido h3 {
-  margin: 0 0 0.3rem;
-  font-size: 0.9rem;
+  margin: 0 0 var(--e-2);
+  font-family: var(--letra-rotulo);
+  font-size: var(--t-m);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .hud__sentido dl {
   display: grid;
   grid-template-columns: repeat(2, auto);
-  gap: 0.1rem 0.8rem;
+  gap: var(--e-1) var(--e-4);
   margin: 0;
 }
 
 .hud__sentido dt {
-  font-size: 0.75rem;
-  color: var(--texto-suave);
+  font-size: var(--t-xs);
+  color: #d4e6dc;
 }
 
 .hud__sentido dd {
   margin: 0;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
+.hud__sentido dd.grande {
+  font-family: var(--letra-rotulo);
+  font-size: var(--t-xl);
+  font-weight: 700;
+  line-height: 1;
+}
+
 .hud__nota {
-  margin: 0.3rem 0 0;
-  font-size: 0.75rem;
-  color: var(--texto-suave);
+  margin: var(--e-2) 0 0;
+  font-size: var(--t-xs);
+  color: #d4e6dc;
+}
+
+/* El panel 3D montado por su cuenta trae su propio HUD, con el estado del pozo
+   y los eventos recientes (en la simulación no se dibuja: lo pone la vista).
+   Cuelga del mismo pórtico, en cajas de asfalto. */
+
+.hud__sentido h4,
+.hud__pozo h4,
+.hud__registro h4 {
+  margin: 0 0 var(--e-2);
+  font-family: var(--letra-rotulo);
+  font-size: var(--t-m);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hud__pozo,
+.hud__registro {
+  margin: var(--e-3) 0 0 var(--e-4);
+  padding: var(--e-2) var(--e-3);
+  background: var(--asfalto);
+  border-radius: var(--r-bloque);
+  box-shadow: 0 2px 6px rgb(38 43 48 / 30%);
+  color: var(--texto-inverso);
+  font-size: var(--t-s);
+}
+
+.hud__pozo dl,
+.hud__registro dl {
+  display: grid;
+  gap: var(--e-1) var(--e-4);
+  margin: 0;
+}
+
+.hud__linea {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--e-4);
+}
+
+.hud__pozo dt,
+.hud__registro dt {
+  color: #aab4bb;
+}
+
+.hud__pozo dd,
+.hud__registro dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* La flecha dice el sentido sin depender del color (DEC-039). */
+.hud__flecha {
+  color: var(--demarcacion);
+}
+
+.hud__registro ul {
+  margin: 0;
+  padding-left: var(--e-4);
+  font-size: var(--t-xs);
+}
+
+.hud__registro li {
+  margin-bottom: var(--e-1);
+}
+
+.hud__registro code {
+  background: none;
+  color: var(--demarcacion);
+  padding: 0;
+}
+
+.hud__pie {
+  margin: var(--e-2) 0 0 var(--e-4);
+  max-width: 48ch;
+  padding: var(--e-1) var(--e-2);
+  background: var(--caseta);
+  border-left: 3px solid var(--borde-fuerte);
+  font-size: var(--t-xs);
 }
 
 /* --------------------------------------------- barra de reproducción ----- */
 
+/* La barra de reproducción va callada: el pórtico ya es la pieza fuerte. */
 .barra-reproduccion {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  padding: 0.4rem 0.6rem;
-  border-top: 1px solid var(--borde);
-  background: var(--fondo-panel);
+  padding: var(--e-2) var(--e-3);
+  border-top: 1px solid var(--borde-fuerte);
+  background: var(--caseta);
 }
 
 .barra-reproduccion__botones {
   display: flex;
-  gap: 0.3rem;
+  gap: var(--e-1);
 }
 
 .barra-reproduccion__tiempo {
@@ -515,12 +817,16 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 .barra-reproduccion__hora {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--e-1);
+  flex-wrap: wrap;
 }
 
 .barra-reproduccion__error {
-  color: var(--alerta);
-  font-size: 0.85rem;
+  padding: 0 var(--e-2);
+  border-left: 3px solid var(--senal);
+  background: var(--senal-suave);
+  color: var(--texto);
+  font-size: var(--t-s);
 }
 
 /* -------------------------------------------------------- panel lateral --- */
@@ -536,68 +842,74 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.6rem;
+  padding: var(--e-4) var(--e-3);
 }
 
 .panel-controles__acciones {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  padding: 0.6rem;
-  border-top: 1px solid var(--borde);
-  background: var(--fondo-suave);
+  gap: var(--e-2);
+  padding: var(--e-3);
+  border-top: 1px solid var(--borde-fuerte);
+  background: var(--concreto-hundido);
 }
 
 .panel-seccion {
-  margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
+  margin-bottom: var(--e-4);
+  padding-bottom: var(--e-3);
   border-bottom: 1px solid var(--borde);
 }
 
 .panel-seccion:last-child {
   border-bottom: 0;
+  margin-bottom: 0;
 }
 
 .panel-seccion h3 {
-  margin: 0 0 0.5rem;
-  font-size: 0.95rem;
+  margin: 0 0 var(--e-2);
+  font-size: var(--t-m);
 }
 
 .panel-campo {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  margin-bottom: 0.5rem;
+  gap: var(--e-1);
+  margin-bottom: var(--e-2);
+  font-size: var(--t-s);
 }
 
 .panel-nota,
 .panel-resultado {
-  margin: 0.2rem 0;
-  font-size: 0.85rem;
+  margin: var(--e-1) 0;
+  font-size: var(--t-s);
   color: var(--texto-suave);
 }
 
+/* La cifra que el panel calcula es lo que se viene a mirar: en negro y grande
+   dentro de su línea. */
 .panel-resultado strong {
   color: var(--texto);
+  font-size: var(--t-m);
   font-variant-numeric: tabular-nums;
 }
 
-.panel-aviso {
-  margin: 0.3rem 0;
-  padding: 0.4rem 0.6rem;
-  border-left: 3px solid var(--modificado-borde);
-  background: var(--modificado);
-  font-size: 0.85rem;
+.panel-aviso,
+.panel-sin-aplicar {
+  margin: var(--e-2) 0;
+  padding: var(--e-2);
+  border-left: 3px solid var(--demarcacion);
+  background: var(--demarcacion-suave);
+  font-size: var(--t-s);
 }
 
 .panel-dias {
-  margin: 0.5rem 0 0;
-  font-size: 0.85rem;
+  margin: var(--e-2) 0 0;
+  font-size: var(--t-s);
 }
 
 .panel-dias div {
-  margin-bottom: 0.3rem;
+  margin-bottom: var(--e-1);
 }
 
 .panel-dias dt {
@@ -606,34 +918,34 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 
 .panel-dias dd {
   margin: 0;
-}
-
-.panel-sin-aplicar {
-  margin: 0;
-  padding: 0.3rem 0.6rem;
-  border: 1px solid var(--modificado-borde);
-  border-radius: 0.3rem;
-  background: var(--modificado);
-  font-size: 0.85rem;
+  color: var(--texto-suave);
 }
 
 .panel-botones {
   display: flex;
-  gap: 0.4rem;
+  gap: var(--e-2);
   flex-wrap: wrap;
 }
 
+/* Recalcular es la acción del programa: el botón va en verde de guía. */
 .boton-principal {
   font-weight: 600;
+  font-size: var(--t-base);
+  padding: var(--e-2) var(--e-3);
+  background: var(--guia);
+  border-color: var(--guia-oscuro);
+  color: var(--texto-inverso);
 }
 
-.boton-texto {
-  border: 0;
-  background: none;
-  padding: 0;
-  color: var(--acento);
-  text-decoration: underline;
-  cursor: pointer;
+.boton-principal:hover:not(:disabled) {
+  background: var(--guia-oscuro);
+  border-color: var(--guia-oscuro);
+}
+
+.boton-principal:disabled {
+  background: var(--concreto-hundido);
+  border-color: var(--borde);
+  color: var(--texto-suave);
 }
 
 /* --------------------------------------------------------------- cajón --- */
@@ -641,8 +953,8 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 .cajon {
   grid-column: 2;
   flex: 0 0 auto;
-  border-top: 1px solid var(--borde);
-  background: var(--fondo-panel);
+  border-top: 1px solid var(--borde-fuerte);
+  background: var(--concreto);
   max-height: 45vh;
   overflow-y: auto;
 }
@@ -650,19 +962,15 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 .cajon--principal {
   grid-column: 2;
   max-height: none;
-  padding: 0.8rem;
+  padding: var(--e-4);
 }
 
 .cajon__tirador {
   width: 100%;
-  border: 0;
-  border-radius: 0;
-  text-align: left;
-  background: var(--fondo-suave);
 }
 
 .cajon__contenido {
-  padding: 0.8rem;
+  padding: var(--e-4);
 }
 
 
@@ -692,8 +1000,7 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 }
 
 /* ==========================================================================
-   Etapa 4a — simplificación (DEC-057). Solo estructura: la paleta y la
-   tipografía son la etapa 4b.
+   Etapa 4a — simplificación (DEC-057), con el aspecto de la etapa 4b encima.
    ========================================================================== */
 
 /* Aviso de una línea dentro de un campo (Supuesto / Sensibilidad / estimados). */
@@ -704,63 +1011,71 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
 }
 
 /* Franja fija con lo que hay que leer siempre, y su panel corto detrás. */
+/* La franja fija es una advertencia permanente, así que lleva el amarillo de
+   demarcación, no el gris del mobiliario. */
 .advertencias {
-  border-bottom: 1px solid var(--borde);
-  background: var(--fondo-suave);
+  border-bottom: 1px solid var(--demarcacion);
+  background: var(--demarcacion-suave);
 }
 
 .advertencias__franja {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  padding: 0.35rem 0.8rem;
+  padding: var(--e-1) var(--e-4);
 }
 
 .advertencias__franja p {
   margin: 0;
-  font-size: 0.85rem;
+  max-width: none;
+  font-size: var(--t-s);
 }
 
 .advertencias__lista {
   margin: 0;
-  padding: 0.2rem 0.8rem 0.6rem 2rem;
-  font-size: 0.85rem;
-  color: var(--texto-suave);
+  padding: var(--e-1) var(--e-4) var(--e-2) var(--e-6);
+  font-size: var(--t-s);
+  color: var(--texto);
 }
 
 .advertencias__lista li {
-  margin-bottom: 0.25rem;
+  margin-bottom: var(--e-1);
+  max-width: 80ch;
 }
 
-/* Pie de la escena: leyenda compacta e indicador de lo que se dibuja. */
+/* Pie de la escena: leyenda compacta e indicador de lo que se dibuja. Va sobre
+   hormigón, separado del asfalto de la calzada por una línea. */
 .vista3d__pie {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  padding: 0.3rem 0.5rem;
+  padding: var(--e-1) var(--e-3);
+  border-top: 1px solid var(--borde-fuerte);
+  background: var(--caseta);
+  font-size: var(--t-s);
 }
 
 .vista3d__estado {
-  font-size: 0.8rem;
+  font-size: var(--t-xs);
   color: var(--texto-suave);
 }
 
 .leyenda-3d__lista {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--e-3);
   flex-wrap: wrap;
-  margin: 0.3rem 0 0;
-  padding: 0;
+  margin: var(--e-1) 0;
+  padding: 0 var(--e-2);
   list-style: none;
-  font-size: 0.8rem;
+  font-size: var(--t-xs);
 }
 
 .leyenda-3d__lista li {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: var(--e-1);
 }
 
 /* Con la franja encima, la vista de simulación deja sitio para ella. */
@@ -774,4 +1089,22 @@ footer { margin-top: 2rem; border-top: 1px solid var(--borde); padding-top: 0.8r
   flex: 1;
   height: auto;
   min-height: 0;
+}
+
+/* ==========================================================================
+   Movimiento reducido. La animación de la escena la gobierna la barra de
+   reproducción, que es una acción del usuario y por tanto se respeta; lo que
+   se apaga aquí son las transiciones y los desplazamientos suaves que la
+   interfaz hace por su cuenta.
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

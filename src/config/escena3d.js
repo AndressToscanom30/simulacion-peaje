@@ -10,13 +10,21 @@
  * JS puro: no importa React, ni DOM, ni three.
  */
 
-/** Estados en que puede estar una caseta, con su forma y su texto (DEC-039). */
+/**
+ * Estados en que puede estar una caseta, con su forma y su texto (DEC-039).
+ *
+ * Los colores son los de la dirección visual (DEC-058), aclarados lo justo
+ * para que se lean sobre el letrero, que va en asfalto: el gris del hormigón
+ * para el pozo, el amarillo de demarcación para la que abre, el verde de guía
+ * para la abierta y el ámbar de obra para la que cierra. `figura`, `texto` y
+ * `alturaIndicador` siguen siendo lo que distingue el estado sin el color.
+ */
 export const ESTADOS_CASETA = {
   cerrada: {
     clave: 'cerrada',
     etiqueta: 'en el pozo',
     texto: 'POZO',
-    color: '#6b6b64',
+    color: '#9aa4ab',
     /** Alto del indicador del letrero: la forma distingue el estado sin color. */
     alturaIndicador: 0.15,
     /** `caja`, `prisma` o `cono`: la figura también lo distingue. */
@@ -26,7 +34,7 @@ export const ESTADOS_CASETA = {
     clave: 'reservada',
     etiqueta: 'reservada, abriendo',
     texto: 'ABRE EN',
-    color: '#d9a400',
+    color: '#e8a302',
     alturaIndicador: 0.5,
     figura: 'cono',
   },
@@ -34,7 +42,7 @@ export const ESTADOS_CASETA = {
     clave: 'abierta',
     etiqueta: 'abierta',
     texto: 'ABIERTA',
-    color: '#2f8f3f',
+    color: '#1a8f55',
     alturaIndicador: 1,
     figura: 'prisma',
   },
@@ -42,7 +50,7 @@ export const ESTADOS_CASETA = {
     clave: 'marcada',
     etiqueta: 'marcada, cierra al terminar',
     texto: 'CIERRA',
-    color: '#b5651d',
+    color: '#c06a1f',
     alturaIndicador: 0.7,
     figura: 'cono',
   },
@@ -125,8 +133,12 @@ export const ESCENA_3D = {
     alto: 0.85,
     /** Variación de largo y de tono, derivada del id para poder seguir uno. */
     variacionLargo: 0.3,
-    /** Paleta de la que se elige por id. */
-    colores: ['#3d6e8f', '#8f5a3d', '#4a7a52', '#7a4a6b', '#6b6b3d', '#3d5a7a'],
+    /**
+     * Paleta de la que se elige por id. Tonos apagados y de la misma
+     * temperatura que el hormigón (DEC-058): los vehículos son el fondo, y lo
+     * que tiene que destacar es el estado de las casetas.
+     */
+    colores: ['#43657f', '#7d5540', '#4a7059', '#6d4a63', '#6b6a44', '#3f5570'],
   },
 
   /**
@@ -248,17 +260,24 @@ export const ESCENA_3D = {
     baja: { clave: 'baja', etiqueta: 'baja', sombras: false, segmentos: 6, colaVisible: 16, carro: null },
   },
 
+  /**
+   * Colores de la plaza, en la paleta de la dirección visual (DEC-058): el
+   * asfalto y el hormigón de la interfaz son los mismos materiales de aquí, así
+   * que comparten los tonos. El letrero va en el asfalto oscuro, igual que el
+   * pórtico del HUD, y el aviso en el rojo de señal.
+   *
+   * No hay cielo oscuro: la interfaz es solo de modo claro (DEC-058).
+   */
   colores: {
-    cielo: '#cfd8dd',
-    cieloOscuro: '#1b1f24',
-    asfalto: '#4a4a46',
-    isleta: '#b8b4a8',
-    caseta: '#d8d4c6',
-    techoCaseta: '#8c8980',
-    marca: '#e8e4d8',
-    letrero: '#2a2d33',
-    aviso: '#c23b22',
-    reasignacion: '#d9a400',
+    cielo: '#e6e9eb',
+    asfalto: '#3a4248',
+    isleta: '#b9c0c5',
+    caseta: '#f2f4f5',
+    techoCaseta: '#8a949b',
+    marca: '#eef1f2',
+    letrero: '#262b30',
+    aviso: '#a8201a',
+    reasignacion: '#e8a302',
   },
 
   /**
@@ -317,11 +336,14 @@ export const ESCENA_3D = {
    * hacia abajo, que es lo único que se ve cuando la cámara libre se mete por
    * debajo de la calzada (DEC-041). Sin ella el reverso queda negro, porque la
    * direccional viene de arriba y además la calzada recibe sombra.
+   *
+   * Solo hay intensidades de día: la interfaz es únicamente de modo claro
+   * (DEC-058), así que la escena ya no se oscurece con el sistema.
    */
   luces: {
-    ambiente: { claro: 0.75, oscuro: 0.5 },
-    direccional: { claro: 1.1, oscuro: 0.7, posicion: [24, 38, 20], resolucionSombra: 1024 },
-    hemisferio: { claro: 0.8, oscuro: 0.45, suelo: '#c4bfb3' },
+    ambiente: { claro: 0.75 },
+    direccional: { claro: 1.1, posicion: [24, 38, 20], resolucionSombra: 1024 },
+    hemisferio: { claro: 0.8, suelo: '#b9c0c5' },
   },
 
   /** Campo de visión vertical de la cámara, en grados. */

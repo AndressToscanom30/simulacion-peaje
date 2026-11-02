@@ -1679,3 +1679,84 @@ tomaron durante el desarrollo.
 - **Descarta:** explicar el modelo en la interfaz; mostrar el rango, el valor por
   defecto y el origen en cada campo; etiquetar los parámetros que no advierten
   nada; y quitar la leyenda de la escena o dejarla solo con el color.
+
+## DEC-058 — Dirección visual de infraestructura vial, y solo modo claro
+
+- **Fecha:** 02/11/2026
+- **Decisión.** La interfaz toma su lenguaje visual de la **infraestructura
+  vial**, que es su propio asunto: hormigón y asfalto para las superficies, el
+  **verde de las señales de guía** para lo activo y lo que cumple, el
+  **amarillo de la demarcación** para lo cambiado y lo que avisa, y el **rojo
+  de señal** para el error. Y es **solo de modo claro**.
+- **Los tokens, en `src/estilos.css`:** superficies (`--asfalto`,
+  `--asfalto-claro`, `--concreto`, `--concreto-hundido`, `--caseta`), texto
+  (`--texto`, `--texto-suave`, `--texto-inverso`), líneas (`--borde`,
+  `--borde-fuerte`, `--rejilla`) y señales (`--guia`, `--demarcacion`,
+  `--senal`, cada una con su versión suave). Los nombres que ya usaba la hoja
+  Los nombres viejos (`--acento`, `--modificado`, `--alerta`, `--si`, `--no`)
+  se borraron: la hoja se reescribió entera contra los nuevos, así que quedaban
+  definidos y sin usar. Sobreviven `--fondo`, que lo usa el `body`, y
+  `--serie-1` y `--serie-2`, las únicas que se leen desde el JSX al dibujar los
+  SVG de los gráficos.
+- **Tipografía: Barlow y Barlow Condensed**, un grotesco dibujado desde el
+  vernáculo de la señalización vial. El condensado va en los títulos, las
+  cabeceras de tabla y los rótulos del pórtico; el normal, en todo lo demás.
+  Las cifras van tabulares, porque se leen en columna.
+  - **Es la única dependencia externa de la interfaz**, cargada desde Google
+    Fonts en `index.html`. Esto **extiende la DEC-034** (pila mínima: sin
+    librerías de rutas ni de gráficos) en vez de contradecirla: no entra ningún
+    paquete en `package.json`, no hay código de terceros ejecutándose, y si la
+    red falla la pila del sistema que declara `estilos.css` la sustituye sin que
+    nada se rompa.
+- **Dónde se gasta la audacia: el HUD es un pórtico de señalización.** Un
+  travesaño de asfalto que cruza la calzada con el reloj, y colgando de él un
+  **panel verde de señal de guía por sentido**, con su filete blanco por dentro.
+  Es lo único llamativo de la interfaz y el único sitio con mayúsculas, que es
+  donde la señalización vial las usa. Todo lo demás es hormigón callado:
+  controles de 3 px de radio, bordes grises, sin sombras de tarjeta.
+- **Solo modo claro.** Se va el bloque `@media (prefers-color-scheme: dark)` de
+  `estilos.css` y se declara `color-scheme: light`. En la escena 3D se van
+  `cieloOscuro` y las intensidades `oscuro` de las tres luces, y con ellas la
+  consulta `prefers-color-scheme` de `PanelVista3D`: la escena ya no se oscurece
+  con el sistema.
+  - **Motivo:** el modo oscuro era una paleta a ciegas. Nunca se revisó a ojo, y
+    sostener dos paletas significa comprobar cada contraste dos veces. Con una
+    sola se puede garantizar lo que se garantiza aquí.
+- **La escena 3D comparte la paleta.** El asfalto y el hormigón de la pantalla
+  son los mismos materiales de la plaza, así que son los mismos tonos; el
+  letrero de la escena va en el asfalto oscuro, igual que el travesaño del
+  pórtico, y el aviso en el rojo de señal. Los vehículos se apagan a propósito:
+  lo que tiene que destacar es el estado de las casetas.
+- **La DEC-039 no se toca, y esta decisión la refuerza.** Cada estado de caseta
+  conserva su figura (`caja`, `cono`, `prisma`), su altura de indicador y su
+  texto (`POZO`, `ABRE EN`, `ABIERTA`, `CIERRA`); los colores solo cambian de
+  tono. En la interfaz, **ningún color va solo**: lo modificado lleva franja
+  gruesa a la izquierda además del amarillo, la vista activa lleva subrayado
+  además del verde, el error lleva su franja roja con el texto, y el sentido del
+  pórtico lleva su flecha.
+- **Accesibilidad comprobada, no supuesta.** Diecisiete pares de color medidos:
+  todos pasan 4,5:1. El más justo era `--texto-suave` sobre el hormigón más
+  oscuro, que daba 4,47, así que el token se oscureció a `#555e65` (4,9:1). Foco
+  visible siempre, con un contorno de 2 px en el verde de guía. Un bloque
+  `prefers-reduced-motion` global apaga transiciones y desplazamientos suaves;
+  la animación de la escena **no** se apaga, porque la gobierna la barra de
+  reproducción y es una acción del usuario.
+- **Tres arreglos de maquetación que salieron al mirarlo en el navegador**, y
+  que venían de antes:
+  - **Había dos HUD superpuestos en la misma esquina.** La etapa 2 añadió el
+    suyo sobre la escena sin quitar el que `PanelVista3D` dibuja por su cuenta;
+    los dos iban en posición absoluta en el mismo sitio, uno encima de otro. El
+    panel recibe ahora `conHud`, que en la vista de simulación va a `false`.
+  - **El pórtico tapaba los controles de cámara y calidad**, que estaban en una
+    barra encima de la escena. Bajan a la barra de instrumentos del pie, junto a
+    la leyenda y al indicador de lo que se dibuja, que es donde los lleva
+    cualquier visor: debajo de lo que gobiernan. Se mueven en el **marcado**, no
+    con `order`, para que el orden de tabulación siga al visual.
+  - **La aplicación crecía más que la ventana** (`min-height: 100vh`), así que
+    el alto del panel de controles empujaba la barra de reproducción fuera de la
+    pantalla. Ahora ocupa la ventana justa y lo que no cabe scrollea dentro de
+    su vista.
+- **Descarta:** sostener dos paletas; el crema con serif y terracota, el negro
+  con verde ácido y el kit de tarjetas con sombra, que son los sitios a los que
+  se cae por defecto; un radio único para todo; y las mayúsculas como etiqueta
+  sobre cada título —en el pórtico sí, porque allí significan algo.

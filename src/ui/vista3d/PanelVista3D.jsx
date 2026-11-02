@@ -37,15 +37,6 @@ function prefiereMenosMovimiento() {
   }
 }
 
-/** ¿El sistema está en modo oscuro? Solo cambia el cielo de la escena. */
-function prefiereOscuro() {
-  try {
-    return window.matchMedia?.('(prefers-color-scheme: dark)').matches ?? false;
-  } catch {
-    return false;
-  }
-}
-
 /**
  * Panel "Vista 3D" de la pestaña Tiempo real.
  *
@@ -66,6 +57,12 @@ export default function PanelVista3D({
    * tiempo real.
    */
   conInterruptor = true,
+  /**
+   * Si el panel dibuja su propio HUD. En la vista de simulación va a `false`:
+   * allí el HUD lo pone la vista, encima de la escena, y si el panel pusiera
+   * además el suyo saldrían los dos en la misma esquina, uno sobre otro.
+   */
+  conHud = true,
 }) {
   const [preajuste, setPreajuste] = useState('todo');
   /**
@@ -80,7 +77,6 @@ export default function PanelVista3D({
   const [estadoCarro, setEstadoCarro] = useState({ carro: null, cargando: false, error: null });
   const [soportaWebGL] = useState(() => hayWebGL());
   const reducirMovimiento = useMemo(() => prefiereMenosMovimiento(), []);
-  const oscuro = useMemo(() => prefiereOscuro(), []);
 
   /** Pide un encuadre: la cámara viaja hasta él y deja de estar libre. */
   const pedirEncuadre = useCallback((clave) => {
@@ -130,40 +126,6 @@ export default function PanelVista3D({
             Mostrar
           </label>
         )}
-        {visible && soportaWebGL && (
-          <>
-            <span className="grupo-velocidad">
-              Cámara:
-              {PREAJUSTES_CAMARA.map((p) => (
-                <button
-                  key={p.clave}
-                  type="button"
-                  className={!camaraLibre && preajuste === p.clave ? 'activo' : undefined}
-                  onClick={() => pedirEncuadre(p.clave)}
-                  aria-pressed={!camaraLibre && preajuste === p.clave}
-                  title="Lleva la cámara a este encuadre; después se puede seguir girando a mano"
-                >
-                  {p.etiqueta}
-                </button>
-              ))}
-            </span>
-            {camaraLibre && (
-              <span className="nota" role="status">
-                Vista libre
-              </span>
-            )}
-            <label>
-              Calidad:
-              <select value={claveCalidad} onChange={(evento) => setClaveCalidad(evento.target.value)}>
-                {Object.values(ESCENA_3D.calidades).map((c) => (
-                  <option key={c.clave} value={c.clave}>
-                    {c.etiqueta}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </>
-        )}
       </div>
 
       {!visible && (
@@ -194,20 +156,53 @@ export default function PanelVista3D({
                 alMedirFotograma={setMsPorFotograma}
                 alTomarElMando={alTomarElMando}
                 alCargarCarro={alCargarCarro}
-                oscuro={oscuro}
               />
             </Suspense>
           </div>
 
-          <Hud
-            escena={escena}
-            etiquetas={etiquetas}
-            conteo={conteoDeLaHora}
-            escenario={escenario}
-            calidad={calidad}
-          />
+          {conHud && (
+            <Hud
+              escena={escena}
+              etiquetas={etiquetas}
+              conteo={conteoDeLaHora}
+              escenario={escenario}
+              calidad={calidad}
+            />
+          )}
 
+          {/* Barra de instrumentos: debajo de la escena, que es lo que
+              gobierna. Encima manda el pórtico del HUD (DEC-058). */}
           <div className="vista3d__pie">
+            <span className="grupo-velocidad">
+              Cámara:
+              {PREAJUSTES_CAMARA.map((p) => (
+                <button
+                  key={p.clave}
+                  type="button"
+                  className={!camaraLibre && preajuste === p.clave ? 'activo' : undefined}
+                  onClick={() => pedirEncuadre(p.clave)}
+                  aria-pressed={!camaraLibre && preajuste === p.clave}
+                  title="Lleva la cámara a este encuadre; después se puede seguir girando a mano"
+                >
+                  {p.etiqueta}
+                </button>
+              ))}
+            </span>
+            {camaraLibre && (
+              <span className="nota" role="status">
+                Vista libre
+              </span>
+            )}
+            <label>
+              Calidad:
+              <select value={claveCalidad} onChange={(evento) => setClaveCalidad(evento.target.value)}>
+                {Object.values(ESCENA_3D.calidades).map((c) => (
+                  <option key={c.clave} value={c.clave}>
+                    {c.etiqueta}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Leyenda />
             <EstadoDelCarro estado={estadoCarro} calidad={calidad} />
           </div>

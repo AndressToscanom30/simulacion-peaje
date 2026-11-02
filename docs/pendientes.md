@@ -681,3 +681,27 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Mientras tanto:** es código muerto en producción —no entra en ninguna ruta
   de la aplicación— pero vivo en las pruebas. Queda anotado para que nadie lo
   tome por la vista actual.
+
+### PEN-025 — Los controles de la escena 3D cambiaron de sitio también en el panel suelto
+
+- **Origen:** etapa 4b de la mejora del frontend (DEC-058).
+- **Qué pasa:** el pórtico del HUD ocupa la franja de arriba de la escena, que
+  es justo donde estaban el selector de cámara y el de calidad. Los bajé a la
+  barra de instrumentos del pie, con la leyenda.
+- **Dónde está la ambigüedad:** el encargo de la etapa 4b es de diseño visual,
+  y mover controles de sitio es estructura. Además `PanelVista3D` se monta
+  también **suelto**, dentro de un documento, en `vista3d.test.jsx` (ver
+  [[PEN-024]]), y allí no hay pórtico que los tape: en ese montaje el cambio no
+  hacía falta.
+- **La opción que tomé:** moverlos en los dos sitios, en el marcado, para que
+  el panel se comporte igual se monte donde se monte. Un visor con sus mandos
+  debajo de la imagen es lo normal, así que suelto tampoco desentona, y mover
+  el marcado (en vez de usar `order`) deja el orden de tabulación igual que el
+  visual.
+- **La alternativa que descarté:** dejarlos arriba y mover el pórtico más abajo.
+  Habría que saber el alto de la barra de controles para colocarlo, que depende
+  del texto, y el pórtico dejaría de empezar donde empieza la calzada, que es lo
+  que hace que se lea como un pórtico.
+- **Qué haría falta para cerrarla:** que alguien mire el panel suelto en la
+  etapa 5, cuando se reescriba `docs/vista3d.md`, y diga si los mandos están
+  mejor arriba o abajo cuando no hay pórtico encima.

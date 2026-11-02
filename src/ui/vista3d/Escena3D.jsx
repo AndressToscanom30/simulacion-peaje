@@ -471,7 +471,6 @@ export default function Escena3D({
   alMedirFotograma,
   alTomarElMando,
   alCargarCarro,
-  oscuro,
 }) {
   const colaAjustada = useMemo(
     () => ({ ...ESCENA_3D.cola, visiblesMaximos: calidad.colaVisible }),
@@ -514,25 +513,18 @@ export default function Escena3D({
       gl={{ antialias: calidad.clave !== 'baja', preserveDrawingBuffer: true }}
       frameloop="always"
     >
-      <color attach="background" args={[oscuro ? colores.cieloOscuro : colores.cielo]} />
-      <fog
-        attach="fog"
-        args={[oscuro ? colores.cieloOscuro : colores.cielo, limites.nieblaDesde, limites.nieblaHasta]}
-      />
+      <color attach="background" args={[colores.cielo]} />
+      <fog attach="fog" args={[colores.cielo, limites.nieblaDesde, limites.nieblaHasta]} />
 
-      <ambientLight intensity={oscuro ? luces.ambiente.oscuro : luces.ambiente.claro} />
+      <ambientLight intensity={luces.ambiente.claro} />
       {/* Cielo arriba, suelo abajo: es lo que deja leer el reverso de la
           calzada cuando la cámara se mete por debajo (DEC-041). */}
       <hemisphereLight
-        args={[
-          oscuro ? colores.cieloOscuro : colores.cielo,
-          luces.hemisferio.suelo,
-          oscuro ? luces.hemisferio.oscuro : luces.hemisferio.claro,
-        ]}
+        args={[colores.cielo, luces.hemisferio.suelo, luces.hemisferio.claro]}
       />
       <directionalLight
         position={luces.direccional.posicion}
-        intensity={oscuro ? luces.direccional.oscuro : luces.direccional.claro}
+        intensity={luces.direccional.claro}
         castShadow={calidad.sombras}
         shadow-mapSize={[luces.direccional.resolucionSombra, luces.direccional.resolucionSombra]}
       />

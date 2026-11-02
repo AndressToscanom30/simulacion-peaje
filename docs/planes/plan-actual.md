@@ -22,7 +22,7 @@ en [`mejora-frontend.md`](mejora-frontend.md)**; aquí solo el estado.
 | 2 | Estructura nueva por `#hash` y flujo de «aplicar y recalcular» | ✅ **cerrada** (02/11, DEC-053 a DEC-055) |
 | 3 | Lenguaje de usuario: fuera la numeración interna de la interfaz | ✅ **cerrada** (02/11, DEC-056) |
 | 4a | Simplificación: la interfaz muestra el programa, no la documentación | ✅ **cerrada** (02/11, DEC-057) |
-| 4b | Diseño visual y solo modo claro | pendiente |
+| 4b | Diseño visual y solo modo claro | ✅ **cerrada** (02/11, DEC-058) |
 | 5 | Cierre: `ui.md`, `vista3d.md` y capturas | pendiente |
 
 La etapa 1 no tocó `src/motor/`, ni componentes `.jsx`, ni estilos. La etapa 2

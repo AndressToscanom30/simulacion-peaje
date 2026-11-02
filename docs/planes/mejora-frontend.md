@@ -192,19 +192,39 @@ línea.
       de la escena) y nada más. Se comprobó que la **DEC-030 no entra**: no fija
       qué muestra el formulario
 
-## Etapa 4b — Diseño visual y solo modo claro
+## Etapa 4b — Diseño visual y solo modo claro ✅
 
-- [ ] Dirección visual con la skill de frontend design; tokens de color,
-      tipografía y espaciado en `estilos.css`
-- [ ] Fuera el bloque `prefers-color-scheme: dark`; `color-scheme: light`
-- [ ] Panel, HUD, barra de reproducción, cajón, vista de lotes y configuración
-      avanzada rediseñados
-- [ ] Paleta de la escena armonizada en `src/config/escena3d.js`
-- [ ] Accesibilidad: el color nunca es la única señal (DEC-039), foco visible,
-      `prefers-reduced-motion`
-- [ ] No se tocan `modeloEscena.js` ni `geometria.js`: la escena sigue siendo
-      función pura de la traza y del instante (DEC-036)
-- [ ] Decisión: solo modo claro y nueva dirección visual
+La dirección visual sale de la **infraestructura vial**: hormigón y asfalto en
+las superficies, y el verde de guía, el amarillo de demarcación y el rojo de
+señal para lo que significa algo (DEC-058).
+
+- [x] Tokens de color, tipografía y espaciado en `estilos.css`, con los nombres
+      viejos (`--fondo`, `--acento`, `--alerta`…) apuntando a los nuevos
+- [x] **Barlow y Barlow Condensed**, la única dependencia externa de la
+      interfaz: no entra nada en `package.json` y, sin red, la pila del sistema
+      la sustituye. Extiende la DEC-034 en vez de contradecirla
+- [x] Fuera el bloque `prefers-color-scheme: dark`; `color-scheme: light`. En
+      la escena, fuera `cieloOscuro`, las intensidades `oscuro` de las tres
+      luces y la consulta `prefers-color-scheme` de `PanelVista3D`
+- [x] Panel, HUD, barra de reproducción, cajón, vista de lotes y configuración
+      avanzada rediseñados. **El HUD es un pórtico de señalización**: travesaño
+      de asfalto con el reloj y, colgando, un panel verde de señal de guía por
+      sentido. Es lo único llamativo y el único sitio con mayúsculas
+- [x] Paleta de la escena armonizada en `src/config/escena3d.js`: los mismos
+      tonos de asfalto y hormigón que la pantalla, vehículos apagados a
+      propósito, y el letrero en el asfalto oscuro del pórtico
+- [x] Accesibilidad: **17 pares de color medidos, todos sobre 4,5:1** (hubo que
+      oscurecer `--texto-suave` a `#555e65`), foco visible en verde de guía,
+      `prefers-reduced-motion` global; el color nunca va solo (DEC-039)
+- [x] No se tocan `modeloEscena.js` ni `geometria.js` (DEC-036)
+- [x] **DEC-058** registrada
+
+**Tres arreglos de maquetación que venían de antes** y que salieron al mirarlo
+en el navegador: dos HUD superpuestos en la misma esquina desde la etapa 2
+(ahora `conHud={false}` en la vista de simulación); los controles de cámara
+tapados por el pórtico, que bajan a la barra del pie (ver PEN-025); y la
+aplicación creciendo más que la ventana, que dejaba la barra de reproducción
+fuera de la pantalla.
 
 ## Etapa 5 — Cierre
 

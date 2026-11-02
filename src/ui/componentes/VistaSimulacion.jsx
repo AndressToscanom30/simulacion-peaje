@@ -156,6 +156,7 @@ export default function VistaSimulacion({
                 visible
                 alCambiarVisible={() => {}}
                 conInterruptor={false}
+                conHud={false}
               />
 
               <Hud estado={estado} instante={instante} escenario={escenarioAplicado} traza={traza} />
