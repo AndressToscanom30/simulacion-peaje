@@ -14,6 +14,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { CATALOGO_PARAMETROS, GRUPOS } from '../src/config/catalogoParametros.js';
+import { esDerivado, leerDerivado } from '../src/config/derivados.js';
 import { ESCENARIO_BASE, construirEscenario, mediaGeneradaSegundos } from '../src/config/escenario.js';
 import { conteos } from '../src/config/datos.js';
 import { SEGUNDOS_POR_MINUTO } from '../src/config/parametros.js';
@@ -23,8 +24,13 @@ const SALIDA = resolve(AQUI, '..', 'docs', 'parametros.md');
 
 const base = construirEscenario();
 
-/** Lee una ruta del escenario. `sentidos[i]` se resuelve al primer sentido. */
+/**
+ * Lee una ruta del escenario. `sentidos[i]` se resuelve a todos los sentidos.
+ *
+ * Los parámetros **derivados** no viven en el escenario: se calculan (DEC-051).
+ */
 function valorPorDefecto(ruta) {
+  if (esDerivado(ruta)) return leerDerivado(base, ruta);
   if (ruta.startsWith('sentidos[i]')) {
     const clave = ruta.slice('sentidos[i].'.length);
     return base.sentidos.map((s) => s[clave]);
@@ -118,8 +124,13 @@ for (const [clave, titulo] of Object.entries(GRUPOS)) {
   for (const p of delGrupo) {
     const valor = valorPorDefecto(p.ruta);
     const nota = Array.isArray(valor) ? '' : anotacion(p.ruta, valor);
+    // Un derivado no se guarda en el escenario: se dice qué escribe al editarlo.
+    const atadas = (p.rutasAtadas ?? []).map((r) => '`' + r + '`').join(' y ');
+    const significado = p.derivado
+      ? p.significado + ' **Derivado:** no se guarda; al editarlo escribe ' + atadas + '.'
+      : p.significado;
     w(
-      `| **${p.nombre}** | \`${p.ruta}\` | ${p.significado} | ${p.unidad} ` +
+      `| **${p.nombre}** | \`${p.ruta}\` | ${significado} | ${p.unidad} ` +
         `| ${formatear(valor, p.ruta)}${nota} | ${p.origen} | ${p.rango} |`,
     );
   }

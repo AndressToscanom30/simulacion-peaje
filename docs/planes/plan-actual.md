@@ -1,6 +1,6 @@
 # Plan actual
 
-Estado: 31/10/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 02/11/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
 **Las siete fases están cerradas**, más tres añadidos posteriores: el
@@ -10,6 +10,23 @@ medir y ya está implementado y medido; el **estudio de arranque en frío**
 las mediciones** (DEC-048 y DEC-049), que cierra PEN-003, PEN-004 y PEN-007. El estudio está completo: el documento con las ocho
 etapas está en `docs/estudio.md` y la política recomendada en
 `docs/politica-recomendada.md`.
+
+## Mejora del frontend — en curso
+
+Mejora posterior al cierre de las siete fases, en cinco etapas. **El plan vive
+en [`mejora-frontend.md`](mejora-frontend.md)**; aquí solo el estado.
+
+| Etapa | Qué es | Estado |
+|---|---|---|
+| 1 | Capa pura: subconjunto del catálogo para el panel, promedio de atención derivado, situaciones predefinidas | ✅ **cerrada** (02/11, DEC-050 a DEC-052) |
+| 2 | Estructura nueva por `#hash` y flujo de «aplicar y recalcular» | pendiente |
+| 3 | Lenguaje de usuario: fuera la numeración interna de la interfaz | pendiente |
+| 4 | Diseño visual y solo modo claro | pendiente |
+| 5 | Cierre: `ui.md`, `vista3d.md` y capturas | pendiente |
+
+La etapa 1 no tocó `src/motor/`, ni componentes `.jsx`, ni estilos, y los
+informes de las fases 2 a 4 se regeneraron con **cero diferencias numéricas**.
+Pruebas: **457** (eran 406).
 
 ## Corrección de base del 30/10/2026 (DEC-042) ✅
 

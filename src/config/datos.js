@@ -20,10 +20,14 @@ export const INTERVALOS_POR_CONTEO = 12;
  * - `casetas`:  casetas de efectivo abiertas durante el intervalo.
  * - `cola`:     lectura puntual del total de vehículos esperando en el sentido
  *               (sin contar los que están siendo atendidos).
+ * - `horaInicio`: hora a la que empieza el conteo, `hh:mm`. Es la misma que ya
+ *               dice `etiqueta`, puesta aparte para poder rotular el día y la
+ *               hora sin leer texto (DEC-052).
  */
 export const conteos = {
   viernes: {
     etiqueta: 'Viernes 02/10/2026, Cúcuta→Pamplona, 12:00–13:00',
+    horaInicio: '12:00',
     sentido: 'Cúcuta→Pamplona',
     llegadas: [18, 21, 24, 19, 17, 23, 22, 20, 18, 21, 16, 19], // 238
     casetas: [2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2],
@@ -31,6 +35,7 @@ export const conteos = {
   },
   domingoCP: {
     etiqueta: 'Domingo 13/09/2026, Cúcuta→Pamplona, 11:50–12:50',
+    horaInicio: '11:50',
     sentido: 'Cúcuta→Pamplona',
     llegadas: [30, 49, 38, 37, 35, 38, 46, 32, 33, 37, 38, 38], // 451
     casetas: [3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3],
@@ -38,6 +43,7 @@ export const conteos = {
   },
   domingoPC: {
     etiqueta: 'Domingo 13/09/2026, Pamplona→Cúcuta, 13:00–14:00',
+    horaInicio: '13:00',
     sentido: 'Pamplona→Cúcuta',
     llegadas: [10, 22, 22, 13, 11, 25, 18, 16, 14, 17, 12, 15], // 195
     casetas: [2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -45,6 +51,7 @@ export const conteos = {
   },
   festivoPC: {
     etiqueta: 'Festivo 12/10/2026, Pamplona→Cúcuta, 16:25–17:25',
+    horaInicio: '16:25',
     sentido: 'Pamplona→Cúcuta',
     llegadas: [92, 78, 60, 108, 92, 124, 78, 102, 86, 101, 99, 44], // 1.064
     casetas: [4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5],

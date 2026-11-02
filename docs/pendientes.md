@@ -643,3 +643,29 @@ mantiene la pregunta abierta hasta que alguien la responda.
   fijó en la fase 6, y eso no entra en «usar el modelo del carro».
 - **Mientras tanto:** `carro.factorDeLargo` en `src/config/escena3d.js` permite
   probarlo en un momento; si se sube, hay que subir también `cola.separacion`.
+
+### PEN-023 — El orden de los sentidos de la situación «domingo» lo elegí yo
+
+- **Origen:** etapa 1 de la mejora del frontend (DEC-052).
+- **Por qué importa:** el **primer** sentido de la lista usa el flujo original
+  del PRNG (DEC-027 punto 1), así que el orden no es cosmético: cambia qué
+  números aleatorios le tocan a cada sentido y, con ellos, los resultados de esa
+  situación. No cambia nada de las fases 1 a 7, que no usan las situaciones.
+- **Qué pasa:** las otras dos situaciones heredan un orden que ya estaba
+  decidido. `festivo` va **P→C primero**, como el `ESCENARIO_BASE` y como
+  `escenarioFestivo`, y por eso puede ser idéntico al base. `diaNormal` va
+  **C→P primero**, porque así lo tiene `escenarioDiaNormal` en
+  `escenarios.js`. Pero **`domingo` no tenía función previa**: no hay nada en el
+  repositorio que fije su orden.
+- **La opción que tomé:** **P→C primero**, igual que el festivo. Por dos
+  razones: deja el mismo sentido en el flujo original en las dos situaciones que
+  se van a comparar más, y P→C es el sentido que el estudio dimensiona (es el de
+  retorno en el festivo). Está fijado con prueba, así que si se cambia, se ve.
+- **Qué haría falta para cerrarlo:** decidir si el criterio es «el sentido de
+  mayor demanda primero» —que en el domingo sería C→P, con 451 veh/h contra
+  195— o «siempre el mismo sentido físico primero», que es lo que hice. Las dos
+  son defendibles; la primera haría que `domingo` y `festivo` no compartieran
+  criterio, la segunda que `domingo` y `diaNormal` no lo compartan.
+- **Mientras tanto:** queda como está y documentado aquí. Si alguna vez se
+  comparan réplica a réplica dos situaciones distintas, conviene releer esto
+  antes.

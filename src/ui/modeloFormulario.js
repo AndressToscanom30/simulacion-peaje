@@ -12,15 +12,30 @@
  * JS puro: no importa React, ni DOM, ni Three.js.
  */
 
-import { CATALOGO_PARAMETROS, GRUPOS, CONTROLES } from '../config/catalogoParametros.js';
+import {
+  CATALOGO_PARAMETROS,
+  GRUPOS,
+  CONTROLES,
+  RUTAS_DEL_PANEL,
+} from '../config/catalogoParametros.js';
 import { conteos } from '../config/datos.js';
+import {
+  esDerivado,
+  leerDerivado,
+  parcheDerivado,
+  rutasAtadas,
+} from '../config/derivados.js';
 import {
   ESCENARIO_BASE,
   MODO,
   construirEscenario,
   problemasDelEscenario,
+  tablaUmbralesPorTasa,
   tablasUmbrales,
 } from '../config/escenario.js';
+
+/** Ruta del tiempo nominal, de la que dependen las tablas por tasa (DEC-046). */
+const RUTA_NOMINAL = 'servicio.mediaNominalSegundos';
 
 /** ¿La ruta es de un parámetro que hay uno por sentido? */
 export const esPorSentido = (ruta) => ruta.startsWith('sentidos[i]');
@@ -96,6 +111,44 @@ export function camposPlanos(escenario) {
   return camposDelFormulario(escenario).flatMap((s) => s.campos);
 }
 
+/**
+ * Los campos del **panel de la vista 3D**: un subconjunto del catálogo, en el
+ * orden de `RUTAS_DEL_PANEL` (DEC-050).
+ *
+ * Reutiliza `camposDelFormulario` y filtra: no hay ni un campo escrito a mano,
+ * así que el panel y el formulario completo no pueden discrepar en unidad,
+ * rango, control ni significado.
+ *
+ * Una ruta por sentido devuelve **un campo por sentido**, en el orden de los
+ * sentidos del escenario.
+ *
+ * @param {object} escenario
+ * @returns {object[]} lista plana de campos, ordenada
+ */
+export function camposDelPanel(escenario) {
+  const porRuta = new Map();
+  for (const campo of camposPlanos(escenario)) {
+    const original = esPorSentido(campo.ruta) || campo.sentidoIndice !== null
+      ? campo.ruta.replace(/sentidos\.\d+/, 'sentidos[i]')
+      : campo.ruta;
+    if (!porRuta.has(original)) porRuta.set(original, []);
+    porRuta.get(original).push(campo);
+  }
+
+  return RUTAS_DEL_PANEL.flatMap((ruta) => porRuta.get(ruta) ?? []);
+}
+
+/**
+ * Valor que un campo muestra.
+ *
+ * Los parámetros derivados no viven en el escenario: se calculan (DEC-051).
+ * Para todo lo demás es `leerRuta`.
+ */
+export function valorDelCampo(escenario, campo) {
+  const ruta = typeof campo === 'string' ? campo : campo.ruta;
+  return esDerivado(ruta) ? leerDerivado(escenario, ruta) : leerRuta(escenario, ruta);
+}
+
 /** Compara dos valores de parámetro, incluidos arreglos y tablas. */
 export function sonIguales(a, b) {
   if (a === b) return true;
@@ -117,7 +170,7 @@ export function rutasModificadas(escenario, base = ESCENARIO_BASE) {
   const completo = construirEscenario({}, base);
   const modificadas = new Set();
   for (const campo of camposPlanos(escenario)) {
-    if (!sonIguales(leerRuta(escenario, campo.ruta), leerRuta(completo, campo.ruta))) {
+    if (!sonIguales(valorDelCampo(escenario, campo), valorDelCampo(completo, campo))) {
       modificadas.add(campo.ruta);
     }
   }
@@ -136,7 +189,34 @@ export function rutasModificadas(escenario, base = ESCENARIO_BASE) {
  * @param {*} valor
  */
 export function cambiarCampo(escenario, ruta, valor) {
-  let siguiente = escribirRuta(escenario, ruta, valor);
+  let siguiente;
+
+  if (esDerivado(ruta)) {
+    // Un derivado no se escribe en su propia ruta —no existe—: se aplica el
+    // parche de las rutas que ata (DEC-051).
+    siguiente = escenario;
+    for (const [atada, suValor] of Object.entries(parcheDerivado(escenario, ruta, valor))) {
+      siguiente = escribirRuta(siguiente, atada, suValor);
+    }
+  } else {
+    siguiente = escribirRuta(escenario, ruta, valor);
+  }
+
+  // Las tablas por tasa salen de la capacidad nominal (DEC-046), así que un
+  // nominal nuevo las desfasa. Solo se regeneran si están en `null`, que es la
+  // marca de "generadas, no escritas a mano".
+  if (ruta === RUTA_NOMINAL || (esDerivado(ruta) && rutasAtadas(ruta).includes(RUTA_NOMINAL))) {
+    if (siguiente.regla.abrirSiTasaMayorQue === null) {
+      const { abrirSiTasaMayorQue } = tablaUmbralesPorTasa({
+        minimoPorSentido: siguiente.pozo.minimoPorSentido,
+        maximoPorSentido: siguiente.pozo.maximoPorSentido,
+        capacidadNominalPorCaseta:
+          siguiente.tiempo.duracionIntervaloSegundos / siguiente.servicio.mediaNominalSegundos,
+        factor: siguiente.regla.factorUmbrales,
+      });
+      siguiente = escribirRuta(siguiente, 'regla.abrirSiTasaMayorQue', abrirSiTasaMayorQue);
+    }
+  }
 
   if (ruta === 'pozo.maximoPorSentido' || ruta === 'pozo.minimoPorSentido') {
     const tablas = tablasUmbrales({
@@ -161,9 +241,25 @@ export function cambiarCampo(escenario, ruta, valor) {
   return siguiente;
 }
 
-/** Devuelve un campo a su valor del base. */
+/**
+ * Devuelve un campo a su valor del base.
+ *
+ * Un **derivado** no se restablece volviendo a escribirlo: se devuelven sus
+ * rutas atadas al valor del base (DEC-051). Si se escribiera, el promedio del
+ * base (12,1016 s) daría θ = 2,5858 s y no los 2,58 s de la DEC-004, porque
+ * k · θ y el nominal son distintos a propósito (DEC-027 punto 7).
+ */
 export function restablecerCampo(escenario, ruta, base = ESCENARIO_BASE) {
   const completo = construirEscenario({}, base);
+
+  if (esDerivado(ruta)) {
+    let siguiente = escenario;
+    for (const atada of rutasAtadas(ruta)) {
+      siguiente = escribirRuta(siguiente, atada, leerRuta(completo, atada));
+    }
+    return siguiente;
+  }
+
   return cambiarCampo(escenario, ruta, leerRuta(completo, ruta));
 }
 

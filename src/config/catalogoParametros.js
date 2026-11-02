@@ -12,6 +12,8 @@
  * JS puro: no importa React, ni DOM, ni Three.js.
  */
 
+import { RUTA_PROMEDIO_ATENCION } from './derivados.js';
+
 /** Secciones del formulario de configuración, en el orden en que se muestran. */
 export const GRUPOS = {
   demanda: 'Demanda',
@@ -126,6 +128,26 @@ export const CATALOGO_PARAMETROS = [
   },
 
   // ------------------------------------------------------------- servicio ---
+  // ------------------------------------------------------------- servicio ---
+  {
+    grupo: 'servicio',
+    control: CONTROLES.NUMERO,
+    paso: 0.01,
+    minimo: 0.01,
+    ruta: RUTA_PROMEDIO_ATENCION,
+    nombre: 'Promedio de atención',
+    /**
+     * **Derivado** (DEC-051): no se guarda en el escenario. Se lee del nominal
+     * y, al editarlo, escribe la escala de la gamma y el nominal a la vez.
+     */
+    derivado: true,
+    rutasAtadas: ['servicio.gammaEscalaSegundos', 'servicio.mediaNominalSegundos'],
+    significado:
+      'Tiempo medio que tarda una caseta en atender un vehículo. Al cambiarlo se mueven a la vez la escala de la gamma (k no cambia, así que el coeficiente de variación se conserva) y el tiempo nominal con el que decide la regla.',
+    unidad: 'segundos',
+    origen: 'Contexto, sección 3; DEC-051. Ata DEC-004 y DEC-027 punto 7',
+    rango: '> 0',
+  },
   {
     grupo: 'servicio',
     control: CONTROLES.NUMERO,
@@ -454,4 +476,25 @@ export const CATALOGO_PARAMETROS = [
     origen: 'Contexto, sección 6; DEC-010 y DEC-011',
     rango: 'entero',
   },
+];
+
+/**
+ * Rutas que muestra el **panel de la vista 3D**, en el orden en que se ven
+ * (DEC-050).
+ *
+ * El panel es un **subconjunto del catálogo**, no una lista de campos aparte:
+ * `camposDelPanel` filtra con esta lista lo que genera `camposDelFormulario`,
+ * así que un parámetro no puede existir en el panel y no en el catálogo, ni
+ * cambiar de significado entre las dos vistas.
+ *
+ * Las rutas por sentido (`sentidos[i]`) generan un campo por sentido, igual que
+ * en el formulario completo.
+ */
+export const RUTAS_DEL_PANEL = [
+  'sentidos[i].factorDemanda',
+  RUTA_PROMEDIO_ATENCION,
+  'regla.abrirSiColaMayorQue',
+  'regla.cerrarSiColaMenorQue',
+  'regla.demoraAperturaSegundos',
+  'regla.ventanaCierreSegundos',
 ];

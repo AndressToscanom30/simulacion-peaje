@@ -2,6 +2,82 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-02 — Mejora del frontend, etapa 1: la capa pura
+
+Primera de las cinco etapas de `docs/planes/mejora-frontend.md`. **Solo la capa
+pura**: ni un componente, ni un estilo, ni una línea de `src/motor/`.
+
+**Qué cambió:**
+
+- **DEC-050 — el panel es un subconjunto del catálogo.** `RUTAS_DEL_PANEL` en
+  `catalogoParametros.js` es una lista ordenada de rutas, y `camposDelPanel`
+  **reutiliza `camposDelFormulario` y filtra**. No hay ni un campo escrito a
+  mano, y hay una prueba que compara campo a campo los del panel con los del
+  formulario completo: así no pueden discrepar en unidad, rango, control ni
+  significado.
+- **DEC-051 — el promedio de atención es un parámetro derivado.** Vive en
+  `src/config/derivados.js`: se lee del nominal y, al editarlo, escribe
+  `gammaEscalaSegundos = promedio / k` **y** `mediaNominalSegundos = promedio`,
+  con **k fijo**. Dice explícitamente que **no supera la DEC-027 punto 7**: la
+  separación entre la media que genera la gamma y el nominal de la regla sigue
+  en el modelo y en la configuración avanzada; lo nuevo es que el panel los ata.
+- **DEC-052 — el día y la hora son situaciones predefinidas.**
+  `src/config/situaciones.js` con `festivo`, `domingo` y `diaNormal`, cada una
+  con título, descripción y aviso **en lenguaje de usuario**. `aplicarSituacion`
+  es pura, toca solo los sentidos y conserva servicio, pozo, regla y el modo de
+  cada sentido. La hora se **deriva del conteo**: añadí `horaInicio` a los
+  cuatro conteos de `datos.js`, que es la misma hora que ya decía su etiqueta,
+  sin cambiar ningún valor existente.
+- μ y λ como funciones puras de solo lectura. λ **no supone que el horizonte sea
+  una hora**: sale de `tiempo.intervalos × tiempo.duracionIntervaloSegundos`, y
+  hay una prueba con media hora que lo comprueba.
+- `scripts/parametros.js` entiende los derivados: `docs/parametros.md` pasa a 34
+  parámetros y la fila del promedio dice que es derivado y qué rutas escribe.
+
+**La trampa de θ, que era el punto delicado.** Hoy `k · θ = 12,0744 s` y el
+nominal es `12,1016 s`: distintos a propósito. Dos cosas podían romperlo y las
+dos están atadas con prueba:
+
+1. **Leer el campo o generar los campos del panel no escribe nada.** El base
+   queda con θ = 2,58 exacto.
+2. **Restablecer no pasa por la escritura**, sino que devuelve las rutas atadas
+   al valor del base. Si pasara por la escritura daría θ = 12,1016 / 4,68 =
+   **2,5858**, que no es la DEC-004. Hay una prueba que comprueba justo que
+   *no* vale eso.
+
+Y un detalle que salió bien solo: escribir 15,5 s da θ = 3,3120 s, que es
+exactamente el del servicio lento de la DEC-025. Buena señal de que la fórmula
+es la misma que ya usaba el repositorio.
+
+**Las tablas por tasa de la DEC-046** se regeneran con el nominal nuevo **solo si
+estaban en `null`**, que es la marca de «generadas». Una tabla escrita a mano no
+se toca. Las dos cosas con prueba, y documentado en la DEC-051.
+
+**Un detalle de ubicación que corregí:** primero puse las pruebas nuevas en
+`src/motor/__tests__/`, siguiendo a `escenario.test.js`, que también prueba un
+módulo de configuración desde ahí. Pero la etapa pedía **no tocar `src/motor/`**,
+y un archivo nuevo ahí lo toca. Las moví a `src/config/__tests__/`, que además
+es donde mejor encajan, y así `git status src/motor/` sale vacío y la promesa de
+la etapa es verificable.
+
+**Pruebas: 406 → 457** (51 nuevas, ninguna existente tocada ni rota).
+
+**Regeneración de informes:** `npm run fase2`, `fase3` y `fase4` dan **una sola
+línea de diferencia en cada archivo, la de la fecha**. Cero diferencias
+numéricas, que es el criterio de cierre de la etapa.
+
+**Qué quedó a medias:** nada de la etapa 1.
+
+**Qué queda abierto:**
+
+- **PEN-023**, nuevo: el orden de los sentidos de la situación «domingo» no
+  estaba fijado en ningún sitio y lo elegí yo (P→C primero, como el festivo).
+  Importa porque el primer sentido usa el flujo original del PRNG (DEC-027
+  punto 1), así que el orden cambia los resultados de esa situación. No afecta a
+  las fases 1 a 7, que no usan las situaciones.
+- Las **etapas 2 a 5** de `mejora-frontend.md`. Nada de lo de la etapa 1 se ve
+  todavía en pantalla: la etapa 2 es la que monta las vistas y el panel.
+
 ## 2026-10-31 — El autor responde tres pendientes, y se mide el calentamiento
 
 Seguimiento de pendientes. El autor de las mediciones respondió tres preguntas

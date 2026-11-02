@@ -1,6 +1,6 @@
 # Catálogo de parámetros
 
-Generado por `npm run parametros` el 2026-10-31.
+Generado por `npm run parametros` el 2026-11-02.
 **No editar a mano:** este archivo se regenera.
 
 Todo valor del modelo es configurable (DEC-030). Esta es la lista completa,
@@ -40,6 +40,7 @@ validarEscenario(miEscenario);
 
 | Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
 |---|---|---|---|---|---|---|
+| **Promedio de atención** | `servicio.promedioAtencionSegundos` | Tiempo medio que tarda una caseta en atender un vehículo. Al cambiarlo se mueven a la vez la escala de la gamma (k no cambia, así que el coeficiente de variación se conserva) y el tiempo nominal con el que decide la regla. **Derivado:** no se guarda; al editarlo escribe `servicio.gammaEscalaSegundos` y `servicio.mediaNominalSegundos`. | segundos | `12,1016` | Contexto, sección 3; DEC-051. Ata DEC-004 y DEC-027 punto 7 | > 0 |
 | **Forma de la gamma (k)** | `servicio.gammaForma` | Parámetro de forma del tiempo de atención. Fija el coeficiente de variación: CV = 1/√k. | adimensional | `4,68` | Contexto, sección 3; DEC-004 | > 0 |
 | **Escala de la gamma (θ)** | `servicio.gammaEscalaSegundos` | Parámetro de escala del tiempo de atención. La media que se genera es k × θ. | segundos | `2,58` | Contexto, sección 3; DEC-004. Para el servicio lento, DEC-025 | > 0 |
 | **Tiempo de atención nominal** | `servicio.mediaNominalSegundos` | El que la regla usa para ρ y para la espera estimada. Es el que el operador conoce, así que NO cambia en el escenario de servicio lento. | segundos | `12,1016` | Contexto, sección 3; DEC-027 punto 7 | > 0 |

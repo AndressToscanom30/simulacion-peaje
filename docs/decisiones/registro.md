@@ -1290,3 +1290,126 @@ tomaron durante el desarrollo.
   cola inicial se observó como 0; y presentar el calentamiento como «el
   tratamiento realista» frente a una DEC-018 «aproximada», cuando cada uno
   acierta en una mitad.
+
+## DEC-050 — El panel de la vista 3D es un subconjunto del catálogo, generado con el mismo mecanismo que el formulario
+
+- **Fecha:** 02/11/2026
+- **No supera a ninguna decisión.** Es la DEC-030 («todo valor del modelo es un
+  parámetro») llevada al panel de la vista 3D.
+- **Decisión:** el panel no tiene campos propios. `catalogoParametros.js` exporta
+  `RUTAS_DEL_PANEL`, una **lista ordenada de rutas**, y
+  `camposDelPanel(escenario)` en `modeloFormulario.js` **reutiliza
+  `camposDelFormulario` y filtra** con esa lista, respetando su orden. Las rutas
+  por sentido (`sentidos[i]`) siguen generando un campo por sentido.
+- **Lo que muestra el panel**, en este orden: el factor de demanda de cada
+  sentido, el promedio de atención (DEC-051), las dos tablas de umbrales, la
+  demora de apertura y la ventana de cierre.
+- **Motivo:** si el panel escribiera sus campos a mano, podría acabar
+  discrepando del formulario en unidad, rango, tipo de control o significado, y
+  nadie se enteraría hasta verlo en pantalla. Filtrando, un parámetro **no puede
+  existir en el panel sin existir en el catálogo**, y hay una prueba que compara
+  campo a campo los del panel con los del formulario completo.
+- **Consecuencia:** añadir un control al panel es añadir una ruta a la lista, no
+  escribir un componente. Y quitar un parámetro del catálogo rompe las pruebas
+  del panel, que es lo que se quiere.
+- **Descarta:** una lista de campos del panel escrita a mano; duplicar
+  metadatos entre el panel y el formulario; y que el panel lea el escenario por
+  su cuenta sin pasar por el catálogo.
+
+## DEC-051 — El promedio de atención es un parámetro derivado que ata la escala de la gamma y el nominal, con k fijo
+
+- **Fecha:** 02/11/2026
+- **No supera a ninguna decisión, y en particular NO supera la DEC-027 punto 7.**
+  Hay que decirlo claro porque es lo que más fácilmente se malinterpreta: la
+  **separación entre la media que genera la gamma y el tiempo nominal con el que
+  decide la regla sigue existiendo**, en el modelo y en la configuración
+  avanzada, donde los dos siguen siendo campos editables por separado. Lo único
+  que la DEC-051 añade es que **el panel** los mueve juntos por defecto. La
+  DEC-004 (k = 4,68; θ = 2,58 s) tampoco se toca.
+- **Decisión:** se añade al catálogo un parámetro **derivado**,
+  `servicio.promedioAtencionSegundos`, marcado con `derivado: true` y con las
+  `rutasAtadas` que escribe. No existe en el escenario:
+  - **Lectura:** devuelve `servicio.mediaNominalSegundos`, que es el valor con
+    el que la regla decide y por tanto el que el usuario reconoce.
+  - **Escritura, solo cuando el usuario edita:** `gammaEscalaSegundos = promedio
+    / gammaForma` **y** `mediaNominalSegundos = promedio`, los dos a la vez.
+    **k no cambia**, así que el coeficiente de variación se conserva, igual que
+    hace el servicio lento de la DEC-025 (de hecho, escribir 15,5 s da
+    θ = 3,3120 s, exactamente el de esa decisión).
+  - **μ en solo lectura:** `μ = SEGUNDOS_POR_HORA / promedio`, en veh/h, con las
+    conversiones de `parametros.js`.
+- **La trampa, que es el motivo de que esto sea una decisión y no un detalle:**
+  hoy `k · θ = 4,68 × 2,58 = 12,0744 s` y el nominal es **12,1016 s**. Son
+  distintos a propósito. Por tanto:
+  1. **Leer el campo o generar los campos del panel NO escribe nada.** El
+     escenario base queda con θ = 2,58 exacto si nadie edita, y hay prueba.
+  2. **Restablecer no pasa por la escritura.** Devuelve las `rutasAtadas` a su
+     valor del base, así que vuelve exactamente a k = 4,68, θ = 2,58 y
+     nominal = 12,1016. Si restableciera escribiendo el promedio del base daría
+     θ = 12,1016 / 4,68 = 2,5858 s, que **no** es la DEC-004. También con prueba.
+- **Las tablas por tasa siguen al nominal nuevo.** Los umbrales por tasa de la
+  DEC-046 se derivan de la capacidad nominal por caseta, así que un nominal
+  nuevo los desfasa. Al editar el promedio **se regeneran si están en `null`**,
+  que es la marca de «generadas, no escritas a mano»; una tabla escrita a mano
+  no se toca. Las dos cosas con prueba.
+- **Motivo:** «promedio de atención» es lo que un operador entiende; `θ` de una
+  gamma y «tiempo nominal de la regla» no. Pero dejar que el panel moviera solo
+  uno de los dos daría escenarios incoherentes —un servicio que tarda 15,5 s con
+  una regla que sigue creyendo que tarda 12,1—, y eso sería un error silencioso,
+  no una sensibilidad.
+- **Descarta:** guardar el promedio como campo del escenario (sería un tercer
+  valor que puede contradecir a los otros dos); mover la escala de la gamma sin
+  mover el nominal, o al contrario, desde el panel; cambiar `k` al editar el
+  promedio; y restablecer el derivado reescribiéndolo.
+
+## DEC-052 — El día y la hora se eligen como situaciones predefinidas, y la hora se deriva del conteo
+
+- **Fecha:** 02/11/2026
+- **No supera a ninguna decisión.** Se apoya en la DEC-010 (colas y casetas
+  iniciales), la DEC-029 (el sustituto de C→P) y la DEC-027 punto 1 (el primer
+  sentido usa el flujo original del PRNG).
+- **El problema:** el modelo simula **siempre los dos sentidos**, pero **cada
+  conteo mide uno solo** (contexto, sección 10). Así que «día» y «hora» no
+  pueden ser campos libres: una combinación arbitraria de conteos no significa
+  nada.
+- **Decisión:** `src/config/situaciones.js` exporta `SITUACIONES` con tres
+  claves, cada una con **título, descripción y aviso en lenguaje de usuario**
+  (sin numeración interna, que es lo que pide la etapa 3):
+
+  | Clave | Qué es | Lo que se advierte |
+  |---|---|---|
+  | `festivo` | P→C medido (16:25) + C→P sustituido por el viernes | El sentido contrario no se midió ese día |
+  | `domingo` | Los dos sentidos medidos | A **horas distintas** (13:00 y 11:50) |
+  | `diaNormal` | Viernes en un sentido, domingo en el otro | **Construido** con dos días distintos |
+
+- **`aplicarSituacion(escenario, clave)` es pura y toca solo los sentidos:**
+  conteo, etiqueta, cola inicial, casetas iniciales, factor a 1 y llegadas y
+  casetas fijas a `null`. **Conserva el servicio, el pozo, la regla y todo lo
+  demás**, para que cambiar de día no deshaga lo que se esté probando en el
+  panel; y **conserva el modo de cada sentido**, para que no cambie en silencio
+  quién decide `c(t)`.
+- **`aplicarSituacion(base, 'festivo')` es idéntico al `ESCENARIO_BASE`**, hasta
+  el orden de las claves, para que el JSON exportado sea el mismo. Con prueba.
+  Por eso el C→P del festivo sale de `parametros.sustitutoFestivoCP` y no del
+  conteo del viernes en crudo: arranca con **1** caseta, no con las 2 del
+  conteo.
+- **Los sentidos no se reordenan.** Cada situación fija su orden, porque el
+  primero usa el flujo original del PRNG (DEC-027 punto 1): `festivo` va P→C
+  primero, como el base; `diaNormal` va C→P primero, como `escenarioDiaNormal`
+  de `escenarios.js`. Para `domingo` no había función previa y el orden se
+  eligió: ver PEN-023.
+- **La hora se deriva del conteo, no se escribe.** Se añadió `horaInicio` a cada
+  conteo de `datos.js` —dato de campo, en su sitio—, que es la misma hora que ya
+  decía su `etiqueta`, puesta aparte para poder rotular sin leer texto. **No se
+  cambió ningún valor existente**, y hay una prueba de que la hora derivada está
+  contenida en la etiqueta. `diaYHoraDeSentidos` y `horasDistintas` dan a la
+  interfaz lo que necesita para rotular.
+- **Dónde vive:** archivo nuevo en `src/config/`, que es donde la DEC-014 pone
+  los datos y los parámetros. Aparte de `escenarios.js` a propósito: ese módulo
+  arma **configuraciones del motor** para los scripts y el catálogo de la fase 4,
+  mientras esto arma **sentidos de escenario** para la interfaz. Son dos formas
+  distintas y mezclarlas confundiría.
+- **Descarta:** un selector libre de día y de hora; combinar conteos a mano
+  desde el panel; escribir la hora en la interfaz; reordenar los sentidos al
+  cambiar de situación; y que cambiar de día arrastre el servicio, el pozo o la
+  regla.
