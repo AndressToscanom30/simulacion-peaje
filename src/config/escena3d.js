@@ -54,6 +54,14 @@ export const ESTADOS_CASETA = {
     alturaIndicador: 0.7,
     figura: 'cono',
   },
+  traspaso: {
+    clave: 'traspaso',
+    etiqueta: 'atendiendo al sentido anterior; cambia al terminar',
+    texto: 'PASA A',
+    color: '#315f91',
+    alturaIndicador: 0.85,
+    figura: 'caja',
+  },
 };
 
 /** Fases visuales de un vehículo. Ver `modeloEscena.js` para lo que miden. */

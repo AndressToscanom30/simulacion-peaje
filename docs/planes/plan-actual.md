@@ -1,6 +1,6 @@
 # Plan actual
 
-Estado: 02/11/2026. Las fases se trabajan en orden. Una fase no se da por
+Estado: 05/11/2026. Las fases se trabajan en orden. Una fase no se da por
 cerrada mientras sus pruebas no pasen.
 
 **Las siete fases están cerradas**, más tres añadidos posteriores: el
@@ -10,6 +10,27 @@ medir y ya está implementado y medido; el **estudio de arranque en frío**
 las mediciones** (DEC-048 y DEC-049), que cierra PEN-003, PEN-004 y PEN-007. El estudio está completo: el documento con las ocho
 etapas está en `docs/estudio.md` y la política recomendada en
 `docs/politica-recomendada.md`.
+
+## Traspasos atendidos, préstamos por colapso y ρ ✅
+
+Tarea opcional posterior al cierre de las siete fases y de la mejora visual. Las
+opciones de motor quedan apagadas por defecto; con ellas apagadas, las medidas
+de las fases 1 a 4 no cambian.
+
+- [x] Diagnosticar el traspaso: se confirmó una reserva de 300 s sin servicio
+      después del cierre; una caseta marcada sí termina el servicio (DEC-007).
+- [x] Añadir «atender durante el traspaso», conservando el servicio del origen
+      hasta abrir en el destino.
+- [x] Añadir préstamo por colapso con umbral configurable y una sola cesión en
+      curso.
+- [x] Reconstruir ρ desde la traza para HUD y gráfico, sin tocar el motor.
+- [x] Versionar y documentar eventos de traza; registrar DEC-059 a DEC-061 y
+      dejar PEN-026 y PEN-027 abiertos.
+- [x] Comparar ocho escenarios con 30 réplicas y semillas comunes:
+      `docs/resultados/traspasos-prestamos.md`.
+- [x] Regenerar `docs/parametros.md` (37 parámetros) y los informes de las fases
+      1 a 4; en estos últimos solo cambió la fecha.
+- [x] **532 pruebas**, build de producción y reportes verificados.
 
 ## Mejora del frontend — en curso
 

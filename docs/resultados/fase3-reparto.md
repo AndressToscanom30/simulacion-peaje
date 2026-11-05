@@ -1,6 +1,6 @@
 # Fase 3: el reparto de las casetas entre los dos sentidos
 
-Generado por `npm run fase3` el 2026-11-02.
+Generado por `npm run fase3` el 2026-11-05.
 **No editar a mano:** este archivo se regenera.
 
 18 casos, **30 réplicas** cada uno, semillas 1 a 30,

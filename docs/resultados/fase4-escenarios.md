@@ -1,6 +1,6 @@
 # Fase 4: la matriz de escenarios
 
-Generado por `npm run fase4` el 2026-11-02.
+Generado por `npm run fase4` el 2026-11-05.
 **No editar a mano:** este archivo se regenera.
 
 214 escenarios (107 casos × 2 regímenes de servicio),

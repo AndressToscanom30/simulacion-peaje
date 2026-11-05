@@ -13,13 +13,13 @@ conviene pasar por los tres primeros.
 | `ui.md` | Cómo se usa la interfaz y cómo está hecha: las tres pestañas, el formulario generado, el worker, la traza y el reloj de reproducción. |
 | `vista3d.md` | La visualización 3D: cómo se traduce la traza en escena, la cámara libre, el modelo del vehículo, la leyenda, qué es cosmético, las constantes configurables y el rendimiento medido. |
 | `capturas/` | Capturas de la escena en tres instantes, para el festivo y para un caso de estrés, más tres de la vista libre. Generadas con WebGL por software. |
-| `traza.md` | Formato de la traza que graba el motor y reproduce la interfaz. Basta para interpretarla sin leer el motor; la fase 6 pintará el 3D desde ahí. |
-| `parametros.md` | Catálogo de los 33 parámetros del modelo: significado, unidad, valor por defecto, origen (contexto o decisión) y rango. Generado con `npm run parametros`, leyendo los valores por defecto del escenario base, así que no puede quedar desfasado. Es la especificación del formulario de la fase 5. |
+| `traza.md` | Formato de la traza que graba el motor y reproduce la interfaz y la escena 3D. Basta para interpretarla sin leer el motor. |
+| `parametros.md` | Catálogo de los 37 parámetros del modelo: significado, unidad, valor por defecto, origen (contexto o decisión) y rango. Generado con `npm run parametros`, leyendo los valores por defecto del escenario base, así que no puede quedar desfasado. Es la especificación del formulario. |
 | `pendientes.md` | Preguntas abiertas y ambigüedades. Si algo no está claro se anota aquí y se sigue con la opción más razonable, dejando dicho cuál se tomó. Incluye lo que falta confirmar con la profesora. |
 | `bitacora.md` | Una entrada por intervención: fecha, qué cambió, qué quedó a medias y qué sigue. Sirve para retomar el trabajo sin releer todo el repo. |
 | `resultados/fase7-arranque-frio.md` | **Arranque en frío** (DEC-047): ¿aguanta la política un festivo que empiece con el peaje vacío? Cruza arranque, capacidad inicial, perfil de demanda y control. Generado con `npm run arranque`. |
 | `resultados/fase7-calentamiento.md` | **Periodo de calentamiento** (DEC-049): deja que la cola inicial emerja del modelo en vez de inyectarla, y lo compara con el tratamiento de la DEC-018 con las mismas semillas. Generado con `npm run calentamiento`. |
-| `resultados/` | Salidas de las corridas. `validacion-fase1.md` es la validación del motor de un sentido contra los cuatro conteos; `diagnostico-festivo.md` compara la cola de campo con la simulada intervalo por intervalo; `fase2-regla.md` enfrenta la regla de apertura y cierre a la operación real; `fase3-reparto.md` reparte las 6 casetas entre los dos sentidos; `fase4-escenarios.md` es la matriz de 160 escenarios con el punto de quiebre. Son archivos generados: se regeneran con sus scripts, no se editan a mano. |
+| `resultados/` | Salidas de las corridas. `validacion-fase1.md` es la validación del motor de un sentido contra los cuatro conteos; `diagnostico-festivo.md` compara la cola de campo con la simulada intervalo por intervalo; `fase2-regla.md` enfrenta la regla de apertura y cierre a la operación real; `fase3-reparto.md` reparte las 6 casetas entre los dos sentidos; `fase4-escenarios.md` es la matriz de 214 escenarios con el punto de quiebre; `traspasos-prestamos.md` compara las dos opciones nuevas con el festivo y demanda ×1,13. Son archivos generados: se regeneran con sus scripts, no se editan a mano. |
 
 ## Dónde está cada cosa en el código
 
@@ -28,7 +28,7 @@ conviene pasar por los tres primeros.
 | `src/config/datos.js` | Datos de campo transcritos de la sección 10 del contexto: los 4 conteos (llegadas, casetas y cola por intervalo de 5 min), los 50 tiempos de atención y el tráfico mensual de la ANI. |
 | `src/config/parametros.js` | Todos los parámetros editables: servicio gamma, umbrales de la regla, demora de apertura, ventana de 15 min, ρ de reasignación, meta y máximo tolerable, réplicas y semillas, reparto del pozo y sustituto de C→P. |
 | `src/config/escenario.js` | Qué es un escenario: objeto declarativo serializable a JSON, escenario base más sobreescrituras, validación y tablas de umbrales. |
-| `src/config/escenarios.js` | Cómo se arman los dos sentidos a partir de los conteos, y el catálogo de los 160 escenarios de la fase 4. |
+| `src/config/escenarios.js` | Cómo se arman los dos sentidos a partir de los conteos, el catálogo de los 214 escenarios de la fase 4 y el lote comparativo de traspasos. |
 | `src/config/catalogoParametros.js` | Metadatos de cada parámetro (significado, unidad, origen, rango) con los que se genera `docs/parametros.md`. |
 | `src/corridas.js` | Runner: traduce escenarios a configuración del motor, corre las réplicas y resuelve el cumplimiento. `simularTraza` graba una réplica para el modo tiempo real. |
 | `src/motor/traza.js` | Grabador de trazas y reconstrucción del estado sin usar el motor. |
@@ -42,6 +42,7 @@ conviene pasar por los tres primeros.
 | `scripts/fase2.js` | Experimentos de la fase 2, operador contra regla (`npm run fase2`). |
 | `scripts/fase3.js` | Experimentos de la fase 3, reparto entre sentidos (`npm run fase3`). |
 | `scripts/fase4.js` | Matriz de escenarios de la fase 4 (`npm run fase4`). |
+| `scripts/traspasos.js` | Comparación de traspasos atendidos y préstamos por colapso (`npm run traspasos`). |
 | `scripts/parametros.js` | Genera `docs/parametros.md` (`npm run parametros`). |
 | `src/App.jsx` | Las tres pestañas de la interfaz: tiempo real, por lotes y configuración. |
 
@@ -55,7 +56,8 @@ npm run simular     # validación de la fase 1 (30 réplicas por conteo)
 npm run diagnostico # compara la cola de campo con la simulada
 npm run fase2       # operador contra regla, con sensibilidad de demora y servicio
 npm run fase3       # reparto de las 6 casetas entre los dos sentidos
-npm run fase4       # matriz de 160 escenarios y punto de quiebre
+npm run fase4       # matriz de 214 escenarios y punto de quiebre
+npm run traspasos   # compara las opciones nuevas de traspaso y préstamo
 npm run parametros  # regenera el catálogo de parámetros
 npm run arranque    # arranque en frío: el caso malo de la política
 npm run calentamiento # cola inicial emergente contra la inyectada (DEC-018)

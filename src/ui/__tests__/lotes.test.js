@@ -91,7 +91,7 @@ describe('la corrida por lotes de la interfaz reproduce el informe de la fase 4'
 describe('trabajos del worker', () => {
   it('el trabajo de traza devuelve una traza completa', () => {
     const { traza } = trabajoTraza({ escenario: {}, semilla: 1 });
-    expect(traza.version).toBe(1);
+    expect(traza.version).toBe(2);
     expect(traza.eventos.length).toBeGreaterThan(1000);
     expect(traza.metadatos.semilla).toBe(1);
   });

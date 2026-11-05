@@ -90,6 +90,7 @@ const MEDIDAS_POZO = [
   'reasignaciones',
   'entregasPorBloqueo',
   'ofrecimientosPorPozo',
+  'prestamos',
   'bloqueosDescartados',
   'peticionesBloqueadas',
   'segundosBloqueados',
@@ -102,6 +103,8 @@ const MEDIDAS_SENTIDO = [
   'segundosBloqueados',
   'reasignacionesRecibidas',
   'reasignacionesCedidas',
+  'prestamosRecibidos',
+  'prestamosCedidos',
 ];
 
 /** Medidas del total del peaje que se resumen entre réplicas (fase 3). */

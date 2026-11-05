@@ -1,6 +1,6 @@
 # Catálogo de parámetros
 
-Generado por `npm run parametros` el 2026-11-02.
+Generado por `npm run parametros` el 2026-11-05.
 **No editar a mano:** este archivo se regenera.
 
 Todo valor del modelo es configurable (DEC-030). Esta es la lista completa,
@@ -71,6 +71,9 @@ validarEscenario(miEscenario);
 | Parámetro | Ruta | Significado | Unidad | Por defecto | Origen | Rango |
 |---|---|---|---|---|---|---|
 | **ρ de reasignación** | `regla.rhoReasignacion` | Una caseta liberada pasa al otro sentido si su ρ supera este valor y le caben casetas. | adimensional | `0,6` | Contexto, sección 4; DEC-008 | ≥ 0 |
+| **Atender mientras cambia de sentido** | `regla.atenderDuranteTraspaso` | Durante la demora de apertura, la caseta sigue atendiendo al sentido que la cede. Apagado por defecto. | sí/no | `false` | DEC-059 | true o false |
+| **Prestar caseta ante colapso** | `regla.prestamoPorColapso` | Permite que un sentido con holgura ceda una caseta de inmediato a otro en colapso. Apagado por defecto. | sí/no | `false` | DEC-060 | true o false |
+| **Umbral de colapso (ρ)** | `regla.rhoColapso` | El sentido se considera en colapso al alcanzar o superar este ρ. | adimensional | `1` | DEC-060 | > 0 |
 | **Ventana móvil de ρ** | `regla.ventanaRhoSegundos` | Cuánto hacia atrás se cuentan las llegadas para calcular ρ. | segundos | `300` (5 min) | Contexto, sección 4 ("últimos 5 min") | > 0 |
 | **Reasignación activada** | `regla.reasignacionActiva` | Si una caseta liberada puede pasar al otro sentido por ρ. Apagada, el pozo es solo almacén. | sí/no | `false` | DEC-008. El valor por defecto apagado, por PEN-015 | true | false |
 | **Ofrecer el pozo libre por ρ** | `regla.ofrecerPozoPorRho` | Si una caseta que ya estaba libre se ofrece al otro sentido sin esperar a que se libere otra. Apagado es lo que dice la regla del estudio; encenderlo es una alternativa para probar. | sí/no | `false` | DEC-027 punto 11 (solo sensibilidad) | true | false |
@@ -169,6 +172,9 @@ Esto es lo que `construirEscenario()` devuelve sin sobreescrituras:
     "factorUmbrales": 1,
     "disparadorPorTasa": false,
     "abrirSiTasaMayorQue": null,
+    "atenderDuranteTraspaso": false,
+    "prestamoPorColapso": false,
+    "rhoColapso": 1,
     "demoraAperturaSegundos": 300,
     "ventanaCierreSegundos": 900,
     "rhoReasignacion": 0.6,

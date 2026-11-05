@@ -1,6 +1,6 @@
 # Diagnóstico de la cola: campo contra simulación
 
-Generado por `npm run diagnostico` el 2026-10-31.
+Generado por `npm run diagnostico` el 2026-11-05.
 **No editar a mano:** este archivo se regenera.
 
 ## Qué se compara y qué se puede concluir

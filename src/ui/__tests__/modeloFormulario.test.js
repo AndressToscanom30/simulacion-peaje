@@ -361,6 +361,9 @@ describe('el panel es un subconjunto del catálogo', () => {
       'regla.cerrarSiColaMenorQue',
       'regla.demoraAperturaSegundos',
       'regla.ventanaCierreSegundos',
+      'regla.atenderDuranteTraspaso',
+      'regla.prestamoPorColapso',
+      'regla.rhoColapso',
     ]);
   });
 

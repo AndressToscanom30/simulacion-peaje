@@ -60,6 +60,9 @@ export function simularPeaje(config) {
     reasignacionActiva = true,
     ofrecerPozoPorRho = false,
     rhoReasignacion = parametros.regla.rhoReasignacion,
+    atenderDuranteTraspaso: atenderConfig,
+    prestamoPorColapso: prestamoConfig,
+    rhoColapso: rhoColapsoConfig,
     ventanaRhoSegundos = parametros.regla.ventanaRhoSegundos,
     esperaDesempateSegundos = parametros.regla.esperaDesempateSegundos,
     servicioNominalSegundos = parametros.servicio.mediaObservadaSegundos,
@@ -73,6 +76,11 @@ export function simularPeaje(config) {
   if (!Array.isArray(configuraciones) || configuraciones.length !== 2) {
     throw new TypeError('`sentidos` debe traer exactamente dos configuraciones.');
   }
+  const atenderDuranteTraspaso =
+    atenderConfig ?? configuraciones.some((c) => c.regla?.atenderDuranteTraspaso);
+  const prestamoPorColapso =
+    prestamoConfig ?? configuraciones.some((c) => c.regla?.prestamoPorColapso);
+  const rhoColapso = rhoColapsoConfig ?? parametros.regla.rhoColapso;
   for (const c of configuraciones) validarConfiguracionSentido(c);
 
   const minimos = configuraciones.map(
@@ -96,6 +104,7 @@ export function simularPeaje(config) {
   let reasignaciones = 0;
   let entregasPorBloqueo = 0;
   let ofrecimientosPorPozo = 0;
+  let prestamos = 0;
   let bloqueosDescartados = 0;
   let segundosPozoAgotado = 0;
   let ultimoInstanteIntegrado = 0;
@@ -142,6 +151,49 @@ export function simularPeaje(config) {
     );
   }
 
+  /** Presta una caseta de un sentido holgado a otro en colapso. */
+  function evaluarPrestamo() {
+    if (!prestamoPorColapso || !pozo.agotado() || pozo.hayPrestamoEnVuelo()) return;
+
+    const pares = sentidos
+      .filter(
+        (destino) =>
+          destino.porRegla &&
+          destino.rho() >= rhoColapso &&
+          destino.casetasEfectivas() < destino.maximoCasetas &&
+          !destino.tienePeticionEnCurso(),
+      )
+      .map((destino) => ({ destino, origen: otro(destino.id) }))
+      .filter((par) => par.origen?.puedeCederPorColapso());
+
+    if (pares.length === 0) return;
+    pares.sort((a, b) => b.destino.rho() - a.destino.rho() || a.destino.id - b.destino.id);
+    const { destino, origen } = pares[0];
+    const caseta = origen.casetaParaPrestamo();
+    if (!caseta) return;
+
+    origen.prepararPrestamo(caseta, destino.id);
+    prestamos += 1;
+    anotar?.('prestamoIniciado', {
+      casetaId: caseta.id,
+      desdeSentidoId: origen.id,
+      haciaSentidoId: destino.id,
+    });
+
+    if (!atenderDuranteTraspaso) {
+      if (caseta.vehiculo) return;
+      arbitro.finalizarPrestamoPendiente(caseta, origen.id, destino.id);
+      return;
+    }
+
+    if (!destino.recibirCaseta(caseta, {
+      desdeSentidoId: origen.id,
+      porPrestamo: true,
+    })) {
+      throw new Error(`El sentido ${destino.id} rechazó el préstamo de la caseta ${caseta.id}.`);
+    }
+  }
+
   /**
    * Coloca una caseta que acaba de quedar libre en el pozo. El orden está
    * fijado en DEC-027: primero las peticiones bloqueadas, que son demanda
@@ -165,7 +217,7 @@ export function simularPeaje(config) {
     const ganador = desempatar(vigentes);
     if (ganador) {
       const caseta = pozo.reservar(ganador.id);
-      if (caseta && ganador.recibirCaseta(caseta)) {
+      if (caseta && ganador.recibirCaseta(caseta, { desdeSentidoId: deId })) {
         entregasPorBloqueo += 1;
         return;
       }
@@ -177,7 +229,10 @@ export function simularPeaje(config) {
     const destino = otro(deId);
     if (destino && admitePorRho(destino)) {
       const caseta = pozo.reservar(destino.id);
-      if (caseta && destino.recibirCaseta(caseta, { porReasignacion: true })) {
+      if (
+        caseta &&
+        destino.recibirCaseta(caseta, { porReasignacion: true, desdeSentidoId: deId })
+      ) {
         reasignaciones += 1;
         sentidos.find((s) => s.id === deId)?.anotarReasignacionCedida();
         anotar?.('casetaReasignada', { casetaId: caseta.id, desdeSentidoId: deId, haciaSentidoId: destino.id });
@@ -194,6 +249,44 @@ export function simularPeaje(config) {
     ventanaRhoSegundos,
 
     reservar: (id) => pozo.reservar(id),
+
+    iniciarTraspaso(caseta, desde, hacia, opciones) {
+      pozo.iniciarTraspaso(caseta, desde, hacia, opciones);
+    },
+
+    evaluarPrestamo,
+
+    finalizarTraspaso(caseta) {
+      const desde = caseta.duenio;
+      const hacia = caseta.reservadaPara;
+      if (desde === null || hacia === null) {
+        throw new Error(`La caseta ${caseta.id} no tiene un traspaso pendiente.`);
+      }
+      const origen = sentidos.find((s) => s.id === desde);
+      const destino = sentidos.find((s) => s.id === hacia);
+      origen?.cerrarTraspaso(caseta, hacia);
+      pozo.finalizarTraspaso(caseta, hacia);
+      destino?.abrirTraspaso(caseta);
+    },
+
+    finalizarPrestamoPendiente(caseta, desde, hacia) {
+      const origen = sentidos.find((s) => s.id === desde);
+      const destino = sentidos.find((s) => s.id === hacia);
+      if (caseta.duenio !== desde || caseta.prestadaA !== hacia) {
+        throw new Error(`La caseta ${caseta.id} no tiene un préstamo pendiente de ${desde} a ${hacia}.`);
+      }
+      origen?.cerrarTraspaso(caseta, hacia);
+      pozo.devolver(caseta);
+      const reservada = pozo.reservar(hacia);
+      if (!reservada) {
+        throw new Error(`No se pudo reservar la caseta ${caseta.id} para completar el préstamo.`);
+      }
+      reservada.porPrestamo = true;
+      if (!destino?.recibirCaseta(reservada, { porPrestamo: true })) {
+        pozo.cancelarReserva(reservada);
+        throw new Error(`El sentido ${hacia} rechazó el préstamo de la caseta ${caseta.id}.`);
+      }
+    },
 
     liberar(caseta, deId) {
       pozo.devolver(caseta);
@@ -233,9 +326,23 @@ export function simularPeaje(config) {
   // -------------------------------------------------------------- montaje ---
 
   configuraciones.forEach((configuracion, indice) => {
+    const configSentido = {
+      ...configuracion,
+      id: indice,
+      ...(configuracion.regla
+        ? {
+            regla: {
+              ...configuracion.regla,
+              atenderDuranteTraspaso,
+              prestamoPorColapso,
+              rhoColapso,
+            },
+          }
+        : {}),
+    };
     sentidos.push(
       crearSentido({
-        config: { ...configuracion, id: indice },
+        config: configSentido,
         // Cada sentido con su propio flujo. El primero usa la semilla tal cual,
         // que es la de las fases 1 y 2 (DEC-027).
         prng: crearPrng(derivarSemilla(semilla, indice)),
@@ -282,6 +389,7 @@ export function simularPeaje(config) {
       reasignaciones,
       entregasPorBloqueo,
       ofrecimientosPorPozo,
+      prestamos,
       bloqueosDescartados,
       peticionesBloqueadas: medidas.reduce((a, m) => a + m.peticionesBloqueadas, 0),
       segundosBloqueados: medidas.reduce((a, m) => a + m.segundosBloqueados, 0),

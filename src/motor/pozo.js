@@ -109,6 +109,41 @@ export function crearPozo({ total }) {
       caseta.duenio = duenio;
       caseta.marcada = false;
       caseta.vehiculo = null;
+      caseta.traspasoVencido = false;
+      caseta.prestadaA = null;
+      caseta.porPrestamo = false;
+    },
+
+    /**
+     * Mantiene la propiedad del origen mientras la caseta cumple la demora
+     * prometida al destino. Se usa para el préstamo y para el traspaso atendido.
+     */
+    iniciarTraspaso(caseta, desde, hacia, { porPrestamo = false } = {}) {
+      if (caseta.reservadaPara !== null && caseta.reservadaPara !== hacia) {
+        throw new Error(`La caseta ${caseta.id} ya está reservada para ${caseta.reservadaPara}.`);
+      }
+      if (caseta.duenio !== null && caseta.duenio !== desde) {
+        throw new Error(`La caseta ${caseta.id} no pertenece al sentido ${desde}.`);
+      }
+      caseta.duenio = desde;
+      caseta.reservadaPara = hacia;
+      caseta.traspasoVencido = false;
+      caseta.prestadaA = porPrestamo ? hacia : null;
+      caseta.porPrestamo = porPrestamo;
+    },
+
+    /** Completa un traspaso cuando vence la demora y terminó el servicio de origen. */
+    finalizarTraspaso(caseta, destino) {
+      if (caseta.duenio === null || caseta.reservadaPara !== destino) {
+        throw new Error(`La caseta ${caseta.id} no está en traspaso hacia ${destino}.`);
+      }
+      caseta.duenio = destino;
+      caseta.reservadaPara = null;
+      caseta.marcada = false;
+      caseta.vehiculo = null;
+      caseta.traspasoVencido = false;
+      caseta.prestadaA = null;
+      caseta.porPrestamo = false;
     },
 
     /**
@@ -130,6 +165,9 @@ export function crearPozo({ total }) {
       caseta.reservadaPara = null;
       caseta.marcada = false;
       caseta.vehiculo = null;
+      caseta.traspasoVencido = false;
+      caseta.prestadaA = null;
+      caseta.porPrestamo = false;
     },
   };
 }

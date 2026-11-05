@@ -1,15 +1,28 @@
 # La interfaz
 
-Interfaz de configuración y modo tiempo real (fase 5). La visualización 3D es la
-fase 6 y no está aquí: lo que hay es un esquema 2D mínimo de las casetas.
+Interfaz de simulación 3D, estudio por lotes y configuración avanzada. La vista
+principal reproduce una traza y muestra el estado en vivo; las vistas se
+seleccionan por `#hash` (DEC-053).
 
 ```sh
 npm install
 npm run dev      # interfaz en http://localhost:5173
-npm test         # 319 pruebas, motor e interfaz
+npm test         # 532 pruebas, motor e interfaz
 ```
 
-## Las tres pestañas
+## Indicador de carga ρ (DEC-061)
+
+El HUD muestra, junto a la cola de cada sentido, el mismo ρ que usa el motor:
+dos decimales con coma decimal, o «sin casetas» si no hay capacidad efectiva.
+Al alcanzar el umbral configurable de colapso se muestra también la palabra
+«colapso» y una figura, no solo un cambio de color. En el cajón de gráficos, el
+SVG de ρ por sentido marca las referencias de 1 y de reasignación.
+
+El valor se reconstruye de la traza y el escenario en `src/ui/rho.js`; no se
+añade estado al motor. La reconstrucción replica que la ventana móvil solo se
+poda cuando llega un vehículo.
+
+## Las vistas
 
 **Tiempo real.** Se elige la semilla (1 por defecto), se pulsa *Simular y
 reproducir* y la réplica se reproduce con controles de iniciar, pausa, reinicio,
@@ -114,13 +127,16 @@ pruebas lo garantizan: corren en entorno `node` y solo
 
 ## Qué se verificó
 
-- Las **319 pruebas** pasan y los informes de las fases 1 a 4 se regeneran
+- Las **532 pruebas** pasan y los informes de las fases 1 a 4 se regeneran
   idénticos (salvo la línea de la fecha).
 - Grabar la traza **no cambia ningún resultado**: en cinco escenarios y las 30
   semillas, con y sin grabador salen las mismas medidas y los mismos números
   aleatorios consumidos.
 - **Reconstruir desde la traza coincide con el motor** en atendidos, cola máxima
   y carriles-intervalo, en cuatro escenarios y las 30 semillas.
+- La reconstrucción de ρ coincide con `s.rho()` en cuatro escenarios y las 30
+  semillas; traspasos y préstamos mantienen la reconstrucción de cola, servicio,
+  casetas y carriles-intervalo.
 - **La corrida por lotes de la interfaz da los mismos números que
   `docs/resultados/fase4-escenarios.md`**: hay una prueba que lee el informe
   publicado y compara el `Wq` del peaje de E2 en los dos regímenes.

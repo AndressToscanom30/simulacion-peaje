@@ -329,6 +329,9 @@ function textoDeAviso(aviso, etiquetas) {
   if (aviso.tipo === 'bloqueo') {
     return `${sentido} pidió caseta y el pozo estaba agotado (cola ${aviso.cola})`;
   }
+  if (aviso.tipo === 'prestamo') {
+    return `caseta ${aviso.casetaId} prestada de ${etiquetas[aviso.desdeSentidoId]} a ${sentido}`;
+  }
   return `lectura de cola de ${sentido}: ${aviso.cola} veh`;
 }
 

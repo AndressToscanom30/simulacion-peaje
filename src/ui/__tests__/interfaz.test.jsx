@@ -12,6 +12,7 @@ import App from '../../App.jsx';
 import Formulario from '../componentes/Formulario.jsx';
 import Advertencias from '../componentes/Advertencias.jsx';
 import EsquemaCasetas from '../componentes/EsquemaCasetas.jsx';
+import Hud from '../componentes/Hud.jsx';
 import TablaMedidas from '../componentes/TablaMedidas.jsx';
 import { construirEscenario } from '../../config/escenario.js';
 import { cambiarCampo, restablecerCampo, ADVERTENCIAS, FRANJA } from '../modeloFormulario.js';
@@ -271,6 +272,58 @@ describe('esquema de casetas', () => {
     // La etapa 4a quitó la explicación de la caseta marcada: se queda el dato
     // que sirve para mirar el pozo (DEC-057).
     expect(screen.getByText(/Libres en el pozo/)).toBeDefined();
+  });
+});
+
+describe('rho en el HUD', () => {
+  it('muestra el colapso con texto y una figura, no solo con color', () => {
+    const escenario = construirEscenario({ regla: { rhoColapso: 0.01 } });
+    const traza = simularTraza(escenario, 1);
+    const llegada = traza.eventos.find((evento) => evento.tipo === 'llegada' && !evento.inicial);
+    const estado = reconstruirDesdeTraza({
+      ...traza,
+      eventos: traza.eventos.filter((evento) => evento.t <= llegada.t),
+    });
+
+    render(<Hud estado={estado} instante={llegada.t} escenario={escenario} traza={traza} />);
+    expect(screen.getAllByLabelText('Colapso').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/▲ colapso/).length).toBeGreaterThan(0);
+  });
+
+  it('muestra «sin casetas» cuando la capacidad efectiva del sentido es cero', () => {
+    const escenario = construirEscenario();
+    const sentidos = [
+      { id: 0, etiqueta: 'P→C', conteo: 'festivoPC' },
+      { id: 1, etiqueta: 'C→P', conteo: 'viernes' },
+    ];
+    const traza = {
+      metadatos: {
+        escenario,
+        sentidos,
+        pozoTotal: 6,
+        duracionIntervaloSegundos: escenario.tiempo.duracionIntervaloSegundos,
+        intervalos: escenario.tiempo.intervalos,
+        horizonteSegundos:
+          escenario.tiempo.duracionIntervaloSegundos * escenario.tiempo.intervalos,
+      },
+      eventos: [
+        { t: 0, tipo: 'casetaAbre', sentidoId: 0, casetaId: 0 },
+        { t: 0, tipo: 'casetaMarcada', sentidoId: 0, casetaId: 0 },
+      ],
+    };
+    const estado = {
+      porSentido: sentidos.map((sentido) => ({
+        sentidoId: sentido.id,
+        etiqueta: sentido.etiqueta,
+        cola: 0,
+        enServicio: 0,
+        atendidos: 0,
+        casetasAbiertas: 0,
+      })),
+    };
+
+    render(<Hud estado={estado} instante={0} escenario={escenario} traza={traza} />);
+    expect(screen.getAllByText('sin casetas')).toHaveLength(2);
   });
 });
 

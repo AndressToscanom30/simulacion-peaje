@@ -178,6 +178,9 @@ export const ESCENARIO_BASE = Object.freeze({
     disparadorPorTasa: false,
     /** `null` = se genera con la fórmula de DEC-046 según el tope. */
     abrirSiTasaMayorQue: null,
+    atenderDuranteTraspaso: parametros.regla.atenderDuranteTraspaso,
+    prestamoPorColapso: parametros.regla.prestamoPorColapso,
+    rhoColapso: parametros.regla.rhoColapso,
     demoraAperturaSegundos: 5 * SEGUNDOS_POR_MINUTO,
     ventanaCierreSegundos: 15 * SEGUNDOS_POR_MINUTO,
     rhoReasignacion: 0.6,
@@ -435,13 +438,21 @@ export function problemasDelEscenario(escenario) {
   if (!noNegativo(r.rhoReasignacion)) {
     errores.push(`\`regla.rhoReasignacion\` no puede ser negativa, llegó ${r.rhoReasignacion}.`);
   }
+  if (!positivo(r.rhoColapso)) {
+    errores.push(`\`regla.rhoColapso\` tiene que ser mayor que 0, llegó ${r.rhoColapso}.`);
+  }
   if (!positivo(r.ventanaRhoSegundos)) {
     errores.push(`\`regla.ventanaRhoSegundos\` tiene que ser mayor que 0, llegó ${r.ventanaRhoSegundos}.`);
   }
   if (!positivo(r.factorUmbrales)) {
     errores.push(`\`regla.factorUmbrales\` tiene que ser mayor que 0, llegó ${r.factorUmbrales}.`);
   }
-  for (const campo of ['reasignacionActiva', 'ofrecerPozoPorRho']) {
+  for (const campo of [
+    'reasignacionActiva',
+    'ofrecerPozoPorRho',
+    'atenderDuranteTraspaso',
+    'prestamoPorColapso',
+  ]) {
     if (typeof r[campo] !== 'boolean') {
       errores.push(`\`regla.${campo}\` tiene que ser true o false, llegó ${JSON.stringify(r[campo])}.`);
     }
@@ -600,6 +611,9 @@ export function aConfiguracionPeaje(escenario) {
               cerrarSiColaMenorQue: e.regla.cerrarSiColaMenorQue,
               abrirSiTasaMayorQue: e.regla.abrirSiTasaMayorQue,
               disparadorPorTasa: e.regla.disparadorPorTasa,
+              atenderDuranteTraspaso: e.regla.atenderDuranteTraspaso,
+              prestamoPorColapso: e.regla.prestamoPorColapso,
+              rhoColapso: e.regla.rhoColapso,
               demoraAperturaSegundos: e.regla.demoraAperturaSegundos,
               ventanaCierreSegundos: e.regla.ventanaCierreSegundos,
               maximoCasetas: e.pozo.maximoPorSentido,
@@ -624,6 +638,9 @@ export function aConfiguracionPeaje(escenario) {
     reasignacionActiva: e.regla.reasignacionActiva,
     ofrecerPozoPorRho: e.regla.ofrecerPozoPorRho,
     rhoReasignacion: e.regla.rhoReasignacion,
+    atenderDuranteTraspaso: e.regla.atenderDuranteTraspaso,
+    prestamoPorColapso: e.regla.prestamoPorColapso,
+    rhoColapso: e.regla.rhoColapso,
     ventanaRhoSegundos: e.regla.ventanaRhoSegundos,
     esperaDesempateSegundos: e.regla.esperaDesempateSegundos,
     servicioNominalSegundos: e.servicio.mediaNominalSegundos,

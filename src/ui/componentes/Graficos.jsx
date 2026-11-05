@@ -8,6 +8,7 @@
 
 import { SEGUNDOS_POR_MINUTO } from '../../config/parametros.js';
 import { num, enMinutos } from '../formato.js';
+import { seriesRhoHasta } from '../rho.js';
 
 const ANCHO = 560;
 const ALTO = 180;
@@ -222,6 +223,62 @@ export function GraficoEspera({ series, instante, duracionIntervalo, metaSegundo
           );
         }),
       )}
+    </Marco>
+  );
+}
+
+/** ρ por sentido a lo largo del tiempo, con referencias de capacidad y reasignación. */
+export function GraficoRho({ traza, instante, rhoReasignacion }) {
+  const series = seriesRhoHasta(traza, instante);
+  const valores = series.flatMap((serie) => serie.puntos.map((punto) => punto.valor).filter(Number.isFinite));
+  const maximoY = Math.max(1, rhoReasignacion, ...valores) * 1.1;
+  const maximoX = Math.max(instante, 1);
+  const alturaDe = (valor) => escalaY(Number.isFinite(valor) ? valor : maximoY, maximoY);
+  const etiquetas = series.map((serie) => serie.etiqueta);
+
+  return (
+    <Marco
+      titulo="Uso de las casetas (ρ)"
+      maximoY={maximoY}
+      maximoX={maximoX}
+      etiquetaY="ρ"
+      leyenda={
+        <>
+          {etiquetas.map((etiqueta, i) => (
+            <span key={etiqueta} style={{ color: COLORES[i] }}>
+              ■ {etiqueta}
+            </span>
+          ))}
+          <span className="ref-meta">— 1,00</span>
+          <span className="ref-max">— reasignación {num(rhoReasignacion)}</span>
+        </>
+      }
+    >
+      <line
+        x1={MARGEN.izquierda}
+        y1={escalaY(1, maximoY)}
+        x2={ANCHO - MARGEN.derecha}
+        y2={escalaY(1, maximoY)}
+        className="ref-meta"
+      />
+      <line
+        x1={MARGEN.izquierda}
+        y1={escalaY(rhoReasignacion, maximoY)}
+        x2={ANCHO - MARGEN.derecha}
+        y2={escalaY(rhoReasignacion, maximoY)}
+        className="ref-max"
+      />
+      {series.map((serie, sentido) => (
+        <polyline
+          key={serie.sentidoId}
+          fill="none"
+          stroke={COLORES[sentido]}
+          strokeWidth="1.6"
+          points={serie.puntos
+            .map((punto) => `${escalaX(punto.t, maximoX)},${alturaDe(punto.valor)}`)
+            .join(' ')}
+        />
+      ))}
     </Marco>
   );
 }

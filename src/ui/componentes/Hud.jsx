@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { horaDelConteo, num, relojSimulado } from '../formato.js';
+import { rhoEnInstante } from '../rho.js';
 
 /**
  * Datos en vivo superpuestos a la escena: el reloj y, por sentido, la cola, los
@@ -8,10 +10,12 @@ import { horaDelConteo, num, relojSimulado } from '../formato.js';
  * real; aquí van encima de la escena porque la escena es la página (DEC-053).
  */
 export default function Hud({ estado, instante, escenario, traza }) {
-  if (!estado) return null;
+  const rhos = useMemo(() => (traza ? rhoEnInstante(traza, instante) : []), [traza, instante]);
+  if (!estado || !traza) return null;
 
   const conteoDeLaHora = traza.metadatos.sentidos[0]?.conteo;
   const hora = horaDelConteo(conteoDeLaHora, instante);
+  const rhoColapso = escenario.regla.rhoColapso;
 
   return (
     <div className="hud">
@@ -28,6 +32,17 @@ export default function Hud({ estado, instante, escenario, traza }) {
               <div>
                 <dt>En cola</dt>
                 <dd className="grande">{num(sentido.cola, 0)}</dd>
+              </div>
+              <div>
+                <dt>ρ</dt>
+                <dd>
+                  {rhos[indice] === Infinity ? 'sin casetas' : num(rhos[indice])}
+                  {rhos[indice] >= rhoColapso && (
+                    <span className="hud__colapso" aria-label="Colapso">
+                      {' '}▲ colapso
+                    </span>
+                  )}
+                </dd>
               </div>
               <div>
                 <dt>Cobrando</dt>

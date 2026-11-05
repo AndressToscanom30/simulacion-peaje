@@ -73,8 +73,15 @@ function Caseta({ caseta, pozoTotal, calidad }) {
   const abierta = caseta.estado !== 'cerrada';
 
   const textura = useMemo(() => {
+    const destino = flechaDe(caseta.sentidoDestinoId);
     const cuenta =
-      caseta.faltaParaAbrir === null ? estado.texto : `ABRE ${Math.ceil(caseta.faltaParaAbrir)} s`;
+      caseta.estado === ESTADOS_CASETA.traspaso.clave
+        ? caseta.traspasoVencido
+          ? `TERMINA → ${destino}`
+          : `→ ${destino} ${Math.ceil(caseta.faltaParaAbrir)} s`
+        : caseta.faltaParaAbrir === null
+          ? estado.texto
+          : `ABRE ${Math.ceil(caseta.faltaParaAbrir)} s`;
     return texturaDeLetrero({
       titulo: `${caseta.id} ${flechaDe(caseta.sentidoId)}`,
       estado: cuenta,
@@ -82,7 +89,15 @@ function Caseta({ caseta, pozoTotal, calidad }) {
       fondo: colores.letrero,
     });
     // La cuenta atrás se redondea a segundos para no regenerar la textura por fotograma.
-  }, [caseta.id, caseta.sentidoId, caseta.estado, Math.ceil(caseta.faltaParaAbrir ?? -1), estado]);
+  },   [
+    caseta.id,
+    caseta.sentidoId,
+    caseta.sentidoDestinoId,
+    caseta.estado,
+    caseta.traspasoVencido,
+    Math.ceil(caseta.faltaParaAbrir ?? -1),
+    estado,
+  ]);
 
   return (
     <group position={[x, 0, 0]}>

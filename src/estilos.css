@@ -289,6 +289,8 @@ textarea { width: 100%; font-family: var(--letra-cifra); font-size: var(--t-xs);
 .leyenda span { margin-right: var(--e-2); }
 .rejilla { stroke: var(--rejilla); stroke-width: 1; }
 .eje { fill: var(--texto-suave); font-size: 9px; }
+.ref-meta { stroke: var(--guia); color: var(--guia); stroke-dasharray: 4 3; }
+.ref-max, .ref-colapso { stroke: var(--senal); color: var(--senal); stroke-dasharray: 4 3; }
 
 /* --- tablas -------------------------------------------------------------- */
 
@@ -701,6 +703,7 @@ td.no { color: var(--senal); font-weight: 700; }
   font-weight: 700;
   line-height: 1;
 }
+.hud__colapso { color: var(--senal); font-weight: 700; }
 
 .hud__nota {
   margin: var(--e-2) 0 0;

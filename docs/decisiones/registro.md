@@ -1760,3 +1760,101 @@ tomaron durante el desarrollo.
   con verde ácido y el kit de tarjetas con sombra, que son los sitios a los que
   se cae por defecto; un radio único para todo; y las mayúsculas como etiqueta
   sobre cada título —en el pórtico sí, porque allí significan algo.
+
+## DEC-059 — Una caseta traspasada puede seguir atendiendo al sentido de origen, apagado por defecto
+
+- **Fecha:** 05/11/2026
+- **Matiza, solo cuando se activa, dos partes vigentes:**
+  - **DEC-007:** una caseta que ya está en servicio nunca lo interrumpe. Esta
+    decisión no cambia esa garantía; añade que, durante el traspaso, también
+    puede empezar servicios nuevos del origen. Si vence la demora mientras
+    atiende, termina ese servicio y recién entonces abre para el destino.
+  - **DEC-027 punto 10:** una caseta marcada no se promete antes de terminar el
+    servicio. Con esta opción, el traspaso directo conserva la propiedad del
+    origen durante la demora, pero deja de contar como capacidad efectiva para
+    su regla; sí queda disponible para su despacho.
+- **Decisión:** se añade `regla.atenderDuranteTraspaso`, `false` por defecto.
+  Encendida, aplica al traspaso directo de una caseta del sentido A al B por
+  petición bloqueada, reasignación de una caseta liberada o préstamo de la
+  DEC-060. Sigue corriendo la demora de apertura normal para B. Una caseta libre
+  que ya estaba en el pozo no adquiere un sentido de origen.
+- **Casos límite:**
+  1. Si la cola de A vuelve a cruzar su umbral, A puede pedir otra caseta; no se
+     cancela la reserva a B.
+  2. Si B deja de necesitarla, la orden de apertura se mantiene, como en
+     DEC-026 punto 10.
+  3. Un cierre nuevo en A se evalúa sobre las casetas efectivas restantes y no
+     puede bajar de su mínimo. El traspaso en curso no se vuelve a seleccionar.
+  4. Si el horizonte cae dentro de la demora, la réplica drena los eventos
+     pendientes y completa el traspaso después del horizonte (DEC-019).
+  5. Con demora cero, B abre en el instante de la reserva si la caseta está
+     libre; si A la está atendiendo, la apertura espera al fin de ese servicio.
+- **Motivo:** la caseta quedaba reservada y sin atender durante toda la demora
+  de apertura, aunque todavía podía servir al origen. La opción permite medir
+  el efecto sin sustituir el comportamiento publicado cuando está apagada.
+- **Descarta:** contar la caseta prometida como efectiva para A; interrumpir un
+  servicio; cancelar una apertura ordenada; o hacer que una caseta libre del
+  pozo atienda a un sentido sin propietario.
+
+## DEC-060 — El préstamo por colapso se añade como vía opcional y no rediseña la reasignación por ρ
+
+- **Fecha:** 05/11/2026
+- **Supera a la DEC-028 únicamente en la parte que dejó la reasignación sin
+  rediseño:** se añade, a pedido de la usuaria, una vía distinta y optativa para
+  ceder capacidad antes de que se libere una caseta. La DEC-008 y la mecánica
+  vigente de reasignación siguen intactas.
+- **Decisión:** `regla.prestamoPorColapso` se añade `false` por defecto y
+  `regla.rhoColapso` con valor por defecto `1`. Tras cada llegada y fin de
+  servicio se puede prestar una caseta si:
+  - el pozo está agotado;
+  - el receptor tiene `ρ ≥ rhoColapso`, está bajo su tope y no tiene apertura
+    ordenada o petición bloqueada;
+  - el donante tiene más que su mínimo de casetas efectivas y su cola está bajo
+    el umbral de cierre de su `c` efectiva.
+- La cesión no espera la ventana de cierre. Se elige primero una caseta libre
+  del donante; si todas atienden, se marca una y se respeta DEC-007. La ventana
+  de cierre del donante se reinicia. Solo puede haber un préstamo en vuelo: la
+  exclusión cubre tanto la espera al fin del servicio como la demora de apertura.
+  Si A está encendida, la caseta puede seguir atendiendo al donante durante esa
+  demora.
+- **Prioridad y casos límite:** una caseta que ya está libre en el pozo sigue el
+  camino normal y no se presta; una orden de préstamo no se revoca si el
+  receptor deja de necesitarla (DEC-026 punto 10); y, si hay dos receptores
+  elegibles, gana el de mayor ρ y luego el de menor identificador para que el
+  resultado sea determinista. Una petición bloqueada del receptor cuenta como
+  apertura en curso según DEC-027 punto 5, así que no se duplica con un préstamo
+  (queda pendiente confirmar esta prioridad en PEN-026).
+- **Motivo:** PEN-015 muestra que la reasignación de DEC-008 casi no se activa
+  en el pico porque no se libera ninguna caseta; este mecanismo permite probar
+  una cesión inmediata cuando el otro sentido colapsa, sin alterar los
+  resultados existentes si está apagado.
+- **Descarta:** prestar desde un pozo con casetas libres; prestar si el donante
+  está en el mínimo o sobre su umbral de cierre; cortar servicios; encadenar
+  préstamos en cascada; y cambiar la regla base o la reasignación de DEC-008.
+
+## DEC-061 — La interfaz reconstruye ρ desde la traza sin tocar el motor
+
+- **Fecha:** 05/11/2026
+- **No supera ninguna decisión.** Se apoya en DEC-027 punto 7 (definición de ρ),
+  DEC-033 (la interfaz reproduce la traza), DEC-034 (gráficos SVG propios),
+  DEC-036 (escena pura de traza e instante) y DEC-039 (color nunca como única
+  señal).
+- **Decisión:** `src/ui/rho.js` reconstruye el ρ que usa el motor desde los
+  eventos y el escenario guardados en la traza; el motor no se modifica para
+  mostrarlo. Replica la poda perezosa: la ventana de llegadas se poda al llegar
+  otro vehículo, no solo porque avance el reloj. Usa las casetas efectivas,
+  excluyendo las marcadas y en traspaso; con cero casetas efectivas devuelve
+  `Infinity`, que se muestra como «sin casetas».
+- El HUD muestra el valor con dos decimales y coma decimal junto a la cola. Al
+  alcanzar `rhoColapso`, muestra texto «colapso» y una figura además del color.
+  El cajón dibuja la serie por sentido en SVG y marca ρ = 1 y el umbral de
+  reasignación. La escena sigue siendo pura y representa el estado de traspaso
+  con figura, color y texto.
+- **Comprobación:** en cuatro escenarios y las 30 semillas, en cada observación
+  de decisión el ρ reconstruido coincide con `s.rho()` del motor.
+- **Motivo:** la interfaz necesita mostrar el mismo indicador que decide, pero
+  la traza y el escenario ya contienen los datos necesarios y mantener otra
+  fuente de ρ en el motor duplicaría estado.
+- **Descarta:** estimar ρ con un reloj deslizante distinto, contar la cola
+  inicial como llegadas recientes, recalcular la ventana sin llegada, o añadir
+  lógica de simulación a React o a la escena 3D.

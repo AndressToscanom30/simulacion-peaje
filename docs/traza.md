@@ -1,9 +1,8 @@
 # Formato de la traza
 
 Una **traza** es una réplica completa convertida en lista de eventos. El motor
-la graba de una vez y la interfaz la **reproduce** (DEC-033). La fase 6 pintará
-el 3D desde aquí, así que este documento tiene que bastar: no hace falta leer el
-motor para interpretar una traza.
+la graba de una vez y la interfaz la **reproduce** (DEC-033), incluida la escena
+3D. Este documento basta para interpretarla sin leer el motor.
 
 Se genera con `simularTraza(escenario, semilla)` de `src/corridas.js` y es
 serializable a JSON. Todos los instantes (`t`) son **segundos de tiempo
@@ -11,14 +10,14 @@ simulado** desde el arranque de la réplica.
 
 ## Versión
 
-`version: 1`. Si el formato cambia de forma incompatible, el número sube. Quien
+`version: 2`. Si el formato cambia de forma incompatible, el número sube. Quien
 lea una traza debe comprobarlo.
 
 ## Estructura
 
 ```js
 {
-  version: 1,
+  version: 2,
   metadatos: { … },        // de qué réplica es
   eventos: [ … ],          // todo lo que pasó, en orden
   seriesPorIntervalo: [ … ], // una entrada por sentido, para los gráficos
@@ -58,18 +57,21 @@ vehículos esperando en ese sentido **después** del evento, por comodidad.
 
 | `tipo` | Campos propios | Qué pasó |
 |---|---|---|
-| `casetaReservada` | `sentidoId`, `casetaId`, `abreEn`, `porReasignacion` | Se ordenó abrirla: queda apartada y abrirá en `abreEn` (DEC-027). Todavía no atiende. |
-| `casetaAbre` | `sentidoId`, `casetaId`, `motivo` | Empieza a operar. `motivo`: `arranque` (las casetas iniciales), `programado` (el conteo del operador) o `regla`. |
+| `casetaReservada` | `sentidoId`, `casetaId`, `abreEn`, `porReasignacion`, `porPrestamo` | Se ordenó abrirla: queda apartada y abrirá en `abreEn` (DEC-027). Con «atender durante el traspaso», la caseta puede seguir atendiendo al sentido de origen hasta ese instante (DEC-059). |
+| `casetaAbre` | `sentidoId`, `casetaId`, `motivo` | Empieza a operar. `motivo`: `arranque` (las casetas iniciales), `programado` (el conteo del operador), `regla` o `traspaso` (cambio desde otro sentido). |
 | `casetaMarcada` | `sentidoId`, `casetaId` | Se marcó para cerrar, pero **sigue atendiendo** su vehículo: no se interrumpe (DEC-007). |
-| `casetaCierra` | `sentidoId`, `casetaId`, `estaba` | Vuelve al pozo. `estaba`: `libre` (cerró en el acto) o `marcada` (cerró al terminar su servicio). |
+| `casetaCierra` | `sentidoId`, `casetaId`, `estaba` | Vuelve al pozo o completa un traspaso. `estaba`: `libre`, `marcada` o `traspaso` (terminó de atender al origen). |
 | `casetaReasignada` | `casetaId`, `desdeSentidoId`, `haciaSentidoId`, `desdeElPozo?` | Una caseta liberada pasa al otro sentido por ρ (DEC-008). Va seguida de su `casetaReservada`. |
 | `cierreCancelado` | `sentidoId`, `casetaId` | Se canceló un cierre marcado porque hacía falta capacidad (DEC-026, punto 2). |
+| `traspasoIniciado` | `casetaId`, `desdeSentidoId`, `haciaSentidoId`, `abreEn`, `porPrestamo` | La caseta queda prometida al destino pero puede continuar atendiendo al origen durante la demora (DEC-059). |
+| `traspasoVencido` | `casetaId`, `desdeSentidoId`, `haciaSentidoId` | Se cumplió la demora, pero la caseta termina un servicio del origen antes de abrir en el destino (DEC-007, DEC-059). |
 
 **De pozo y de medición:**
 
 | `tipo` | Campos propios | Qué pasó |
 |---|---|---|
 | `peticionBloqueada` | `sentidoId`, `cola` | Pidió caseta y el pozo estaba agotado. Se reintentará cuando se libere una. |
+| `prestamoIniciado` | `casetaId`, `desdeSentidoId`, `haciaSentidoId` | Un sentido cede una caseta al otro por colapso, sin esperar la ventana de cierre (DEC-060). La entrega respeta la demora habitual. |
 | `lecturaCola` | `sentidoId`, `intervalo`, `cola` | Lectura puntual del **total en espera** del sentido, en un instante aleatorio del intervalo (contexto, sección 6). Es la misma variable que la columna `cola` de los conteos (DEC-042), así que es directamente comparable con el dato de campo. |
 
 ### `seriesPorIntervalo`

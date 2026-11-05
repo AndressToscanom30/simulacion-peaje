@@ -72,8 +72,10 @@ export function crearModeloEscena(traza, { duraciones, reducirMovimiento = false
       id,
       estado: ESTADOS_CASETA.cerrada.clave,
       sentidoId: null,
+      sentidoDestinoId: null,
       vehiculoId: null,
       abreEn: null,
+      traspasoVencido: false,
     }));
     avisos = [];
     atendidos = new Array(numeroDeSentidos).fill(0);
@@ -132,9 +134,25 @@ export function crearModeloEscena(traza, { duraciones, reducirMovimiento = false
         const caseta = casetas[evento.casetaId];
         caseta.estado = ESTADOS_CASETA.abierta.clave;
         caseta.sentidoId = evento.sentidoId;
+        caseta.sentidoDestinoId = null;
         caseta.abreEn = null;
+        caseta.traspasoVencido = false;
         break;
       }
+
+      case 'traspasoIniciado': {
+        const caseta = casetas[evento.casetaId];
+        caseta.estado = ESTADOS_CASETA.traspaso.clave;
+        caseta.sentidoId = evento.desdeSentidoId;
+        caseta.sentidoDestinoId = evento.haciaSentidoId;
+        caseta.abreEn = evento.abreEn;
+        caseta.traspasoVencido = false;
+        break;
+      }
+
+      case 'traspasoVencido':
+        casetas[evento.casetaId].traspasoVencido = true;
+        break;
 
       case 'casetaMarcada':
         casetas[evento.casetaId].estado = ESTADOS_CASETA.marcada.clave;
@@ -148,7 +166,9 @@ export function crearModeloEscena(traza, { duraciones, reducirMovimiento = false
         const caseta = casetas[evento.casetaId];
         caseta.estado = ESTADOS_CASETA.cerrada.clave;
         caseta.sentidoId = null;
+        caseta.sentidoDestinoId = null;
         caseta.abreEn = null;
+        caseta.traspasoVencido = false;
         break;
       }
 
@@ -164,6 +184,16 @@ export function crearModeloEscena(traza, { duraciones, reducirMovimiento = false
 
       case 'peticionBloqueada':
         avisos.push({ t: evento.t, tipo: 'bloqueo', sentidoId: evento.sentidoId, cola: evento.cola });
+        break;
+
+      case 'prestamoIniciado':
+        avisos.push({
+          t: evento.t,
+          tipo: 'prestamo',
+          casetaId: evento.casetaId,
+          desdeSentidoId: evento.desdeSentidoId,
+          sentidoId: evento.haciaSentidoId,
+        });
         break;
 
       case 'lecturaCola':
@@ -306,7 +336,8 @@ export function crearModeloEscena(traza, { duraciones, reducirMovimiento = false
       for (const caseta of casetas) {
         const operando =
           caseta.estado === ESTADOS_CASETA.abierta.clave ||
-          caseta.estado === ESTADOS_CASETA.marcada.clave;
+          caseta.estado === ESTADOS_CASETA.marcada.clave ||
+          caseta.estado === ESTADOS_CASETA.traspaso.clave;
         if (operando && caseta.sentidoId !== null) {
           contadores[caseta.sentidoId].casetasAbiertas += 1;
         }

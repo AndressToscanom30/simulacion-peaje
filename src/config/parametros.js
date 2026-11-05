@@ -103,6 +103,12 @@ export const parametros = {
     abrirSiTasaMayorQue: { 1: 21, 2: 46, 3: 70, 4: 95, 5: null },
     disparadorPorTasa: false,
 
+    /** La caseta sigue atendiendo a su sentido anterior durante el traspaso. */
+    atenderDuranteTraspaso: false,
+    /** Presta una caseta de inmediato ante ρ de colapso, apagado por defecto. */
+    prestamoPorColapso: false,
+    rhoColapso: 1,
+
     /**
      * Coeficientes con los que se generan las tablas de arriba para topes por
      * sentido distintos de 5 (DEC-031). Reproducen exactamente los ocho valores

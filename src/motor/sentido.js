@@ -94,6 +94,7 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     ? (config.maximoCasetas ?? regla.maximoCasetas)
     : (config.maximoCasetas ?? Math.max(...casetasProgramadas, casetasIniciales));
   const minimoCasetas = porRegla ? regla.minimoCasetas : 0;
+  const atenderDuranteTraspaso = Boolean(regla?.atenderDuranteTraspaso);
 
   // Tasas de llegada por intervalo, en veh/s.
   const tasas = llegadas.map((n) => (n * factorEscalaDemanda) / duracionIntervaloSegundos);
@@ -137,6 +138,8 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   let segundosBloqueados = 0;
   let reasignacionesRecibidas = 0;
   let reasignacionesCedidas = 0;
+  let prestamosRecibidos = 0;
+  let prestamosCedidos = 0;
   let contandoCambios = false;
   /**
    * Acciones de apertura que **solo** explica el disparador por tasa: la
@@ -172,11 +175,20 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
    * Casetas que van a atender vehículos nuevos: abiertas y no marcadas para
    * cerrar. Es la `c` con la que la regla mira sus umbrales (DEC-026).
    */
-  const casetasEfectivas = () => pozo.casetasDe(id).filter((c) => !c.marcada).length;
+  const casetasEfectivas = () =>
+    pozo.casetasDe(id).filter((c) => !c.marcada && !pozo.enTraspaso(c)).length;
 
   /** Casetas que pueden tomar un vehículo ahora mismo. */
   const casetasDisponibles = () =>
-    pozo.casetasDe(id).filter((c) => !c.marcada && !c.vehiculo);
+    pozo.casetasDe(id).filter(
+      (c) =>
+        !c.marcada &&
+        !c.vehiculo &&
+        (!pozo.enTraspaso(c) ||
+          (atenderDuranteTraspaso &&
+            !c.traspasoVencido &&
+            regla?.demoraAperturaSegundos > 0)),
+    );
 
   /** ¿Hay una apertura en curso, ya reservada o esperando caseta? */
   const tienePeticionEnCurso = () => aperturaPendiente !== null || bloqueadaDesde !== null;
@@ -291,14 +303,14 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
    */
   function cerrarUna() {
     const mias = pozo.casetasDe(id);
-    const libre = mias.find((c) => !c.marcada && !c.vehiculo);
+    const libre = mias.find((c) => !c.marcada && !c.vehiculo && !pozo.enTraspaso(c));
     if (libre) {
       if (contandoCambios) cierres += 1;
       anotar?.('casetaCierra', { sentidoId: id, casetaId: libre.id, estaba: 'libre' });
       arbitro.liberar(libre, id);
       return 'cerrada';
     }
-    const ocupada = mias.find((c) => !c.marcada && c.vehiculo);
+    const ocupada = mias.find((c) => !c.marcada && c.vehiculo && !pozo.enTraspaso(c));
     if (ocupada) {
       ocupada.marcada = true;
       anotar?.('casetaMarcada', { sentidoId: id, casetaId: ocupada.id });
@@ -461,8 +473,23 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
    * Programa la apertura de una caseta ya reservada, para `t + demora`.
    * La orden no se revoca: al llegar la hora abre aunque la cola haya bajado.
    */
-  function ordenarApertura(caseta, { porReasignacion = false, anticipada = false } = {}) {
+  function ordenarApertura(
+    caseta,
+    {
+      porReasignacion = false,
+      anticipada = false,
+      desdeSentidoId = null,
+      porPrestamo = false,
+    } = {},
+  ) {
     if (instantePrimeraOrden === null && !porReasignacion) instantePrimeraOrden = reloj.ahora;
+    const mantenerOrigen =
+      desdeSentidoId !== null &&
+      desdeSentidoId !== id &&
+      (atenderDuranteTraspaso || porPrestamo);
+    if (mantenerOrigen) {
+      arbitro.iniciarTraspaso(caseta, desdeSentidoId, id, { porPrestamo });
+    }
     casetaReservada = caseta;
     aperturaPendiente = reloj.ahora + regla.demoraAperturaSegundos;
     eventos.programar(aperturaPendiente, TIPO_EVENTO.APERTURA_CASETA, { sentidoId: id });
@@ -472,7 +499,17 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       abreEn: aperturaPendiente,
       porReasignacion,
       anticipada,
+      porPrestamo,
     });
+    if (mantenerOrigen) {
+      anotar?.('traspasoIniciado', {
+        casetaId: caseta.id,
+        desdeSentidoId,
+        haciaSentidoId: id,
+        abreEn: aperturaPendiente,
+        porPrestamo,
+      });
+    }
   }
 
   /**
@@ -540,8 +577,25 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
   function evaluarRegla() {
     if (!porRegla) return;
     actualizarVentanaCierre();
-    if (intentarAbrir()) return;
-    intentarCerrar();
+    if (!intentarAbrir()) intentarCerrar();
+    arbitro.evaluarPrestamo?.();
+  }
+
+  function puedeCederPorColapso() {
+    const c = casetasEfectivas();
+    const umbral = regla.cerrarSiColaMenorQue[c];
+    return (
+      porRegla &&
+      c > minimoCasetas &&
+      umbral !== null &&
+      umbral !== undefined &&
+      enEspera() < umbral
+    );
+  }
+
+  function casetaParaPrestamo() {
+    const mias = pozo.casetasDe(id).filter((c) => !c.marcada && !pozo.enTraspaso(c));
+    return mias.find((c) => !c.vehiculo) ?? mias[0] ?? null;
   }
 
   // ------------------------------------------------------------- interfaz ---
@@ -564,7 +618,10 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
     condicionDeAperturaPorCola,
     condicionDeAperturaPorTasa,
     tienePeticionEnCurso,
+    tieneAperturaReservada: () => aperturaPendiente !== null,
     estaBloqueada: () => bloqueadaDesde !== null,
+    puedeCederPorColapso,
+    casetaParaPrestamo,
     integrarHasta,
 
     /** Arranca el sentido: casetas iniciales, cola inicial y primeros eventos. */
@@ -621,7 +678,11 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
       atendidosTotal += 1;
       if (reloj.ahora <= horizonte) salidasEnHorizonte += 1;
       anotar?.('salida', { sentidoId: id, vehiculoId, casetaId, cola: enEspera() });
-      if (caseta.marcada) {
+      if (caseta.prestadaA !== null && !pozo.enTraspaso(caseta)) {
+        arbitro.finalizarPrestamoPendiente(caseta, id, caseta.prestadaA);
+      } else if (pozo.enTraspaso(caseta) && caseta.traspasoVencido) {
+        arbitro.finalizarTraspaso(caseta);
+      } else if (caseta.marcada && !pozo.enTraspaso(caseta)) {
         // La caseta marcada ya terminó: ahora sí vuelve al pozo (o se reasigna).
         if (contandoCambios) cierres += 1;
         desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
@@ -639,14 +700,31 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
 
     manejarApertura() {
       // La orden ya se dio: la caseta abre aunque la cola haya bajado (DEC-026).
-      aperturaPendiente = null;
       const caseta = casetaReservada;
-      casetaReservada = null;
       if (caseta) {
+        if (pozo.enTraspaso(caseta)) {
+          if (caseta.vehiculo) {
+            caseta.traspasoVencido = true;
+            anotar?.('traspasoVencido', {
+              casetaId: caseta.id,
+              desdeSentidoId: caseta.duenio,
+              haciaSentidoId: id,
+            });
+            return;
+          }
+          aperturaPendiente = null;
+          casetaReservada = null;
+          arbitro.finalizarTraspaso(caseta);
+          return;
+        }
+        aperturaPendiente = null;
+        casetaReservada = null;
         pozo.entregar(caseta, id);
         if (contandoCambios) aperturas += 1;
         desdeCuandoBajoUmbral = null; // cambió c: el conteo arranca de nuevo
         anotar?.('casetaAbre', { sentidoId: id, casetaId: caseta.id, motivo: 'regla' });
+      } else {
+        aperturaPendiente = null;
       }
       despachar();
     },
@@ -673,15 +751,54 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
      * El árbitro le entrega una caseta tras una petición bloqueada o una
      * reasignación. Devuelve `true` si la aceptó.
      */
-    recibirCaseta(caseta, { porReasignacion = false } = {}) {
+    recibirCaseta(
+      caseta,
+      { porReasignacion = false, desdeSentidoId = null, porPrestamo = false } = {},
+    ) {
       if (tienePeticionEnCurso() && aperturaPendiente !== null) return false;
       if (bloqueadaDesde !== null) {
         segundosBloqueados += reloj.ahora - bloqueadaDesde;
         bloqueadaDesde = null;
       }
       if (porReasignacion) reasignacionesRecibidas += 1;
-      ordenarApertura(caseta, { porReasignacion });
+      if (porPrestamo) prestamosRecibidos += 1;
+      ordenarApertura(caseta, { porReasignacion, desdeSentidoId, porPrestamo });
       return true;
+    },
+
+    prepararPrestamo(caseta, destinoId) {
+      prestamosCedidos += 1;
+      desdeCuandoBajoUmbral = null;
+      caseta.prestadaA = destinoId;
+      if (!atenderDuranteTraspaso && caseta.vehiculo) {
+        caseta.marcada = true;
+        anotar?.('casetaMarcada', {
+          sentidoId: id,
+          casetaId: caseta.id,
+          porPrestamo: true,
+          haciaSentidoId: destinoId,
+        });
+      }
+    },
+
+    cerrarTraspaso(caseta, destinoId) {
+      if (contandoCambios) cierres += 1;
+      desdeCuandoBajoUmbral = null;
+      anotar?.('casetaCierra', {
+        sentidoId: id,
+        casetaId: caseta.id,
+        estaba: caseta.marcada ? 'marcada' : 'traspaso',
+        haciaSentidoId: destinoId,
+      });
+    },
+
+    abrirTraspaso(caseta) {
+      aperturaPendiente = null;
+      casetaReservada = null;
+      if (contandoCambios) aperturas += 1;
+      desdeCuandoBajoUmbral = null;
+      anotar?.('casetaAbre', { sentidoId: id, casetaId: caseta.id, motivo: 'traspaso' });
+      despachar();
     },
 
     /** Descarta una petición bloqueada que ya no tiene razón de ser. */
@@ -781,6 +898,8 @@ export function crearSentido({ config, prng, eventos, reloj, pozo, arbitro, anot
         segundosBloqueados,
         reasignacionesRecibidas,
         reasignacionesCedidas,
+        prestamosRecibidos,
+        prestamosCedidos,
 
         numerosAleatoriosUsados: prng.cuenta(),
 

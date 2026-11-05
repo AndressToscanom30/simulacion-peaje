@@ -705,3 +705,29 @@ mantiene la pregunta abierta hasta que alguien la responda.
 - **Qué haría falta para cerrarla:** que alguien mire el panel suelto en la
   etapa 5, cuando se reescriba `docs/vista3d.md`, y diga si los mandos están
   mejor arriba o abajo cuando no hay pórtico encima.
+
+### PEN-026 — Préstamo si el receptor ya tiene una petición bloqueada
+
+- **Origen:** DEC-060, préstamo por colapso.
+- **Qué no fija la petición:** un sentido puede estar en ρ de colapso y tener
+  una petición de apertura que no pudo reservar caseta porque el pozo estaba
+  agotado. La DEC-027, punto 5, dice que esa petición cuenta como apertura en
+  curso; la solicitud nueva también dice que el receptor no debe tener otra
+  apertura en curso.
+- **Opción implementada:** la petición bloqueada impide un préstamo duplicado.
+  Cuando una caseta se libere, la petición normal conserva prioridad según
+  DEC-027, y el préstamo se vuelve a evaluar en la próxima llegada o fin de
+  servicio.
+- **Qué hace falta confirmar:** si la usuaria quería que el préstamo por
+  colapso desplace una petición que ya está bloqueada, en vez de tratarla como
+  apertura en curso.
+
+### PEN-027 — Desempate entre dos sentidos elegibles para préstamo
+
+- **Origen:** DEC-060. El modelo tiene dos sentidos, así que ambos pueden
+  alcanzar el umbral de colapso al mismo tiempo si los parámetros se cambian.
+- **Opción implementada:** se presta al receptor de mayor ρ; a igualdad, gana
+  el de menor identificador. Es determinista y evita que el orden del arreglo
+  decida por accidente.
+- **Qué hace falta confirmar:** si la usuaria prefiere otro desempate cuando
+  ambos sentidos colapsan, por ejemplo usar la cola o la espera estimada.

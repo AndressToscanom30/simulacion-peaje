@@ -2,6 +2,59 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-05 — Traspasos atendidos, préstamos por colapso y ρ en vivo
+
+Se añadieron las tres mejoras pedidas, con A y B apagadas por defecto. El
+diagnóstico confirmó la hipótesis: la ventana de cierre no suspende el servicio
+y una caseta marcada termina su atención; la indisponibilidad aparece después,
+cuando la caseta se reserva para el otro sentido y espera la demora habitual.
+En el escenario de estrés con pozo de 6, semilla 1, se observó el intervalo
+`t = 1804,390`–`2104,390`: 300 s entre la reserva y la apertura.
+
+### Cambios
+
+- **A:** `regla.atenderDuranteTraspaso` permite que una caseta comprometida con
+  el destino siga despachando al origen durante la demora. Al vencer, termina
+  el servicio activo y luego cambia de sentido; no cuenta como capacidad
+  efectiva del origen. Se cubrieron también demora cero, cruce del horizonte,
+  nueva petición y otro cierre.
+- **B:** `regla.prestamoPorColapso` y `regla.rhoColapso` añaden una cesión
+  inmediata bajo los criterios acordados, con prioridad para una caseta libre,
+  una sola cesión en curso y sin alterar la ruta normal cuando el pozo tiene
+  casetas libres.
+- **C:** `src/ui/rho.js` reconstruye el mismo ρ perezoso del motor. El HUD y el
+  gráfico son accesibles con texto/figura y referencias de capacidad; la escena
+  3D muestra el traspaso con cuenta atrás.
+- La traza subió a versión 2. Se registraron DEC-059–061; PEN-026 y PEN-027
+  documentan las dos interpretaciones que requieren confirmación.
+
+### Comparación (30 réplicas, semillas comunes)
+
+| Perfil | Variante | Wq P→C (min) | Wq C→P (min) | Wq peaje (min) | Cola máx. muestr. | Carriles-int. | Préstamos |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Festivo | Regla + reasignación | 0,53 ± 0,10 | 0,39 ± 0,10 | 0,51 ± 0,08 | 35,6 | 69,6 | 0,00 |
+| Festivo | Con préstamo | 0,37 ± 0,06 | 0,49 ± 0,12 | 0,39 ± 0,05 | 33,8 | 68,4 | 1,27 |
+| Festivo | Traspaso atendido | 0,40 ± 0,07 | 0,38 ± 0,10 | 0,40 ± 0,05 | 32,4 | 70,9 | 0,00 |
+| Festivo | Ambas opciones | 0,27 ± 0,04 | 0,46 ± 0,09 | 0,30 ± 0,03 | 30,1 | 70,7 | 2,07 |
+| Demanda ×1,13 (E3) | Regla + reasignación | 0,76 ± 0,23 | 0,81 ± 0,20 | 0,77 ± 0,18 | 54,1 | 70,2 | 0,00 |
+| Demanda ×1,13 (E3) | Con préstamo | 0,73 ± 0,19 | 0,84 ± 0,20 | 0,75 ± 0,15 | 54,5 | 69,5 | 0,73 |
+| Demanda ×1,13 (E3) | Traspaso atendido | 0,66 ± 0,20 | 0,80 ± 0,20 | 0,69 ± 0,15 | 49,0 | 70,9 | 0,00 |
+| Demanda ×1,13 (E3) | Ambas opciones | 0,69 ± 0,25 | 0,75 ± 0,20 | 0,70 ± 0,19 | 49,8 | 70,9 | 1,00 |
+
+El informe completo está en `docs/resultados/traspasos-prestamos.md`. El modelo
+subestima el pico (PEN-008), así que estas cifras son comparativas, no una
+predicción.
+
+### Verificación
+
+- Antes de esta tarea: **508/508** pruebas en verde.
+- Después: `npm test` **532/532**; `npm run build` exitoso. Vite mantiene el
+  aviso de chunk 3D por encima de 900 kB.
+- `npm run parametros`: **37 parámetros**.
+- `npm run simular`, `diagnostico`, `fase2`, `fase3` y `fase4`: en los cinco
+  informes de fases 1–4, el diff muestra solo el cambio de fecha. Con las dos
+  opciones nuevas apagadas, los resultados y la salida de lotes se conservaron.
+
 ## 2026-11-04 — Corrección de regresión de situaciones y cámara
 
 Se reanuda la mejora del frontend para corregir dos regresiones que quedaron en

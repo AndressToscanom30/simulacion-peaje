@@ -593,6 +593,55 @@ export function catalogoFase4() {
 }
 
 /**
+ * Lote puntual para las opciones de traspaso de las DEC-059 y DEC-060.
+ *
+ * Usa la regla con reasignación de la DEC-008 como base para que el escenario
+ * compare tanto traspasos como préstamos, y cruza el festivo con E3 ×1,13.
+ * No forma parte de `catalogoFase4`, cuyos informes publicados no cambian.
+ */
+export function catalogoTraspasos() {
+  const perfiles = [
+    { clave: 'festivo', nombre: 'Festivo', factorDemanda: 1 },
+    { clave: 'demanda-alta', nombre: 'Demanda ×1,13 (E3)', factorDemanda: 1.13 },
+  ];
+  const variantes = [
+    { clave: 'base', nombre: 'Regla + reasignación', atender: false, prestamo: false },
+    { clave: 'prestamo', nombre: 'Con préstamo', atender: false, prestamo: true },
+    { clave: 'traspaso', nombre: 'Traspaso atendido', atender: true, prestamo: false },
+    { clave: 'ambos', nombre: 'Ambas opciones', atender: true, prestamo: true },
+  ];
+
+  return perfiles.flatMap((perfil) =>
+    variantes.map((variante) => {
+      const nombre = `${perfil.nombre} · ${variante.nombre}`;
+      const escenario = construirEscenario({
+        nombre,
+        sentidos:
+          perfil.factorDemanda === 1
+            ? [{}, {}]
+            : [
+                { factorDemanda: perfil.factorDemanda },
+                { factorDemanda: perfil.factorDemanda },
+              ],
+        regla: {
+          reasignacionActiva: true,
+          atenderDuranteTraspaso: variante.atender,
+          prestamoPorColapso: variante.prestamo,
+        },
+      });
+      validarEscenario(escenario);
+      return {
+        grupo: perfil.clave,
+        codigo: `${perfil.clave}-${variante.clave}`,
+        nombre,
+        cambia: `${perfil.nombre}: ${variante.nombre}, con reasignación de la DEC-008`,
+        escenario,
+      };
+    }),
+  );
+}
+
+/**
  * Nombre de cada grupo del catálogo de la fase 4, en lenguaje de usuario
  * (DEC-056). Los códigos `E1`…`E5` siguen siendo la clave interna y la que usan
  * los informes; esto es solo lo que se lee en pantalla.

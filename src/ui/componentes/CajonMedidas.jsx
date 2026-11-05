@@ -2,7 +2,7 @@ import { conteos } from '../../config/datos.js';
 import { enMinutos } from '../formato.js';
 import EsquemaCasetas from './EsquemaCasetas.jsx';
 import TablaMedidas from './TablaMedidas.jsx';
-import { GraficoCola, GraficoCasetas, GraficoEspera } from './Graficos.jsx';
+import { GraficoCola, GraficoCasetas, GraficoEspera, GraficoRho } from './Graficos.jsx';
 
 /**
  * Cajón plegable con los gráficos, el esquema de casetas y la tabla de medidas.
@@ -65,6 +65,7 @@ export default function CajonMedidas({
           maximoSegundos={escenario.desempeno.maximoTolerableWqSegundos}
           etiquetas={etiquetas}
         />
+        <GraficoRho traza={traza} instante={instante} rhoReasignacion={escenario.regla.rhoReasignacion} />
       </div>
 
       {hayObservada && (

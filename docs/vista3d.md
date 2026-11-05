@@ -1,10 +1,10 @@
 # La vista 3D
 
-Visualización 3D del peaje (fase 6). Se abre dentro de la pestaña **Tiempo
-real**, compartiendo el reloj y los controles con los tableros 2D.
+Vista 3D principal del peaje. Comparte traza, reloj y controles con el HUD y el
+cajón de medidas.
 
 ```sh
-npm run dev      # http://localhost:5173 → Tiempo real → Simular y reproducir
+npm run dev      # http://localhost:5173 → simulación
 ```
 
 ## Cómo se traduce la traza en escena
@@ -130,6 +130,7 @@ la **figura** y la altura del indicador sobre el letrero, y por su **texto**.
 | reservada | `ABRE n s` | cono | Ya tiene destino y cuenta atrás hasta abrir, pero todavía no atiende (DEC-027). |
 | abierta | `ABIERTA` | prisma alto | Operando. |
 | marcada | `CIERRA` | cono medio | Cerrará al terminar su servicio; **no se interrumpe** (DEC-007). |
+| traspaso | `PASA A` | caja | Atiende al sentido anterior mientras se cumple la demora; al terminar un servicio abre para el destino (DEC-059). |
 
 Los avisos breves sobre la plaza: **anillo dorado** sobre una caseta que acaba
 de reasignarse, **octaedro rojo** sobre el sentido cuya petición de caseta se

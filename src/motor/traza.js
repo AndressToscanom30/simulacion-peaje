@@ -13,7 +13,7 @@
  */
 
 /** Versión del formato. Se sube si cambia de forma incompatible. */
-export const VERSION_TRAZA = 1;
+export const VERSION_TRAZA = 2;
 
 /** Eventos que el grabador reconoce, por familia. */
 export const EVENTOS_TRAZA = {
@@ -25,8 +25,10 @@ export const EVENTOS_TRAZA = {
     'casetaCierra',
     'casetaReasignada',
     'cierreCancelado',
+    'traspasoIniciado',
+    'traspasoVencido',
   ],
-  pozo: ['peticionBloqueada'],
+  pozo: ['peticionBloqueada', 'prestamoIniciado'],
   medicion: ['lecturaCola'],
 };
 
@@ -169,6 +171,7 @@ export function reconstruirDesdeTraza(traza) {
   const duenoDeCaseta = new Array(metadatos.pozoTotal).fill(null);
   const reservadaPara = new Array(metadatos.pozoTotal).fill(null);
   const marcada = new Array(metadatos.pozoTotal).fill(false);
+  const enTraspaso = new Array(metadatos.pozoTotal).fill(false);
 
   /** Serie de hitos: un punto cada vez que algo cambia, para los gráficos. */
   const hitos = [];
@@ -207,6 +210,7 @@ export function reconstruirDesdeTraza(traza) {
         reservadaPara[evento.casetaId] = null;
         duenoDeCaseta[evento.casetaId] = evento.sentidoId;
         marcada[evento.casetaId] = false;
+        enTraspaso[evento.casetaId] = false;
         s.casetasAbiertas += 1;
         break;
       case 'casetaMarcada':
@@ -216,12 +220,29 @@ export function reconstruirDesdeTraza(traza) {
         marcada[evento.casetaId] = false;
         break;
       case 'casetaCierra':
+        if (duenoDeCaseta[evento.casetaId] !== null) {
+          porSentido[duenoDeCaseta[evento.casetaId]].casetasAbiertas -= 1;
+        }
         duenoDeCaseta[evento.casetaId] = null;
         marcada[evento.casetaId] = false;
-        s.casetasAbiertas -= 1;
+        enTraspaso[evento.casetaId] = false;
+        break;
+      case 'traspasoIniciado': {
+        const id = evento.casetaId;
+        if (duenoDeCaseta[id] === null) {
+          duenoDeCaseta[id] = evento.desdeSentidoId;
+          porSentido[evento.desdeSentidoId].casetasAbiertas += 1;
+        }
+        reservadaPara[id] = evento.haciaSentidoId;
+        enTraspaso[id] = true;
+        break;
+      }
+      case 'traspasoVencido':
+        enTraspaso[evento.casetaId] = true;
         break;
       case 'casetaReasignada':
       case 'peticionBloqueada':
+      case 'prestamoIniciado':
       case 'lecturaCola':
         break; // no cambian el estado reconstruido
       default:
@@ -249,6 +270,7 @@ export function reconstruirDesdeTraza(traza) {
       duenoDeCaseta: [...duenoDeCaseta],
       reservadaPara: [...reservadaPara],
       marcada: [...marcada],
+      enTraspaso: [...enTraspaso],
     },
     hitos,
     intervalos,
