@@ -13,6 +13,9 @@ etapas está en `docs/estudio.md` y la política recomendada en
 
 ## Mejora del frontend — en curso
 
+Sesión 04/11/2026: corrección de regresión en los avisos de las situaciones y en
+el orden de los preajustes de cámara; la etapa 5 sigue pendiente.
+
 Mejora posterior al cierre de las siete fases, en cinco etapas. **El plan vive
 en [`mejora-frontend.md`](mejora-frontend.md)**; aquí solo el estado.
 

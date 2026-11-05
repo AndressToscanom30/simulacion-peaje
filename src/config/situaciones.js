@@ -67,7 +67,7 @@ export const SITUACIONES = {
     descripcion:
       'El retorno de un festivo, que es la hora más cargada que se midió. Es el caso para el que se diseñó la política.',
     aviso:
-      'El sentido contrario no se midió ese día: se sustituye por el conteo de un viernes, así que lo que pase en ese sentido es un supuesto.',
+      'Es el caso real más exigente y el punto de referencia para la política. El C→P usa el sustituto del estudio, no el conteo bruto.',
     sentidos: (modos = []) => [
       sentidoDeConteo({ etiqueta: P_C, conteo: 'festivoPC', modo: modos[0] }),
       sentidoDeConteo({
@@ -87,7 +87,7 @@ export const SITUACIONES = {
     descripcion:
       'Un domingo con tráfico moderado. Es el único día en que se midieron los dos sentidos.',
     aviso:
-      'Los dos sentidos se midieron el mismo día pero a horas distintas, así que no son una foto simultánea del peaje.',
+      'Los dos sentidos se midieron en horas distintas, así que es útil para comparar la respuesta del modelo en dos perfiles reales sin asumir simultaneidad.',
     sentidos: (modos = []) => [
       sentidoDeConteo({ etiqueta: P_C, conteo: 'domingoPC', modo: modos[0] }),
       sentidoDeConteo({ etiqueta: C_P, conteo: 'domingoCP', modo: modos[1] }),
@@ -100,7 +100,7 @@ export const SITUACIONES = {
     descripcion:
       'Un día cualquiera, con holgura de sobra. Sirve para ver que sin presión los dos sentidos no se pelean por las casetas.',
     aviso:
-      'Está construido con dos días distintos: un viernes en un sentido y un domingo en el otro. No es una hora que ocurriera así.',
+      'Se construye con dos días distintos para mostrar un caso tranquilo, sin que la presión de un mismo pico los fuerce a competir por el mismo pozo.',
     // El mismo orden que `escenarioDiaNormal` de escenarios.js: C→P primero.
     sentidos: (modos = []) => [
       sentidoDeConteo({ etiqueta: C_P, conteo: 'viernes', modo: modos[0] }),

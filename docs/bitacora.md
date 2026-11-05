@@ -2,6 +2,26 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-04 — Corrección de regresión de situaciones y cámara
+
+Se reanuda la mejora del frontend para corregir dos regresiones que quedaron en
+el estado de trabajo: los avisos de las situaciones predefinidas no se estaban
+pintando en el selector, y el orden de los preajustes de cámara no coincidía con
+la secuencia esperada por la fase 6.
+
+### Cambio
+
+- Se añadieron los textos de aviso para `festivo`, `domingo` y `diaNormal` en
+  `src/config/situaciones.js`, con lenguaje de usuario y sin numeración interna.
+- Se reordenó la lista `PREAJUSTES_CAMARA` en `src/ui/vista3d/geometria.js` para
+  que `P→C` y `C→P` aparezcan en el orden esperado, manteniendo la ruta de la
+  cámara y las etiquetas legibles.
+
+### Verificación
+
+- `npx vitest run --reporter=json --outputFile=vitest.json` en verde: **508/508
+  pruebas pasadas**.
+
 ## 2026-11-02 — Mejora del frontend: etapa 4b (diseño visual y solo modo claro)
 
 La interfaz tenía estructura (etapa 2), hablaba en lenguaje de usuario (etapa 3)

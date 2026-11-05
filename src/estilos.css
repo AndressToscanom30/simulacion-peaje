@@ -651,7 +651,6 @@ td.no { color: var(--senal); font-weight: 700; }
 }
 
 .hud__sentidos {
-  display: flex;
   gap: var(--e-3);
   flex-wrap: wrap;
   padding: var(--e-3) var(--e-4) 0;
