@@ -359,7 +359,7 @@ describe('préstamos por colapso', () => {
     if (primerPrestamo) expect(primerPrestamo.t).toBeGreaterThan(primeraReservaReceptora.t);
   });
 
-  it('no presta a un sentido con una apertura bloqueada', () => {
+  it('el préstamo satisface la petición bloqueada del sentido en colapso', () => {
     const escenario = escenarioDePrestamo({
       cambios: {
         sentidos: [{ colaInicial: 2 }, { colaInicial: 24 }],
@@ -367,8 +367,63 @@ describe('préstamos por colapso', () => {
       },
     });
     const eventos = eventosDePrestamo(escenario);
-    expect(eventos.some((evento) => evento.tipo === 'peticionBloqueada' && evento.sentidoId === 1)).toBe(true);
-    expect(eventos.some((evento) => evento.tipo === 'prestamoIniciado')).toBe(false);
+    const peticion = eventos.find(
+      (evento) => evento.tipo === 'peticionBloqueada' && evento.sentidoId === 1,
+    );
+    const prestamo = eventos.find(
+      (evento) => evento.tipo === 'prestamoIniciado' && evento.haciaSentidoId === 1,
+    );
+    const reserva = eventos.find(
+      (evento) =>
+        evento.tipo === 'casetaReservada' &&
+        evento.casetaId === prestamo?.casetaId &&
+        evento.t === prestamo?.t,
+    );
+    const apertura = eventos.find(
+      (evento) =>
+        evento.tipo === 'casetaAbre' &&
+        evento.casetaId === prestamo?.casetaId &&
+        evento.sentidoId === 1 &&
+        evento.t >= (reserva?.abreEn ?? Infinity),
+    );
+
+    expect(peticion).toBeDefined();
+    expect(prestamo).toBeDefined();
+    expect(prestamo.t).toBeGreaterThan(peticion.t);
+    expect(reserva?.porPrestamo).toBe(true);
+    expect(apertura).toBeDefined();
+    expect(apertura.t).toBeCloseTo(reserva.abreEn, 9);
+  });
+
+  it('no duplica una apertura que ya tiene caseta reservada', () => {
+    const escenario = escenarioDePrestamo({
+      cambios: {
+        sentidos: [{ colaInicial: 2 }, { colaInicial: 24, casetasIniciales: 3 }],
+        regla: {
+          rhoColapso: 0.1,
+          abrirSiColaMayorQue: { 1: 4, 2: 1000, 3: 14, 4: 1000, 5: null },
+        },
+      },
+    });
+    const eventos = eventosDePrestamo(escenario);
+    const reservaNormal = eventos.find(
+      (evento) => evento.tipo === 'casetaReservada' && evento.sentidoId === 1,
+    );
+    const aperturaNormal = eventos.find(
+      (evento) =>
+        evento.tipo === 'casetaAbre' &&
+        evento.sentidoId === 1 &&
+        evento.motivo !== 'arranque',
+    );
+    const prestamo = eventos.find(
+      (evento) => evento.tipo === 'prestamoIniciado' && evento.haciaSentidoId === 1,
+    );
+
+    expect(reservaNormal).toBeDefined();
+    expect(reservaNormal.porPrestamo).toBe(false);
+    expect(aperturaNormal).toBeDefined();
+    expect(prestamo).toBeDefined();
+    expect(prestamo.t).toBeGreaterThanOrEqual(aperturaNormal.t);
   });
 
   it('no presta si el donante está en su mínimo o su cola no está bajo el umbral de cierre', () => {

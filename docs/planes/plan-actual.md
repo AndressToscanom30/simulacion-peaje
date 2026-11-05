@@ -25,12 +25,24 @@ de las fases 1 a 4 no cambian.
       curso.
 - [x] Reconstruir ρ desde la traza para HUD y gráfico, sin tocar el motor.
 - [x] Versionar y documentar eventos de traza; registrar DEC-059 a DEC-061 y
-      dejar PEN-026 y PEN-027 abiertos.
+      dejar PEN-027 abierto. DEC-062 cerró después PEN-026.
 - [x] Comparar ocho escenarios con 30 réplicas y semillas comunes:
       `docs/resultados/traspasos-prestamos.md`.
 - [x] Regenerar `docs/parametros.md` (37 parámetros) y los informes de las fases
       1 a 4; en estos últimos solo cambió la fecha.
-- [x] **532 pruebas**, build de producción y reportes verificados.
+- [x] **533 pruebas**, build de producción y reportes verificados.
+
+## Revisión del préstamo bloqueado ✅
+
+- [x] Reproducir el festivo de la interfaz: se confirmó que una petición
+      bloqueada impedía prestar aunque C→P alcanzara ρ ≈ 3.
+- [x] Por decisión de la usuaria, permitir que el préstamo satisfaga la
+      petición bloqueada, sin duplicar una apertura ya reservada.
+- [x] Probar en la interfaz el festivo, el domingo y el día normal; verificar
+      también la demora de 300 s y el descenso de ρ al abrir la caseta.
+- [x] Registrar DEC-062 y cerrar PEN-026. PEN-027 sigue abierto.
+- [x] **533 pruebas**, build de producción y validación runtime standalone
+      (pruebas, build y HTTP 200) verificados después del cambio.
 
 ## Mejora del frontend — en curso
 

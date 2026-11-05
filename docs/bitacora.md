@@ -2,6 +2,50 @@
 
 Una entrada por intervención, la más reciente arriba.
 
+## 2026-11-05 — El préstamo por colapso satisface la petición bloqueada
+
+Se probaron en la interfaz varios perfiles, incluidos los valores del caso
+festivo de la captura. La cola de C→P cruzaba el umbral normal de apertura, pero
+la solicitud quedaba bloqueada con el pozo agotado; la regla del préstamo la
+interpretaba como una apertura ya en curso y no podía adelantarla. La usuaria
+confirmó que el préstamo debe satisfacer esa solicitud.
+
+### Cambio
+
+- Por DEC-062, el préstamo puede convertir una petición bloqueada en su propia
+  reserva. Una caseta que ya está reservada para una apertura normal sí impide
+  un segundo préstamo.
+- No se modifica la demora de 300 s. En la interfaz, el C→P seguía en una
+  caseta y ρ = 2,94 a las 07:09 porque el traspaso aún no había vencido; a las
+  12:06 ya atendía con dos casetas y ρ = 1,92. La cola siguió creciendo: la
+  demanda conjunta excede la capacidad nominal total, por lo que prestar no
+  garantiza estabilizar el sistema.
+- El domingo y el día normal se mantuvieron sin colapso. PEN-026 queda cerrado;
+  PEN-027 sigue abierto.
+
+### Comparación diagnóstica (30 semillas por caso)
+
+| Perfil | Préstamos activos | Réplicas con préstamo | Préstamos medios | ρ máximo | Réplicas con ρ ≥ 3 | Cola máxima |
+|---|---:|---:|---:|---:|---:|---:|
+| Festivo 1064/952, apagado | No | 0/30 | 0,00 | 4,84 | 29/30 | 652 |
+| Festivo 1064/952, encendido | Sí | 30/30 | 4,33 | 4,36 | 29/30 | 407 |
+| Domingo, encendido | Sí | 0/30 | 0,00 | 1,33 | 0/30 | 15 |
+| Día normal, encendido | Sí | 0/30 | 0,00 | 1,57 | 0/30 | 17 |
+
+El escenario de control con el umbral inicial elevado solo se usó para aislar
+el efecto de una petición bloqueada; no se propone cambiar el parámetro. El pico
+de ρ también es transitorio durante la demora y no debe ocultarse ajustando
+valores.
+
+### Verificación
+
+- `npm test`: **533/533**.
+- `npm run build`: exitoso; se mantiene el aviso existente del chunk 3D superior
+  a 900 kB.
+- Validación runtime standalone: **3/3** (pruebas, build y respuesta HTTP 200
+  en el servidor Vite aislado en el puerto 5174).
+- `git diff --check`: limpio.
+
 ## 2026-11-05 — Traspasos atendidos, préstamos por colapso y ρ en vivo
 
 Se añadieron las tres mejoras pedidas, con A y B apagadas por defecto. El

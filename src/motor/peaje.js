@@ -161,7 +161,7 @@ export function simularPeaje(config) {
           destino.porRegla &&
           destino.rho() >= rhoColapso &&
           destino.casetasEfectivas() < destino.maximoCasetas &&
-          !destino.tienePeticionEnCurso(),
+          !destino.tieneAperturaReservada(),
       )
       .map((destino) => ({ destino, origen: otro(destino.id) }))
       .filter((par) => par.origen?.puedeCederPorColapso());

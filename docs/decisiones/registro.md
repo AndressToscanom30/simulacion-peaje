@@ -1831,6 +1831,9 @@ tomaron durante el desarrollo.
 - **Descarta:** prestar desde un pozo con casetas libres; prestar si el donante
   está en el mínimo o sobre su umbral de cierre; cortar servicios; encadenar
   préstamos en cascada; y cambiar la regla base o la reasignación de DEC-008.
+- **Actualización por DEC-062:** la exclusión de una petición bloqueada quedó
+  superada; para el préstamo solo impide actuar una apertura que ya tiene una
+  caseta reservada. El resto de esta decisión sigue vigente.
 
 ## DEC-061 — La interfaz reconstruye ρ desde la traza sin tocar el motor
 
@@ -1858,3 +1861,32 @@ tomaron durante el desarrollo.
 - **Descarta:** estimar ρ con un reloj deslizante distinto, contar la cola
   inicial como llegadas recientes, recalcular la ventana sin llegada, o añadir
   lógica de simulación a React o a la escena 3D.
+
+## DEC-062 — El préstamo por colapso satisface una petición bloqueada
+
+- **Fecha:** 05/11/2026
+- **Supera a DEC-060** únicamente en la exclusión de una petición bloqueada
+  como motivo para no prestar, y a **DEC-027 punto 5** únicamente en esa vía:
+  una petición bloqueada sigue contando como apertura pendiente para la regla
+  normal, pero puede ser satisfecha por el préstamo por colapso.
+- **Decisión:** si el préstamo está habilitado, el receptor cumple
+  `ρ ≥ rhoColapso`, está bajo su tope y el pozo está agotado, una petición
+  bloqueada no impide la cesión. El préstamo convierte esa espera en una
+  reserva normal con la demora habitual; se registra el tiempo bloqueado y no
+  se crea una segunda apertura. Una apertura que ya tiene caseta reservada sí
+  impide otro préstamo hasta que esa reserva abra o se cancele.
+- Se mantienen los criterios de elegibilidad del donante, la preferencia por
+  una caseta libre, el respeto al servicio en curso (DEC-007), el reinicio de la
+  ventana de cierre y el límite de un préstamo en vuelo.
+- **Motivo:** en la configuración festiva de la interfaz, el C→P cruzaba el
+  umbral de cola y quedaba bloqueado mientras el pozo se agotaba; aunque
+  alcanzaba `ρ = 3,07`, la petición bloqueada impedía el préstamo. La usuaria
+  confirmó que el préstamo debe adelantar esa petición.
+- **Casos límite:** no se duplica una apertura ya reservada; si el donante no
+  puede ceder, no se presta; si el pozo tiene caseta libre, sigue el camino
+  normal. La demora de 300 s puede mantener `ρ > 1` temporalmente, y la demanda
+  total del ejemplo supera la capacidad nominal conjunta, por lo que el
+  préstamo no garantiza que `ρ` baje de 1 ni elimina el colapso.
+- **Descarta:** conservar bloqueada la petición mientras el sentido colapsa,
+  descartarla sin satisfacerla, abrir una segunda reserva en el receptor,
+  acortar la demora o alterar parámetros para ocultar el pico.

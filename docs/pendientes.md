@@ -706,21 +706,21 @@ mantiene la pregunta abierta hasta que alguien la responda.
   etapa 5, cuando se reescriba `docs/vista3d.md`, y diga si los mandos están
   mejor arriba o abajo cuando no hay pórtico encima.
 
-### PEN-026 — Préstamo si el receptor ya tiene una petición bloqueada
+### PEN-026 — Préstamo si el receptor ya tiene una petición bloqueada ✅ CERRADO
 
 - **Origen:** DEC-060, préstamo por colapso.
-- **Qué no fija la petición:** un sentido puede estar en ρ de colapso y tener
-  una petición de apertura que no pudo reservar caseta porque el pozo estaba
-  agotado. La DEC-027, punto 5, dice que esa petición cuenta como apertura en
-  curso; la solicitud nueva también dice que el receptor no debe tener otra
-  apertura en curso.
-- **Opción implementada:** la petición bloqueada impide un préstamo duplicado.
-  Cuando una caseta se libere, la petición normal conserva prioridad según
-  DEC-027, y el préstamo se vuelve a evaluar en la próxima llegada o fin de
-  servicio.
-- **Qué hace falta confirmar:** si la usuaria quería que el préstamo por
-  colapso desplace una petición que ya está bloqueada, en vez de tratarla como
-  apertura en curso.
+- **Cerrado el 05/11/2026 por DEC-062**, tras probar el festivo real en la
+  interfaz. Con ambos interruptores activos, C→P alcanzó cola 62 y ρ = 3,07 a
+  las 06:52 simuladas, pero no recibió préstamo porque su apertura quedó
+  bloqueada con el pozo agotado.
+- La usuaria confirmó que el préstamo debe satisfacer esa petición bloqueada.
+  Ahora solo una apertura que ya reservó una caseta impide el préstamo; la
+  espera bloqueada se transforma en la reserva del préstamo y conserva la
+  demora normal de apertura.
+- La prueba de control con umbral de apertura inicial elevado confirmó que el
+  préstamo se iniciaba al quitar el bloqueo, pero no es un cambio de parámetro
+  propuesto para el escenario. Con la corrección, el préstamo se inicia aun
+  cuando la petición normal ya está bloqueada.
 
 ### PEN-027 — Desempate entre dos sentidos elegibles para préstamo
 

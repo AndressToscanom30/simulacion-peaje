@@ -7,7 +7,7 @@ seleccionan por `#hash` (DEC-053).
 ```sh
 npm install
 npm run dev      # interfaz en http://localhost:5173
-npm test         # 532 pruebas, motor e interfaz
+npm test         # 533 pruebas, motor e interfaz
 ```
 
 ## Indicador de carga ρ (DEC-061)
@@ -127,7 +127,7 @@ pruebas lo garantizan: corren en entorno `node` y solo
 
 ## Qué se verificó
 
-- Las **532 pruebas** pasan y los informes de las fases 1 a 4 se regeneran
+- Las **533 pruebas** pasan y los informes de las fases 1 a 4 se regeneran
   idénticos (salvo la línea de la fecha).
 - Grabar la traza **no cambia ningún resultado**: en cinco escenarios y las 30
   semillas, con y sin grabador salen las mismas medidas y los mismos números
